@@ -126,6 +126,11 @@ If your plugin does not need CSS, delete this file.
 	text-align: center;
 }
 
+.project-section {
+	width: fit-content;
+	max-width: 100%;
+}
+
 .project-controls {
 	display: flex;
 	align-items: center;

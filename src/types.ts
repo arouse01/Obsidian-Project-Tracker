@@ -4,14 +4,13 @@ import {
 } from 'obsidian';
 
 export interface IssueContext {
-	editor: Editor,
 	tempTitle: string;
 	selectedText: string;
 	projectPaths: string[] | null;
 	projectNames: string[] | null;
 	sourceFile: TFile;
-	line: number;
-
+	line: number | null;
+	editor?: Editor
 }
 
 export interface IssueData {

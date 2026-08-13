@@ -1,28 +1,12 @@
 import {
-	App,
-	// MarkdownView,
-	// MarkdownFileInfo,
-	// CachedMetadata,
 	ItemView,
 	WorkspaceLeaf,
 	ButtonComponent,
-	Setting,
 	TFile
 } from 'obsidian';
 import { MyProjectManager } from './projectManager';
 import {
-	IssueContext,
-	ProjectInfo,
-	CreateIssueRequest,
-	IssueModalOptions,
-	PRIORITIES,
-	TimeSession,
-	TimeSummary
-} from "./types";
-import {
-	formatIssueID,
-	formatTimestamp,
-	formatMinutes
+	formatMinutesToDuration
 } from './utils';
 import { TimeTracker } from './timeTracker';
 import { TimeModal } from './timeModal';
@@ -49,6 +33,7 @@ export class TimeDashboardView extends ItemView {
 		return "time-dashboard";
 	}
 
+	
 	getDisplayText(): string {
 		return "Time Dashboard";
 	}
@@ -189,7 +174,7 @@ export class TimeDashboardView extends ItemView {
 		const activeSessionMap = new Map(
 			activeSessions.map(session => [session.projectPath, session])
 		);
-		const newBody = document.createElement('tbody')
+		const newBody = createEl('tbody')
 
 		for (const project of projects) {
 
@@ -274,7 +259,7 @@ export class TimeDashboardView extends ItemView {
 		this.rangeText.setText(dateRangeText);
 
 		// create temporary body for table, then fill it and swap for the current one instead of clearing the whole thing
-		const newBody = document.createElement('tbody')
+		const newBody = createEl('tbody')
 
 		const summaryTotals = await this.timeTracker.getTimeSummary(start, end);
 		/*
@@ -299,7 +284,7 @@ export class TimeDashboardView extends ItemView {
 			}
 
 
-			const durationText = formatMinutes(timeSum.totalMinutes);
+			const durationText = formatMinutesToDuration(timeSum.totalMinutes);
 			totalCell.setText(durationText)
 
 		}

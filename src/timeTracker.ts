@@ -1,30 +1,16 @@
 import {
 	App,
-	// MarkdownView,
-	// MarkdownFileInfo,
-	// CachedMetadata,
-	Modal,
-	Notice,
-	Plugin,
 	Events,
 	TFile
 } from 'obsidian';
 import { MyProjectManager } from './projectManager';
 import {
-	IssueContext,
 	ProjectInfo,
-	CreateIssueRequest,
-	IssueModalOptions,
-	PRIORITIES,
-	SessionContext,
 	TimeSession,
 	TimeSummary,
 	ClientTimeSummary
 } from "./types";
-import {
-	formatIssueID,
-	formatTimestamp
-} from './utils';
+
 
 export class TimeTracker extends Events {
 
@@ -91,6 +77,24 @@ export class TimeTracker extends Events {
 		await this.saveSessions(sessions);
 
 	}
+
+	async stopAllSessions(
+		timestamp: Date = new Date()
+	): Promise<void> {
+
+		const stopTS = timestamp.toISOString();
+		let sessions = await this.loadSessions();
+		const activeSessions = this.findActiveSessions(sessions);
+		if (activeSessions.length === 0) {
+			return;  // no active sessions at all, no need to do anything
+		}
+		sessions = this.stopSessions(sessions, stopTS);
+
+		await this.saveSessions(sessions);
+
+	}
+
+	
 
 	private stopSessions(
 		sessions: TimeSession[],

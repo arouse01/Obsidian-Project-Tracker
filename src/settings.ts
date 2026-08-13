@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import IssueTracker from './main';
+import ProjectTrackerPlugin from './main';
 
 export interface IssueTrackerSettings {
 	nextIssueID: number;
@@ -12,9 +12,9 @@ export const DEFAULT_SETTINGS: IssueTrackerSettings = {
 };
 
 export class IssueTrackerSettingTab extends PluginSettingTab {
-	plugin: IssueTracker;
+	plugin: ProjectTrackerPlugin;
 
-	constructor(app: App, plugin: IssueTracker) {
+	constructor(app: App, plugin: ProjectTrackerPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}

@@ -5,26 +5,12 @@ import {
 	// CachedMetadata,
 	Modal,
 	Notice,
-	ButtonComponent,
-	Setting,
-	Events,
-	TFile
+	Setting
 } from 'obsidian';
-import { MyProjectManager } from './projectManager';
 import {
-	ProjectInfo,
-	CreateIssueRequest,
 	SessionAction,
-	SessionContext,
-	TimeSession,
-	TimeSummary
+	SessionContext
 } from "./types";
-import {
-	formatIssueID,
-	formatTimestamp
-} from './utils';
-import { TimeTracker } from './timeTracker';
-
 
 
 export class TimeModal extends Modal {

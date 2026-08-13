@@ -1,8 +1,4 @@
 import {
-	App,
-	// MarkdownView,
-	// MarkdownFileInfo,
-	// CachedMetadata,
 	ItemView,
 	WorkspaceLeaf,
 	ButtonComponent,
@@ -12,19 +8,18 @@ import { MyProjectManager } from './projectManager';
 import {
 	IssueContext,
 	ProjectInfo,
-	CreateIssueRequest,
 	IssueModalOptions,
-	PRIORITIES,
-	TimeSession,
-	TimeSummary
+	PRIORITIES
 } from "./types";
 import {
-	formatIssueID,
 	formatTimestamp,
-	formatMinutes
+	formatMinutesToDuration,
+	formatDate
 } from './utils';
 import { TimeTracker } from './timeTracker';
 import { TimeModal } from './timeModal';
+import IssueTracker from './issueTracker';
+import { IssueModal } from './issueModal';
 
 export class ProjectDashboardView extends ItemView {
 	private summaryPeriod: "week" | "month" = "week";  // to drive the summary period selection
@@ -45,7 +40,8 @@ export class ProjectDashboardView extends ItemView {
 	constructor(
 		leaf: WorkspaceLeaf,
 		private timeTracker: TimeTracker,
-		private projectManager: MyProjectManager
+		private projectManager: MyProjectManager,
+		private issueTracker: IssueTracker
 	) {
 		super(leaf);
 	}
@@ -83,6 +79,7 @@ export class ProjectDashboardView extends ItemView {
 	private buildDashboard() {
 
 		const projectSection = this.contentEl.createEl("section");
+		projectSection.addClass("project-section")
 		projectSection.createEl("h3", {
 			text: "Projects"
 		});
@@ -115,9 +112,10 @@ export class ProjectDashboardView extends ItemView {
 
 		new ButtonComponent(controlSection)
 			.setButtonText("New project...")
-			.setClass("new-project-button")
+			.setClass("project-dashboard-button")
 			.onClick(async () => {
 				// TODO
+				await this.createProject();
 				await this.updateDashboard();
 			});
 
@@ -275,7 +273,7 @@ export class ProjectDashboardView extends ItemView {
 		const activeSessionMap = new Map(
 			activeSessions.map(session => [session.projectPath, session])
 		);
-		const newBody = document.createElement('tbody'); // new object to store table before moving it entirely into the window so there's no flicker as the table is rebuilt
+		const newBody = createEl('tbody'); // new object to store table before moving it entirely into the window so there's no flicker as the table is rebuilt
 
 		const weekStart = window.moment()
 			.startOf("week")
@@ -349,11 +347,11 @@ export class ProjectDashboardView extends ItemView {
 			clientCell.setText(client);
 
 			const dailyTimeSum = dayTimeSumByPath.get(project.file.path);
-			const dailyTimeText = formatMinutes(dailyTimeSum?.totalMinutes ?? 0);
+			const dailyTimeText = formatMinutesToDuration(dailyTimeSum?.totalMinutes ?? 0);
 			dailyHoursCell.setText(dailyTimeText);
 
 			const weekTimeSum = weekTimeSumByPath.get(project.file.path);
-			const weekTimeText = formatMinutes(weekTimeSum?.totalMinutes ?? 0);
+			const weekTimeText = formatMinutesToDuration(weekTimeSum?.totalMinutes ?? 0);
 			weeklyHoursCell.setText(weekTimeText);
 			
 
@@ -411,7 +409,66 @@ export class ProjectDashboardView extends ItemView {
 				.setButtonText("New issue")
 				.setClass("project-dashboard-button")
 				.onClick(async () => {
-					await this.createIssue(project)
+					const tempTitle = "";
+					const lines = "";
+					const sourceFile = project.file;
+
+					// get the project of the current document and its actual file location, if any
+					const projectNames = [project.name];
+					const projectPaths = [project.file.path];
+
+					/*
+					let projectPath: string | null = null;
+
+					if (projectName !== "") {
+
+						const file =
+							this.app.metadataCache.getFirstLinkpathDest(
+								projectName,
+								sourceFile.path
+							);
+
+						projectPath = file?.path ?? null;
+					}
+					*/
+
+					const context: IssueContext = {
+						tempTitle: tempTitle,
+						selectedText: lines,
+						sourceFile: sourceFile,
+						line: null,
+						projectPaths: projectPaths,
+						projectNames: projectNames
+
+					}
+
+					// const selectedText = editor.getLine(editor.getCursor().line);
+					const allProjects = this.projectManager.getActiveProjects();
+					const currProjectSet = new Set(projectNames);
+					const sortedProjects = [...allProjects].sort((a, b) => {
+						const aSource = currProjectSet.has(a.file.path);
+						const bSource = currProjectSet.has(b.file.path);
+						if (aSource !== bSource) {
+							return aSource ? -1 : 1;
+						}
+
+						return a.name.localeCompare(b.name);
+					})
+
+					const options: IssueModalOptions = {
+						context: context,
+						projects: sortedProjects,
+						priorities: PRIORITIES,
+						onSubmit: async (request) => {
+							const newFile = await this.issueTracker.createIssue(request);
+							await this.app.workspace.getLeaf(false).openFile(newFile);
+						}
+
+					}
+					new IssueModal(
+						this.app,
+						options
+					).open();
 				})
 		}
 		// this.projectTableBodyEl.empty();
@@ -435,7 +492,7 @@ export class ProjectDashboardView extends ItemView {
 		this.rangeText.setText(dateRangeText);
 
 		// create temporary body for table, then fill it and swap for the current one instead of clearing the whole thing
-		const newBody2 = document.createElement('tbody')
+		const newBody2 = createEl('tbody')
 
 		const summaryTotals = await this.timeTracker.getTimeSummaryByClient(start, end);
 		/*
@@ -454,7 +511,7 @@ export class ProjectDashboardView extends ItemView {
 			const clientName = timeSum.client;
 			clientCell.setText(clientName);
 			
-			const durationText = this.formatMinutes(timeSum.totalMinutes);
+			const durationText = formatMinutesToDuration(timeSum.totalMinutes);
 			totalCell.setText(durationText)
 
 		}
@@ -466,13 +523,39 @@ export class ProjectDashboardView extends ItemView {
 	async createMeeting(
 		project: ProjectInfo
 	): Promise<void> {
+		let newFile: TFile;
 
+		const currDate = formatDate();
+		const projectName = project.name;
+		const meetingTitle = `${currDate} ${projectName} Meeting`
+
+		const filename = `${meetingTitle}`
+		const path = `Meetings/${filename}.md`
+		const creationTS = formatTimestamp();
+		const content =
+			`---
+project: "[[${projectName}]]"
+topic: 
+date: "${creationTS}"
+people:
+- 
+tags:
+- meeting
+---
+
+# ${filename}
+
+
+
+`;
+
+		newFile = await this.app.vault.create(path, content);
+
+		await this.app.workspace.getLeaf(false).openFile(newFile);
 
 	}
 
-	async createIssue(
-		project: ProjectInfo
-	): Promise<void> {
+	async createProject(): Promise<void> {
 
 
 	}
@@ -491,10 +574,5 @@ export class ProjectDashboardView extends ItemView {
 		return { start, end };
 	}
 
-	private formatMinutes(totalMinutes: number): string {
-		const hours = Math.floor(totalMinutes / 60).toString().padStart(2,'0');
-		const minutes = (totalMinutes % 60).toString().padStart(2, '0');
-		return `${hours}:${minutes}`
-	}
 }
 
