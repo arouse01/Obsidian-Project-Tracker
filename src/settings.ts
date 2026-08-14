@@ -4,11 +4,13 @@ import ProjectTrackerPlugin from './main';
 export interface IssueTrackerSettings {
 	nextIssueID: number;
 	timeLogPath: string;
+	todoLogPath: string;
 }
 
 export const DEFAULT_SETTINGS: IssueTrackerSettings = {
 	nextIssueID: 1,
-	timeLogPath: 'Project Management/timeLog.json'
+	timeLogPath: 'Project Management/timeLog.json',
+	todoLogPath: 'Project Management/todoList.json'
 };
 
 export class IssueTrackerSettingTab extends PluginSettingTab {
@@ -26,6 +28,7 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 		// const form = contentEl.createDiv({ cls: "issue-form" });
 		this.buildSerialField(containerEl);
 		this.buildTimeLogField(containerEl);
+		this.buildTodoLogField(containerEl);
 
 	}
 
@@ -46,38 +49,34 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 
 					}),
 			);
-		/*
-		parent.createEl("label", {
-			text: "Next serial number"
-		});
-		const input = parent.createEl("input", {
-			type: "text"
-		});
-		input.set
-		// input.style.width = "100%";
-		input.value = this.plugin.settings.nextIssueID.toString();
-		input.addEventListener("input", () => {
-			this.plugin.settings.timeLogPath = input.value;
-			this.plugin.saveSettings();
-		});*/
 
 	}
+
 	buildTimeLogField(parent: HTMLElement): void {
 		new Setting(parent)
 			.setName('Time log path')
 			.setDesc('Path to the JSON time log file')
-
 			.addText(text =>
 				text.setValue(this.plugin.settings.timeLogPath)
 					.onChange(async (value) => {
 						this.plugin.settings.timeLogPath = value;
 						await this.plugin.saveSettings();
-
-
 					})
 					.inputEl.addClass('wide-setting-input')
 			);
-
 	}
 
+	buildTodoLogField(parent: HTMLElement): void {
+		new Setting(parent)
+			.setName('Todo log path')
+			.setDesc('Path to the JSON todo list file')
+			.addText(text =>
+				text.setValue(this.plugin.settings.todoLogPath)
+					.onChange(async (value) => {
+						this.plugin.settings.todoLogPath = value;
+						await this.plugin.saveSettings();
+					})
+					.inputEl.addClass('wide-setting-input')
+			);
+	}
 }

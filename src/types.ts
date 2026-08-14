@@ -80,3 +80,45 @@ export interface SessionContext {
 }
 
 export type SessionAction = "start" | "stop";
+
+export interface TodoItem {
+	id: number;
+	name: string;
+	dateAdded: string;
+	priority: number;
+	dueDate?: string;
+	projectPath?: string;
+	status: TodoStatus;
+	completedTS?: string;
+}
+
+export interface TodoData {
+	name: string;
+	priority: number;
+	dueDate?: string;
+	project?: ProjectInfo;
+}
+
+export interface TodoContext {
+	project?: ProjectInfo;
+	tempTitle: string;
+	projectPaths: string[] | null;
+	projectNames: string[] | null;
+	sourceFile: TFile;
+	line: number | null;
+	editor?: Editor
+}
+
+export interface TodoModalOptions {
+	context: TodoContext;
+	projects: ProjectInfo[];
+	priorities: PriorityOption[];
+	onSubmit: (request: CreateTodoRequest) => Promise<void>;
+}
+
+export interface CreateTodoRequest {
+	todoInfo: TodoData;
+	context: TodoContext;
+}
+
+export type TodoStatus = "open" | "complete";

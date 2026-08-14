@@ -8,10 +8,13 @@ import { MyProjectManager } from './projectManager';
 import { TimeTracker } from "./timeTracker";
 import { IssueModal } from "./issueModal"
 import IssueTracker from "./issueTracker"
+import { TodoManager } from "./todoTracker"
+import { TodoModal } from "./todoModal"
 import {
 	IssueContext,
 	IssueModalOptions,
-	PRIORITIES
+	PRIORITIES,
+	TodoContext
 } from "./types";
 import {
 	normalizeWikiLink
@@ -29,7 +32,8 @@ export default class ProjectTrackerPlugin extends Plugin {
 	projectManager!: MyProjectManager;
 	settings!: IssueTrackerSettings;
 	timeTracker!: TimeTracker;
-	issueTracker!: IssueTracker
+	issueTracker!: IssueTracker;
+	todoManager!: TodoManager
 
 	async onload() {
 
@@ -48,6 +52,12 @@ export default class ProjectTrackerPlugin extends Plugin {
 			this.settings,
 			() => this.saveSettings()
 		);
+
+		this.todoManager = new TodoManager(
+			this.app,
+			this.projectManager,
+			() => this.settings.todoLogPath
+		)
 
 		this.registerView(
 			"time-dashboard",
@@ -95,9 +105,17 @@ export default class ProjectTrackerPlugin extends Plugin {
 
 		this.registerEvent(
 			this.app.workspace.on("editor-menu", (menu, editor, view) => {
-				const selected = editor.getSelection().split(/\r?\n/);
+				const selectedText = editor.getSelection();
+				const startLine = editor.getCursor("from").line;
+				let selected: string[];
+				if (selectedText.length == 0) {
+					selected = editor.getLine(startLine).split(/\r?\n/)
+				} else {
+					selected = editor.getSelection().split(/\r?\n/);
+				}
 
-				if (selected.length > 0) {
+
+				// if (editor.getSelection().length > 0) {
 					menu.addItem(item => {
 						item
 							.setTitle("Create issue from selection")
@@ -141,21 +159,6 @@ export default class ProjectTrackerPlugin extends Plugin {
 										)
 										.filter((path): path is string => path !== undefined);
 
-								/*
-								let projectPath: string | null = null;
-
-								if (projectName !== "") {
-
-									const file =
-										this.app.metadataCache.getFirstLinkpathDest(
-											projectName,
-											sourceFile.path
-										);
-
-									projectPath = file?.path ?? null;
-								}
-								*/
-
 								const context: IssueContext = {
 									tempTitle: tempTitle,
 									selectedText: lines,
@@ -167,7 +170,6 @@ export default class ProjectTrackerPlugin extends Plugin {
 
 								}
 
-								// const selectedText = editor.getLine(editor.getCursor().line);
 								const allProjects = this.projectManager.getActiveProjects();
 								const currProjectSet = new Set(projectNames);
 								const sortedProjects = [...allProjects].sort((a, b) => {
@@ -199,6 +201,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 
 							});
 					});
+
 					menu.addItem(item => {
 						item
 							.setTitle("Add to issue")
@@ -213,11 +216,76 @@ export default class ProjectTrackerPlugin extends Plugin {
 								*/
 							});
 					});
-				}
+
+					menu.addItem(item => {
+						item
+							.setTitle("Create todo selection")
+							.setIcon("file-plus")
+							.onClick(async () => {
+
+								const tempTitle = selected[0] ?? ""
+									.replace(/^[-*]\s*/, "")
+									.trim();
+								
+								const sourceFile = view.file!;
+
+								// get the project of the current document and its actual file location, if any
+								const projectNames =
+									this.projectManager.getFrontmatterStringArray(sourceFile, "project");
+								// console.log('projects: ', projectNames);
+								const projectPaths =
+									this.projectManager.getFrontmatterStringArray(sourceFile, "project")
+										.map(link => normalizeWikiLink(link))
+										.map(link =>
+											this.app.metadataCache.getFirstLinkpathDest(
+												link,
+												sourceFile.path
+											)?.path
+										)
+										.filter((path): path is string => path !== undefined);
+
+								const context: TodoContext = {
+									tempTitle: tempTitle,
+									sourceFile: sourceFile,
+									line: startLine,
+									projectPaths: projectPaths,
+									projectNames: projectNames,
+									editor: editor
+
+								}
+
+								// const selectedText = editor.getLine(editor.getCursor().line);
+								const allProjects = this.projectManager.getActiveProjects();
+								const currProjectSet = new Set(projectNames);
+								const sortedProjects = [...allProjects].sort((a, b) => {
+									const aSource = currProjectSet.has(a.file.path);
+									const bSource = currProjectSet.has(b.file.path);
+									if (aSource !== bSource) {
+										return aSource ? -1 : 1;
+									}
+
+									return a.name.localeCompare(b.name);
+								})
+
+
+								new TodoModal(this.app, {
+									context: context,
+									projects: sortedProjects,
+									priorities: PRIORITIES,
+									onSubmit: async (request) => {
+										await this.todoManager.addNewTodoItem(request);
+									}
+								}).open();
+
+
+
+
+							});
+					});
+				// }
 			})
 		);
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new IssueTrackerSettingTab(this.app, this));
 	}
 
@@ -324,13 +392,6 @@ export default class ProjectTrackerPlugin extends Plugin {
 
 
 	onunload() {}
-
-	private async getNextIssueID(): Promise<number> {
-		const id = this.settings.nextIssueID;
-		this.settings.nextIssueID++;
-		await this.saveSettings();
-		return id;
-	}
 
 	async loadSettings() {
 		const data = await this.loadData() as Partial<IssueTrackerSettings>;
