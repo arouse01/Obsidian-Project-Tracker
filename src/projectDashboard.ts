@@ -530,7 +530,7 @@ export class ProjectDashboardView extends ItemView {
 		const meetingTitle = `${currDate} ${projectName} Meeting`
 
 		const filename = `${meetingTitle}`
-		const path = `Meetings/${filename}.md`
+		const path = `Meeting Notes/${filename}.md`
 		const creationTS = formatTimestamp();
 		const content =
 			`---

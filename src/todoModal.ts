@@ -20,6 +20,7 @@ import {
 
 export class TodoModal extends Modal {
 	private name = "";
+	private notes = "";
 	private selectedProject: ProjectInfo | null = null;
 	private priority: number;
 	private dueDate!: Date;
@@ -56,6 +57,7 @@ export class TodoModal extends Modal {
 		buttons
 		*/
 		this.buildTitleField(form);
+		this.buildNotesField(form);
 		this.buildProjectDropdown(form);
 		this.buildPriorityDropdown(form);
 		this.buildDateFields(form);
@@ -83,6 +85,23 @@ export class TodoModal extends Modal {
 		});
 
 		
+	}
+
+	buildNotesField(parent: HTMLElement): void {
+		parent.createEl("label", {
+			text: "Notes (optional)"
+		});
+
+
+		const input = parent.createEl("textarea");
+		input.rows = 8;
+
+		input.value = this.notes;
+		input.addEventListener("input", () => {
+			this.notes = input.value;
+		});
+
+
 	}
 
 	buildProjectDropdown(parent: HTMLElement) {
@@ -203,6 +222,7 @@ export class TodoModal extends Modal {
 						const request: CreateTodoRequest = {
 							todoInfo: {
 								name: this.name,
+								notes: this.notes,
 								dueDate: this.dueDate?.toISOString(),
 								project: this.selectedProject,
 								priority: this.priority

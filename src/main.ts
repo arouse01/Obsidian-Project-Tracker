@@ -25,6 +25,9 @@ import {
 import {
 	ProjectDashboardView
 } from './projectDashboard'
+import {
+	TodoDashboardView
+} from './todoDashboard'
 
 
 
@@ -58,6 +61,15 @@ export default class ProjectTrackerPlugin extends Plugin {
 			this.projectManager,
 			() => this.settings.todoLogPath
 		)
+		this.registerView(
+			"project-dashboard",
+			leaf => new ProjectDashboardView(
+				leaf,
+				this.timeTracker,
+				this.projectManager,
+				this.issueTracker
+			)
+		);
 
 		this.registerView(
 			"time-dashboard",
@@ -69,12 +81,11 @@ export default class ProjectTrackerPlugin extends Plugin {
 		);
 
 		this.registerView(
-			"project-dashboard",
-			leaf => new ProjectDashboardView(
+			"todo-dashboard",
+			leaf => new TodoDashboardView(
 				leaf,
-				this.timeTracker,
-				this.projectManager,
-				this.issueTracker
+				this.todoManager,
+				this.projectManager
 			)
 		);
 
@@ -86,7 +97,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 				await this.activateProjectDashboard();
 			});
 
-		// Add the time tracking dashboard to the left 
+		// Add the time tracking dashboard to the right 
 		this.addRibbonIcon(
 			'clock',
 			'Open time dashboard',
@@ -95,6 +106,12 @@ export default class ProjectTrackerPlugin extends Plugin {
 				await this.activateTimeDashboard();
 			});
 
+		this.addRibbonIcon(
+			'list-todo',
+			'Open todo dashboard',
+			async (_evt: MouseEvent) => {
+				await this.activateTodoDashboard();
+			});
 
 		/*
 				// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
@@ -331,6 +348,30 @@ export default class ProjectTrackerPlugin extends Plugin {
 
 			await leaf.setViewState({
 				type: "time-dashboard",
+				active: true
+			});
+		}
+
+		await workspace.revealLeaf(leaf);
+	}
+
+	async activateTodoDashboard(): Promise<void> {
+
+		const { workspace } = this.app;
+
+		let leaf = workspace.getLeavesOfType(
+			"todo-dashboard"
+		)[0];
+
+		if (!leaf) {
+			leaf = workspace.getLeaf("tab");
+
+			if (!leaf) {
+				return;
+			}
+
+			await leaf.setViewState({
+				type: "todo-dashboard",
 				active: true
 			});
 		}

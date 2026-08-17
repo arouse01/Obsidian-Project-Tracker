@@ -62,7 +62,7 @@ export class TodoManager extends Events {
 	private findActiveTodos(
 		todos: TodoItem[]
 	): TodoItem[] {
-		return todos.filter(s => s.status === "open")  // return any sessions with an end of null, meaning they're open
+		return todos.filter(s => !s.status)  // return any todos with with a status of false, meaning incomplete
 	}
 
 	async getActiveTodos(): Promise<TodoItem[]> {
@@ -91,7 +91,7 @@ export class TodoManager extends Events {
 		const newTodo: TodoItem = {
 			...todoFields,
 			id: newID,
-			status: "open",
+			status: false,
 			dateAdded: formatDate(),
 			projectPath: project?.file.path
 		}
@@ -127,12 +127,12 @@ export class TodoManager extends Events {
 			throw new Error(`Todo item ${id} not found`);
 		}
 
-		todo.status = "complete";
+		todo.status = true;
 		todo.completedTS = new Date().toISOString();
 
 		await this.saveTodos(todos);
 
-		await this.markTodoComplete(id);
+		await this.markTodoCompleteEverywhere(id);
 		
 
 	}
@@ -201,7 +201,7 @@ export class TodoManager extends Events {
 		return Math.max(...todos.map(todo => todo.id)) + 1;
 	}
 
-	async markTodoComplete(todoId: number): Promise<void> {
+	async markTodoCompleteEverywhere(todoId: number): Promise<void> {
 		// go through all markdown files and look for this todo marker, and indicate it's been completed
 		const reference = `<!-- todo:${todoId} -->`;
 

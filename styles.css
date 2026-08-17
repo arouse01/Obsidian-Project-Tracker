@@ -1,11 +1,4 @@
-/*
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
 .issue-form {
 	display: flex;
 	flex-direction: column;
@@ -17,25 +10,14 @@ If your plugin does not need CSS, delete this file.
 	margin-bottom: 4px;
 }
 
-.issue-form input,
-.issue-form textarea,
-.issue-form select {
+.issue-form input,.issue-form textarea,.issue-form select {
 	width: 100%;
 }
 .wide-setting-input {
 	width: 100%;
 }
 
-/*.time-dashboard table {
-	width: 100%;
-}*/
-/*.time-dashboard td {
-	padding: 0 6px;
-	text-align: center;
-}*/
-
 .time-dashboard th,.time-dashboard td {
-/*	padding: 0px 8px;*/
 	border-bottom: 1px solid var(--background-modifier-border);
 	text-align: center;
 	vertical-align: middle;
@@ -192,4 +174,99 @@ button.project-dashboard-button.button-selected {
 }
 .project-table thead tr:nth-child(2) th {
 	font-weight: 600;
+}
+
+
+
+.todo-dashboard th, .todo-dashboard td {
+	/*	padding: 0px 8px;*/
+	border-bottom: 1px solid var(--background-modifier-border);
+	text-align: center;
+	vertical-align: middle;
+	font-size: 12px;
+}
+
+.todo-dashboard th {
+	font-weight: 600;
+	background-color: var(--background-secondary);
+}
+
+
+.todo-dashboard tbody tr:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.todo-dashboard-centered {
+	text-align: center;
+}
+
+.todo-dashboard button {
+	padding-top: 0px;
+	padding-bottom: 0px;
+	font-size: 12px;
+	height: 24px;
+}
+
+
+.todo-dashboard .summary-controls {
+	padding-bottom: 8px;
+}
+
+.todo-dashboard .summary-controls button {
+	height: 30px;
+}
+
+.todo-dashboard .summary-controls .arrow-button {
+	width: 30px;
+}
+
+.todo-dashboard .summary-section {
+	font-size: 12px;
+}
+
+.todo-dashboard table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.todo-dashboard .summary-section table {
+	padding: 0px 8px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	text-align: center;
+	height: 30px;
+}
+
+.todo-dashboard tbody tr {
+	height: 30px;
+	vertical-align: middle;
+}
+
+.todo-dashboard button {
+	background: none;
+	border: none;
+	box-shadow: none;
+	padding: 0;
+	color: var(--link-color);
+	cursor: pointer;
+	font: inherit;
+}
+
+.todo-dashboard button:hover {
+	color: var(--text-accent);
+	text-decoration: underline;
+}
+
+.todo-dashboard .button-selected {
+	font-weight: 600;
+}
+
+.todo-controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	text-align: left;
+}
+
+.todo-dashboard td.left-align {
+	text-align: left;
 }

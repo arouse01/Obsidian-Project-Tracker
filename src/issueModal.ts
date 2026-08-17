@@ -193,16 +193,7 @@ export class IssueModal extends Modal {
 		textarea.addEventListener("input", () => {
 			this.description = textarea.value;
 		});
-		// new Setting(parent)
-		// 	.setName("Description")
-		// 	.addTextArea(text => {
-		// 		text.inputEl.style.width = "100%";
-		// 		text
-		// 			.setValue(this.description)
-		// 			.onChange(value => {
-		// 				this.description = value;
-		// 		});
-		// 	});
+
 	}
 
 	buildPriorityDropdown(parent: HTMLElement) {
@@ -226,28 +217,7 @@ export class IssueModal extends Modal {
 			this.priority = Number(select.value);
 
 		});
-		/*
-		new Setting(parent)
-			.setName("Priority")
-			.addDropdown(dropdown => {
-				// assign the values to the dropdown
-				this.options.priorities.forEach(priority => {
-					dropdown.addOption(priority.value.toString(),
-						priority.label
-					);
-				});
-				
-				// select the default value
-				dropdown.setValue("0");
-					
-
-				// Update the selectedProject var if dropdown is changed
-				dropdown.onChange(value => {
-					
-					this.priority = Number(value);
-				});
-			});
-			*/
+		
 	}
 
 	buildButtons(parent: HTMLElement) {

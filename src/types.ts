@@ -84,16 +84,18 @@ export type SessionAction = "start" | "stop";
 export interface TodoItem {
 	id: number;
 	name: string;
+	notes?: string;
 	dateAdded: string;
 	priority: number;
 	dueDate?: string;
 	projectPath?: string;
-	status: TodoStatus;
+	status: boolean;
 	completedTS?: string;
 }
 
 export interface TodoData {
 	name: string;
+	notes?: string;
 	priority: number;
 	dueDate?: string;
 	project?: ProjectInfo;
@@ -104,7 +106,7 @@ export interface TodoContext {
 	tempTitle: string;
 	projectPaths: string[] | null;
 	projectNames: string[] | null;
-	sourceFile: TFile;
+	sourceFile?: TFile;
 	line: number | null;
 	editor?: Editor
 }
@@ -122,3 +124,18 @@ export interface CreateTodoRequest {
 }
 
 export type TodoStatus = "open" | "complete";
+
+export interface TodoSort {
+	field: TodoSortField;
+	dir: SortDirection;
+}
+
+export type TodoGroupField = "none" | "project" | "priority";
+export type TodoSortField = "name" | "project" | "priority" | "dueDate";
+export type SortDirection = "asc" | "desc";
+
+export interface TodoGroup {
+	key: string;
+	label: string;
+	todos: TodoItem[];
+}
