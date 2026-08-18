@@ -1,7 +1,7 @@
 {
 	"id": "project-tracker",
 	"name": "Project Tracker",
-	"version": "1.8.0",
+	"version": "1.8.5",
 	"minAppVersion": "1.0.0",
 	"description": "Project tracking plugin that allows issue note creation from text selection and other tracking.",
 	"author": "Sophisticated Sea Lion Productions",

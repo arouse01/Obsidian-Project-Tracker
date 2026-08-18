@@ -181,7 +181,7 @@ button.project-dashboard-button.button-selected {
 .todo-dashboard th, .todo-dashboard td {
 	/*	padding: 0px 8px;*/
 	border-bottom: 1px solid var(--background-modifier-border);
-	text-align: center;
+	text-align: left;
 	vertical-align: middle;
 	font-size: 12px;
 }
@@ -267,6 +267,6 @@ button.project-dashboard-button.button-selected {
 	text-align: left;
 }
 
-.todo-dashboard td.left-align {
-	text-align: left;
+.todo-dashboard td.center-align, .todo-dashboard th.center-align {
+	text-align: center;
 }

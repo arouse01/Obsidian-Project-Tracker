@@ -130,7 +130,12 @@ export interface TodoSort {
 	dir: SortDirection;
 }
 
-export type TodoGroupField = "none" | "project" | "priority";
+export const Todo_Group_Fields = [
+	{ value: "none", label: "None" },
+	{ value: "project", label: "Project" },
+	{ value: "priority", label: "Priority" }
+] as const;
+export type TodoGroupField = typeof Todo_Group_Fields[number]['value'];
 export type TodoSortField = "name" | "project" | "priority" | "dueDate";
 export type SortDirection = "asc" | "desc";
 
@@ -139,3 +144,5 @@ export interface TodoGroup {
 	label: string;
 	todos: TodoItem[];
 }
+
+
