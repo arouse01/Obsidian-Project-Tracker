@@ -1,15 +1,12 @@
 import {
 	ItemView,
 	WorkspaceLeaf,
-	ButtonComponent,
-	TFile
+	ButtonComponent
 } from 'obsidian';
 import { MyProjectManager } from './projectManager';
-import {
-	formatMinutesToDuration
-} from './utils';
+
 import { TodoManager } from './todoTracker';
-import { TodoModal } from './todoModal';
+
 import {
 	TodoItem,
 	TodoGroup,
@@ -17,7 +14,6 @@ import {
 	TodoGroupField,
 	Todo_Group_Fields,
 	TodoSortField,
-	TodoContext,
 	PRIORITIES
 } from './types'
 
@@ -138,9 +134,12 @@ export class TodoDashboardView extends ItemView {
 		return "todo-dashboard";
 	}
 
-	
 	getDisplayText(): string {
-		return "Todo Dashboard";
+		return "Todo dashboard";
+	}
+
+	getIcon(): string {
+		return 'list-todo';
 	}
 
 	async onOpen(): Promise<void> {
@@ -207,45 +206,7 @@ export class TodoDashboardView extends ItemView {
 			.setButtonText("Create new todo")
 			.setClass("todo-dashboard-button-add")
 			.onClick(async () => {
-				const tempTitle = "";
-				const lines = -1;
-				// const sourceFile = view.file!;
-				const projectNames = null;
-				const projectPaths = null;
-				// get the project of the current document and its actual file location, if any
-
-
-				const context: TodoContext = {
-					tempTitle: tempTitle,
-					line: lines,
-					projectPaths: projectPaths,
-					projectNames: projectNames
-
-
-				}
-
-				// const selectedText = editor.getLine(editor.getCursor().line);
-				const allProjects = this.projectManager.getActiveProjects();
-				const currProjectSet = new Set(projectNames);
-				const sortedProjects = [...allProjects].sort((a, b) => {
-					const aSource = currProjectSet.has(a.file.path);
-					const bSource = currProjectSet.has(b.file.path);
-					if (aSource !== bSource) {
-						return aSource ? -1 : 1;
-					}
-
-					return a.name.localeCompare(b.name);
-				})
-
-
-				new TodoModal(this.app, {
-					context: context,
-					projects: sortedProjects,
-					priorities: PRIORITIES,
-					onSubmit: async (request) => {
-						await this.todoManager.addNewTodoItem(request);
-					}
-				}).open();
+				await this.todoManager.startBlankTodoItem();
 			})
 
 
@@ -681,7 +642,7 @@ export class TodoDashboardView extends ItemView {
 			await this.todoManager.completeTodoItem(todoID)
 			await this.todoManager.markTodoCompleteEverywhere(todoID)
 		} else {
-			console.log('Checkbox unchecked.');
+			// console.log('Checkbox unchecked.');
 		}
 	}
 

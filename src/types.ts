@@ -55,6 +55,25 @@ export const PRIORITIES: PriorityOption[] = [
 	{ value: 5, label: "5 - Urgent" },
 ]
 
+export interface ProjectSort {
+	field: ProjectSortField;
+	dir: SortDirection;
+}
+
+export const Project_Group_Fields = [
+	{ value: "none", label: "None" },
+	{ value: "project", label: "Project" },
+	{ value: "primary", label: "Client" }
+] as const;
+export type ProjectGroupField = typeof Project_Group_Fields[number]['value'];
+export type ProjectSortField = "status" | "project" | "primary" ;
+
+
+export interface ProjectGroup {
+	key: string;
+	label: string;
+	projects: ProjectInfo[];
+}
 export interface TimeSession {
 	id: string;
 	projectPath: string;
@@ -98,7 +117,7 @@ export interface TodoData {
 	notes?: string;
 	priority: number;
 	dueDate?: string;
-	project?: ProjectInfo;
+	project: ProjectInfo | null;
 }
 
 export interface TodoContext {

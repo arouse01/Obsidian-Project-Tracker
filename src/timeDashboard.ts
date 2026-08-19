@@ -33,9 +33,12 @@ export class TimeDashboardView extends ItemView {
 		return "time-dashboard";
 	}
 
-	
 	getDisplayText(): string {
-		return "Time Dashboard";
+		return "Time dashboard";
+	}
+
+	getIcon(): string {
+		return 'clock';
 	}
 
 	async onOpen(): Promise<void> {
@@ -63,7 +66,7 @@ export class TimeDashboardView extends ItemView {
 	private buildDashboard() {
 		const controlSection = this.contentEl.createEl("section");
 		controlSection.createEl("h3", {
-			text: "Active Projects"
+			text: "Active projects"
 		});
 		controlSection.addClass('time-dashboard')
 		const tableMainEl = controlSection.createEl('table');
@@ -184,15 +187,15 @@ export class TimeDashboardView extends ItemView {
 			const statusCell = row.createEl('td');
 			const projectCell = row.createEl('td');
 			const actionCell = row.createEl('td');
-			const timeCell = row.createEl('td');
+			// const timeCell = row.createEl('td');
 
 			statusCell.addClass("time-dashboard-centered");
 			const activeSession = activeSessionMap.get(project.file.path);
 			// const isActive = activePaths.has(project.file.path);
 			if (activeSession) {
-				statusCell.setText("⏲");
+				statusCell.setText("🟢"); //⏲
 			} else {
-				statusCell.setText("💤");
+				statusCell.setText("");  //💤
 			}
 
 			projectCell.setText(project.name);

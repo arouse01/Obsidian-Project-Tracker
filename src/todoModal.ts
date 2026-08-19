@@ -4,15 +4,10 @@ import {
 	// MarkdownFileInfo,
 	// CachedMetadata,
 	Modal,
-	Notice,
-	Setting,
-	TFile
+	Setting
 } from 'obsidian';
 import {
 	ProjectInfo,
-	SessionAction,
-	SessionContext,
-	TodoData,
 	TodoModalOptions,
 	CreateTodoRequest
 } from "./types";
@@ -23,7 +18,7 @@ export class TodoModal extends Modal {
 	private notes = "";
 	private selectedProject: ProjectInfo | null = null;
 	private priority: number;
-	private dueDate!: Date;
+	private dueDate: Date | undefined;
 
 
 	constructor(
@@ -108,13 +103,7 @@ export class TodoModal extends Modal {
 		parent.createEl("label", {
 			text: "Project"
 		});
-		const select = parent.createEl("select");
-		const relatedGroup = select.createEl("optgroup", {
-			attr: { label: "Related Projects" }
-		});
-		const otherGroup = select.createEl("optgroup", {
-			attr: { label: "Other Active Projects" }
-		});
+		
 		const relatedPaths = new Set(this.options.context.projectPaths);
 		const relatedProjects = this.options.projects.filter(project =>
 			relatedPaths.has(project.file.path)
@@ -122,27 +111,55 @@ export class TodoModal extends Modal {
 		const otherProjects = this.options.projects.filter(project =>
 			!relatedPaths.has(project.file.path)
 		);
-		for (const project of relatedProjects) {
-			const option = relatedGroup.createEl("option");
-			option.value = project.file.path;
-			option.text = project.name;
-		}
 
-		for (const project of otherProjects) {
-			const option = otherGroup.createEl("option");
-			option.value = project.file.path;
-			option.text = project.name;
-		}
-
-
+		const select = parent.createEl("select");
 
 		if (relatedProjects.length > 0) {
+			const relatedGroup = select.createEl("optgroup", {
+				attr: { label: "Related Projects" }
+			});
+			const otherGroup = select.createEl("optgroup", {
+				attr: { label: "Other Active Projects" }
+			});
+
+			for (const project of relatedProjects) {
+				const option = relatedGroup.createEl("option");
+				option.value = project.file.path;
+				option.text = project.name;
+			}
+
+			for (const project of otherProjects) {
+				const option = otherGroup.createEl("option");
+				option.value = project.file.path;
+				option.text = project.name;
+			}
+
 			this.selectedProject = relatedProjects[0]!;
+
 		} else {
-			this.selectedProject = otherProjects[0] ?? null;
+			const generalGroup = select.createEl("optgroup", {
+				attr: { label: "Projects" }
+			});
+			// add a 'none' option in case the todo doesn't have a specific project
+			const option = generalGroup.createEl("option");
+			option.value = "None";
+			option.text = "None";
+
+			for (const project of otherProjects) {
+				const option = generalGroup.createEl("option");
+				option.value = project.file.path;
+				option.text = project.name;
+			}
+
+			this.selectedProject = null;
+
 		}
+
+
 		if (this.selectedProject) {
 			select.value = this.selectedProject.file.path;
+		} else {
+			select.value = "None"
 		}
 		select.addEventListener("change", () => {
 
@@ -182,26 +199,41 @@ export class TodoModal extends Modal {
 
 
 	buildDateFields(parent: HTMLElement): void {
-
-		parent.createEl("label", {
+		const dueDateRow = parent.createDiv({ cls: "timestamp-row" });
+		dueDateRow.createEl("label", {
 			text: "Due date (optional)"
 		});
 
-		const dueDateInput = parent.createEl("input", {
-			type: "datetime-local"
+		const dueDateInput = dueDateRow.createEl("input", {
+			type: "date"
 		});
+		const dueTimeInput = dueDateRow.createEl("input", {
+			type: "time",
+			placeholder: "(Time)"
+		});
+		const updateDueDate = () => {
+			if (!dueDateInput.value) {
+				this.dueDate = undefined;
+				return;
+			}
 
-		// this.dueDate = new Date();
+			if (dueTimeInput.value) {
+				// time has been entered, build timestamp with time
+				this.dueDate = new Date(
+					`${dueDateInput.value}T${dueTimeInput.value}`
+				);
+			} else {
+				this.dueDate = new Date(
+					`${dueDateInput.value}T00:00`
+				);
+			}
+		}
 
 		// dueDateInput.value = this.getDateTimeLocalValue(this.dueDate);
-		dueDateInput.addEventListener("change", () => {
-			this.dueDate = new Date(dueDateInput.value);
-		})
-		
+		dueDateInput.addEventListener("change", updateDueDate);
+		dueTimeInput.addEventListener("change", updateDueDate);
 
 	}
-
-	
 
 	buildButtons(parent: HTMLElement) {
 		new Setting(parent)
@@ -213,10 +245,9 @@ export class TodoModal extends Modal {
 					.onClick(async () => {
 
 						// check that project has been selected
-						if (!this.selectedProject) {
-							new Notice("Select a project.");
-							return;
-						}
+						// if (!this.selectedProject) {
+						// 	this.selectedProject = undefined
+						// }
 						
 						// build the TodoData var to pass out
 						const request: CreateTodoRequest = {

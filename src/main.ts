@@ -1,4 +1,9 @@
-import { Plugin } from 'obsidian';
+import {
+	Plugin,
+	Editor,
+	MarkdownView,
+	MarkdownFileInfo
+} from 'obsidian';
 import {
 	DEFAULT_SETTINGS,
 	IssueTrackerSettings,
@@ -6,19 +11,19 @@ import {
 } from './settings';
 import { MyProjectManager } from './projectManager';
 import { TimeTracker } from "./timeTracker";
-import { IssueModal } from "./issueModal"
+// import { IssueModal } from "./issueModal"
 import IssueTracker from "./issueTracker"
 import { TodoManager } from "./todoTracker"
-import { TodoModal } from "./todoModal"
-import {
-	IssueContext,
-	IssueModalOptions,
-	PRIORITIES,
-	TodoContext
-} from "./types";
-import {
-	normalizeWikiLink
-} from './utils';
+// import { TodoModal } from "./todoModal"
+// import {
+// 	IssueContext,
+// 	IssueModalOptions,
+// 	PRIORITIES,
+// 	TodoContext
+// } from "./types";
+// import {
+// 	normalizeWikiLink
+// } from './utils';
 import {
 	TimeDashboardView
 } from './timeDashboard';
@@ -53,6 +58,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 		this.issueTracker = new IssueTracker(
 			this.app,
 			this.settings,
+			this.projectManager,
 			() => this.saveSettings()
 		);
 
@@ -67,7 +73,8 @@ export default class ProjectTrackerPlugin extends Plugin {
 				leaf,
 				this.timeTracker,
 				this.projectManager,
-				this.issueTracker
+				this.issueTracker,
+				this.todoManager
 			)
 		);
 
@@ -89,6 +96,62 @@ export default class ProjectTrackerPlugin extends Plugin {
 			)
 		);
 
+		this.addCommand({
+			id: "open-project-dashboard",
+			name: "Open project dashboard",
+			editorCallback: async () => {
+				await this.activateProjectDashboard();
+			}
+		});
+
+		this.addCommand({
+			id: "open-time-dashboard",
+			name: "Open time dashboard",
+			editorCallback: async () => {
+				await this.activateTimeDashboard();
+			}
+		});
+
+		this.addCommand({
+			id: "open-todo-dashboard",
+			name: "Open todo dashboard",
+			editorCallback: async () => {
+				await this.activateTodoDashboard();
+			}
+		});
+
+		this.addCommand({
+			id: "add-todo",
+			name: "Add new todo",
+			editorCallback: async () => {
+				await this.todoManager.startBlankTodoItem()
+			}
+		});
+
+		this.addCommand({
+			id: "create-issue-from-selection",
+			name: "Create issue from selection",
+			editorCallback: async (editor, view) => {
+				await this.issueTracker.createIssueFromSelection(editor, view);
+			}
+		});
+
+		this.addCommand({
+			id: "add-to-issue",
+			name: "Add to issue",
+			editorCallback: async (editor, view) => {
+				await this.addToIssue(editor, view);
+			}
+		});
+
+		this.addCommand({
+			id: "create-todo-from-selection",
+			name: "Create todo from selection",
+			editorCallback: async (editor, view) => {
+				await this.todoManager.createTodoFromSelection(editor, view);
+			}
+		});
+
 		this.addRibbonIcon(
 			'folder-open-dot',
 			'Open project dashboard',
@@ -97,7 +160,6 @@ export default class ProjectTrackerPlugin extends Plugin {
 				await this.activateProjectDashboard();
 			});
 
-		// Add the time tracking dashboard to the right 
 		this.addRibbonIcon(
 			'clock',
 			'Open time dashboard',
@@ -118,194 +180,51 @@ export default class ProjectTrackerPlugin extends Plugin {
 				const statusBarItemEl = this.addStatusBarItem();
 				statusBarItemEl.setText('Status bar text');
 		*/
-
+		
 
 		this.registerEvent(
 			this.app.workspace.on("editor-menu", (menu, editor, view) => {
-				const selectedText = editor.getSelection();
-				const startLine = editor.getCursor("from").line;
-				let selected: string[];
-				if (selectedText.length == 0) {
-					selected = editor.getLine(startLine).split(/\r?\n/)
-				} else {
-					selected = editor.getSelection().split(/\r?\n/);
-				}
-
-
-				// if (editor.getSelection().length > 0) {
-					menu.addItem(item => {
-						item
-							.setTitle("Create issue from selection")
-							.setIcon("file-plus")
-							.onClick(async () => {
-								/*
-								Create issue steps
-									Prompt for issue title, project selection (Default to current note project)
-									Get current note link
-									Create new note in Issues folder
-										Get next issue ID
-									Assign Issue template
-									Assign properties
-										ID, Project, Origin
-									Rename issue note
-									Back in note, insert/replace link to issue note
-								*/
-								// const cursor = editor.getCursor();
-
-								const tempTitle = selected[0] ?? ""
-									.replace(/^[-*]\s*/, "")
-									.trim();
-								const lines = selected
-									.slice(1)
-									.join("\n")
-									.trim();
-								const sourceFile = view.file!;
-
-								// get the project of the current document and its actual file location, if any
-								const projectNames =
-									this.projectManager.getFrontmatterStringArray(sourceFile, "project");
-								// console.log('projects: ', projectNames);
-								const projectPaths =
-									this.projectManager.getFrontmatterStringArray(sourceFile, "project")
-										.map(link => normalizeWikiLink(link))
-										.map(link =>
-											this.app.metadataCache.getFirstLinkpathDest(
-												link,
-												sourceFile.path
-											)?.path
-										)
-										.filter((path): path is string => path !== undefined);
-
-								const context: IssueContext = {
-									tempTitle: tempTitle,
-									selectedText: lines,
-									sourceFile: sourceFile,
-									line: editor.getCursor("from").line,
-									projectPaths: projectPaths,
-									projectNames: projectNames,
-									editor: editor
-
-								}
-
-								const allProjects = this.projectManager.getActiveProjects();
-								const currProjectSet = new Set(projectNames);
-								const sortedProjects = [...allProjects].sort((a, b) => {
-									const aSource = currProjectSet.has(a.file.path);
-									const bSource = currProjectSet.has(b.file.path);
-									if (aSource !== bSource) {
-										return aSource ? -1 : 1;
-									}
-
-									return a.name.localeCompare(b.name);
-								})
-
-								const options: IssueModalOptions = {
-									context: context,
-									
-									projects: sortedProjects,
-									priorities: PRIORITIES,
-									onSubmit: async (request) => {
-										await this.issueTracker.createIssue(request);
-									}
-
-								}
-								new IssueModal(
-									this.app,
-									options
-								).open();
-
-								
-
-							});
-					});
-
-					menu.addItem(item => {
-						item
-							.setTitle("Add to issue")
-							.setIcon("message-circle-plus")
-							.onClick(async () => {
-								/*
-								Append to issue steps
-									Select which issue (from open issues)	
-									Go to end of "Activity" section 
-									Add new subsection with meeting backlink
-									Add selected text
-								*/
-							});
-					});
-
-					menu.addItem(item => {
-						item
-							.setTitle("Create todo selection")
-							.setIcon("file-plus")
-							.onClick(async () => {
-
-								const tempTitle = selected[0] ?? ""
-									.replace(/^[-*]\s*/, "")
-									.trim();
-								
-								const sourceFile = view.file!;
-
-								// get the project of the current document and its actual file location, if any
-								const projectNames =
-									this.projectManager.getFrontmatterStringArray(sourceFile, "project");
-								// console.log('projects: ', projectNames);
-								const projectPaths =
-									this.projectManager.getFrontmatterStringArray(sourceFile, "project")
-										.map(link => normalizeWikiLink(link))
-										.map(link =>
-											this.app.metadataCache.getFirstLinkpathDest(
-												link,
-												sourceFile.path
-											)?.path
-										)
-										.filter((path): path is string => path !== undefined);
-
-								const context: TodoContext = {
-									tempTitle: tempTitle,
-									sourceFile: sourceFile,
-									line: startLine,
-									projectPaths: projectPaths,
-									projectNames: projectNames,
-									editor: editor
-
-								}
-
-								// const selectedText = editor.getLine(editor.getCursor().line);
-								const allProjects = this.projectManager.getActiveProjects();
-								const currProjectSet = new Set(projectNames);
-								const sortedProjects = [...allProjects].sort((a, b) => {
-									const aSource = currProjectSet.has(a.file.path);
-									const bSource = currProjectSet.has(b.file.path);
-									if (aSource !== bSource) {
-										return aSource ? -1 : 1;
-									}
-
-									return a.name.localeCompare(b.name);
-								})
-
-
-								new TodoModal(this.app, {
-									context: context,
-									projects: sortedProjects,
-									priorities: PRIORITIES,
-									onSubmit: async (request) => {
-										await this.todoManager.addNewTodoItem(request);
-									}
-								}).open();
-
-
-
-
-							});
-					});
+				// const selectedText = editor.getSelection();
+				// const startLine = editor.getCursor("from").line;
+				// let selected: string[];
+				// if (selectedText.length == 0) {
+				// 	selected = editor.getLine(startLine).split(/\r?\n/)
+				// } else {
+				// 	selected = editor.getSelection().split(/\r?\n/);
 				// }
+
+				menu.addItem(item => {
+					item
+						.setTitle("Create issue from selection")
+						.setIcon("file-plus")
+						.onClick(async () => {
+							await this.issueTracker.createIssueFromSelection(editor, view)
+						})
+					});
+
+				menu.addItem(item => {
+					item
+						.setTitle("Add to issue")
+						.setIcon("message-circle-plus")
+						.onClick(async () => {
+							await this.addToIssue(editor, view);
+						});
+				});
+
+				menu.addItem(item => {
+					item
+						.setTitle("Create todo from selection")
+						.setIcon("file-plus")
+						.onClick(async () => {
+							await this.todoManager.createTodoFromSelection(editor, view)
+						});
+				});
+
 			})
 		);
 
 		this.addSettingTab(new IssueTrackerSettingTab(this.app, this));
 	}
-
 
 	async activateProjectDashboard(): Promise<void> {
 
@@ -377,6 +296,20 @@ export default class ProjectTrackerPlugin extends Plugin {
 		}
 
 		await workspace.revealLeaf(leaf);
+	}
+
+	async addToIssue(editor: Editor, view: MarkdownView | MarkdownFileInfo): Promise<void> {
+		/*
+							Append to issue steps
+								Select which issue (from open issues)	
+								Go to end of "Activity" section 
+								Add new subsection with meeting backlink
+								Add selected text
+							*/
+	}
+
+	async createNewTodo() {
+		await this.todoManager.startBlankTodoItem()
 	}
 
 	/*

@@ -142,7 +142,7 @@
 	background-color: var(--background-modifier-hover);
 }
 
-button.project-dashboard-button {
+.project-dashboard button {
 	background: none;
 	border: none;
 	box-shadow: none;
@@ -152,13 +152,36 @@ button.project-dashboard-button {
 	font: inherit;
 }
 
-button.project-dashboard-button:hover {
+.project-dashboard button:hover {
 	color: var(--link-color-hover);
 	text-decoration: underline;
 }
 
-button.project-dashboard-button.button-selected {
+.project-dashboard .button-selected {
 	font-weight: 600;
+}
+
+.project-controls button {
+	background: none;
+	border: none;
+	box-shadow: none;
+	padding: 0;
+	color: var(--link-color);
+	cursor: pointer;
+	font: inherit;
+}
+
+.project-controls button:hover {
+	color: var(--link-color-hover);
+	text-decoration: underline;
+}
+
+.project-controls .button-selected {
+	font-weight: 600;
+}
+
+.project-controls .button-right {
+	margin-left: auto;
 }
 
 .project-table {
@@ -176,7 +199,16 @@ button.project-dashboard-button.button-selected {
 	font-weight: 600;
 }
 
+.timestamp-row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
 
+.timestamp-row input {
+	width: auto;
+	flex: 0 0 auto;
+}
 
 .todo-dashboard th, .todo-dashboard td {
 	/*	padding: 0px 8px;*/

@@ -2,19 +2,23 @@ import {
 	App,
 	Editor,
 	Events,
-	TFile
+	TFile,
+	MarkdownView,
+	MarkdownFileInfo
 } from 'obsidian';
 import { MyProjectManager } from './projectManager';
 import {
 	ProjectInfo,
-	TimeSession,
-	TimeSummary,
-	ClientTimeSummary,
 	TodoItem,
 	TodoContext,
-	CreateTodoRequest
+	CreateTodoRequest,
+	PRIORITIES
 } from "./types";
-import { formatDate } from './utils'
+import { TodoModal } from './todoModal'
+import {
+	formatDate,
+	normalizeWikiLink
+} from './utils'
 
 
 export class TodoManager extends Events {
@@ -72,10 +76,161 @@ export class TodoManager extends Events {
 
 	}
 
-	async startTodoItem(
+	async createTodoFromSelection(editor: Editor, view: MarkdownView | MarkdownFileInfo): Promise<void> {
+		const selectedText = editor.getSelection();
+		const startLine = editor.getCursor("from").line;
+		let selected: string[];
+		if (selectedText.length == 0) {
+			selected = editor.getLine(startLine).split(/\r?\n/)
+		} else {
+			selected = editor.getSelection().split(/\r?\n/);
+		}
+
+		const tempTitle = selected[0] ?? ""
+			.replace(/^[-*]\s*/, "")
+			.trim();
+
+		const sourceFile = view.file!;
+
+		// get the project of the current document and its actual file location, if any
+		const projectNames =
+			this.projectManager.getFrontmatterStringArray(sourceFile, "project");
+		// console.log('projects: ', projectNames);
+		const projectPaths =
+			this.projectManager.getFrontmatterStringArray(sourceFile, "project")
+				.map(link => normalizeWikiLink(link))
+				.map(link =>
+					this.app.metadataCache.getFirstLinkpathDest(
+						link,
+						sourceFile.path
+					)?.path
+				)
+				.filter((path): path is string => path !== undefined);
+
+		const context: TodoContext = {
+			tempTitle: tempTitle,
+			sourceFile: sourceFile,
+			line: startLine,
+			projectPaths: projectPaths,
+			projectNames: projectNames,
+			editor: editor
+
+		}
+
+		// const selectedText = editor.getLine(editor.getCursor().line);
+		const allProjects = this.projectManager.getActiveProjects();
+		const currProjectSet = new Set(projectNames);
+		const sortedProjects = [...allProjects].sort((a, b) => {
+			const aSource = currProjectSet.has(a.file.path);
+			const bSource = currProjectSet.has(b.file.path);
+			if (aSource !== bSource) {
+				return aSource ? -1 : 1;
+			}
+
+			return a.name.localeCompare(b.name);
+		})
+
+
+		new TodoModal(this.app, {
+			context: context,
+			projects: sortedProjects,
+			priorities: PRIORITIES,
+			onSubmit: async (request) => {
+				await this.addNewTodoItem(request);
+			}
+		}).open();
+
+
+
+
+	}
+
+
+
+	async startBlankTodoItem(): Promise<void> {
+		const tempTitle = "";
+		const lines = -1;
+		// const sourceFile = view.file!;
+		const projectNames = null;
+		const projectPaths = null;
+		// get the project of the current document and its actual file location, if any
+
+
+		const context: TodoContext = {
+			tempTitle: tempTitle,
+			line: lines,
+			projectPaths: projectPaths,
+			projectNames: projectNames
+
+
+		}
+
+		// const selectedText = editor.getLine(editor.getCursor().line);
+		const allProjects = this.projectManager.getActiveProjects();
+		const currProjectSet = new Set(projectNames);
+		const sortedProjects = [...allProjects].sort((a, b) => {
+			const aSource = currProjectSet.has(a.file.path);
+			const bSource = currProjectSet.has(b.file.path);
+			if (aSource !== bSource) {
+				return aSource ? -1 : 1;
+			}
+
+			return a.name.localeCompare(b.name);
+		})
+
+
+		new TodoModal(this.app, {
+			context: context,
+			projects: sortedProjects,
+			priorities: PRIORITIES,
+			onSubmit: async (request) => {
+				await this.addNewTodoItem(request);
+			}
+		}).open();
+	}
+
+	async startProjectTodoItem(
 		project: ProjectInfo,
 	): Promise<void> {
+		const tempTitle = "";
+		const lines = -1;
+		// const sourceFile = view.file!;
+		const projectNames = [project.name];
+		const projectPaths = [project.file.path];
+		// get the project of the current document and its actual file location, if any
 
+
+		const context: TodoContext = {
+			tempTitle: tempTitle,
+			line: lines,
+			projectPaths: projectPaths,
+			projectNames: projectNames
+
+
+		}
+
+		// const selectedText = editor.getLine(editor.getCursor().line);
+		const allProjects = this.projectManager.getActiveProjects();
+		const currProjectSet = new Set(projectNames);
+		const sortedProjects = [...allProjects].sort((a, b) => {
+			const aSource = currProjectSet.has(a.file.path);
+			const bSource = currProjectSet.has(b.file.path);
+			if (aSource !== bSource) {
+				return aSource ? -1 : 1;
+			}
+
+			return a.name.localeCompare(b.name);
+		})
+
+
+		new TodoModal(this.app, {
+			context: context,
+			projects: sortedProjects,
+			priorities: PRIORITIES,
+			onSubmit: async (request) => {
+				await this.addNewTodoItem(request);
+			}
+		}).open();
 	}
 
 	async addNewTodoItem(
