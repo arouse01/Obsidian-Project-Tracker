@@ -8,8 +8,12 @@ import {
 	ProjectInfo,
 	TimeSession,
 	TimeSummary,
-	ClientTimeSummary
+	ClientTimeSummary,
+	WeeklyTimeSummary
 } from "./types";
+import {
+	formatDate
+} from './utils'
 
 
 export class TimeTracker extends Events {
@@ -93,9 +97,23 @@ export class TimeTracker extends Events {
 		await this.saveSessions(sessions);
 
 	}
+/*
+	async stopAllSessionsAt(
+		timestamp: Date = new Date()
+	): Promise<void> {
 
-	
+		const stopTS = timestamp.toISOString();
+		let sessions = await this.loadSessions();
+		const activeSessions = this.findActiveSessions(sessions);
+		if (activeSessions.length === 0) {
+			return;  // no active sessions at all, no need to do anything
+		}
+		sessions = this.stopSessions(sessions, stopTS);
 
+		await this.saveSessions(sessions);
+
+	}
+*/
 	private stopSessions(
 		sessions: TimeSession[],
 		stopTime: string,
@@ -169,15 +187,15 @@ export class TimeTracker extends Events {
 	): Promise<TimeSummary[]> {
 		// Get summary of time worked between start and end for all projects
 		
-		const activeProjects = this.projectManager.getActiveProjects();
+		// const activeProjects = this.projectManager.getActiveProjects();
 
 		// initialize the summary table
 		const summaryArray = new Map<string, number>();
 
 		// initialize the active project rows
-		for (const project of activeProjects) {
-			summaryArray.set(project.file.path, 0);
-		}
+		// for (const project of activeProjects) {
+		// 	summaryArray.set(project.file.path, 0);
+		// }
 
 		const sessions = await this.loadSessions();
 
@@ -240,9 +258,9 @@ export class TimeTracker extends Events {
 		// Get summary of time worked between start and end for all projects
 
 		const projects = this.projectManager.getProjects();
-		const clients = new Set(
-			projects.map(project => project.client.replace(/^\[\[|\]\]$/g, ""))
-		)
+		// const clients = new Set(
+		// 	projects.map(project => project.client.replace(/^\[\[|\]\]$/g, ""))
+		// )
 		const clientByProjectPath = new Map(
 			projects.map(project => [
 				project.file.path,
@@ -253,11 +271,12 @@ export class TimeTracker extends Events {
 		// initialize the summary table
 		const summaryArray = new Map<string, number>();
 
+/*
 		// initialize the active project rows
 		for (const client of clients) {
 			summaryArray.set(client, 0);
 		}
-
+*/
 		const sessions = await this.loadSessions();
 
 		for (const session of sessions) {
@@ -315,6 +334,40 @@ export class TimeTracker extends Events {
 
 	}
 
+	async getWeeklySummary(
+		weekStart: Date
+	): Promise<WeeklyTimeSummary> {
+
+		const result: WeeklyTimeSummary = {
+			days: [],
+			projects: new Map()
+		};
+
+		for (let i = 0; i < 7; i++) {
+			const dayStart = new Date(weekStart);
+			dayStart.setDate(weekStart.getDate() + i);
+
+			const dayEnd = new Date(dayStart);
+			dayEnd.setDate(dayStart.getDate() + 1);
+
+			result.days.push(dayStart);
+
+			const dailySummary = await this.getTimeSummary(dayStart, dayEnd);
+
+			for (const item of dailySummary) {
+				// make an entry for the selected project if there isn't already
+				if (!result.projects.has(item.projectPath)) {
+					result.projects.set(item.projectPath, new Map());
+				}
+				result.projects
+					.get(item.projectPath)!
+					.set(formatDate(dayStart), item.totalMinutes);
+			}
+		}
+
+		return result;
+	}
+
 	private roundToNearest(date: Date, nearest: number = 15, start: boolean): Date {
 		const msInterval = nearest * 60 * 1000; // 15 minutes in milliseconds
 		if (start) {
@@ -324,7 +377,7 @@ export class TimeTracker extends Events {
 		}
 		
 	}
-	
+
 }
 
 

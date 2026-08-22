@@ -7,11 +7,6 @@ import {
 import { MyProjectManager } from './projectManager';
 import {
 	ProjectInfo,
-	ProjectGroup,
-	ProjectSort,
-	ProjectGroupField,
-	Project_Group_Fields,
-	ProjectSortField,
 	TimeSession,
 	TimeSummary
 } from "./types";
@@ -25,83 +20,145 @@ import { TimeTracker } from './timeTracker';
 import { TimeModal } from './timeModal';
 import IssueTracker from './issueTracker';
 import { TodoManager } from './todoTracker';
+import {
+	SummaryPeriod,
+	getSummaryPeriod,
+	sortItems,
+	GroupDefs,
+	ColSort,
+	TableColumn,
+	updateSortButtons,
+	getGroupOptions
+} from './tableFunctions';
 
-interface ProjectColumn {
-	field: ProjectColumnField;
+
+const PROJ_COLS = {
+	"status": {
+		label: "Status",
+		sortable: true,
+		groupable: false
+	},
+	"project": {
+		label: "Project",
+		sortable: true,
+		groupable: true
+	},
+	"primary": {
+		label: "Client",
+		sortable: true,
+		groupable: true
+	},
+	"hoursToday": {
+		label: "Today",
+		sortable: false,
+		groupable: false
+	},
+	"hoursWeek": {
+		label: "This week",
+		sortable: false,
+		groupable: false
+	},
+	"sessionStart": {
+		label: "",
+		sortable: false,
+		groupable: false
+	},
+	"sessionAt": {
+		label: "",
+		sortable: false,
+		groupable: false
+	},
+	"newMeeting": {
+		label: "",
+		sortable: false,
+		groupable: false
+	},
+	"newIssue": {
+		label: "",
+		sortable: false,
+		groupable: false
+	},
+	"newTodo": {
+		label: "",
+		sortable: false,
+		groupable: false
+	}
+} satisfies Record<string, TableColumn>;
+
+// type ProjectColumn = TableColumn
+
+// type ProjectColumnField =
+// 	"status" |
+// 	"project" |
+// 	"primary" |
+// 	"hoursToday" |
+// 	"hoursWeek" |
+// 	"sessionStart" |
+// 	"sessionAt" |
+// 	"newMeeting" |
+// 	"newIssue" |
+// 	"newTodo"
+
+type ProjectColumnField = keyof typeof PROJ_COLS;
+
+// type of ProjectColumnField here instead of SortField because it can now let any field be sorted, and that is defined by the master column list above
+type ProjectSort = ColSort<ProjectColumnField>
+
+type ProjectGroupField =
+	| "none"
+	| {
+		[K in keyof typeof PROJ_COLS]:
+		typeof PROJ_COLS[K]["groupable"] extends true
+		? K
+		: never
+	}[keyof typeof PROJ_COLS];
+
+// const Project_Group_Fields = [
+// 	{ value: "none", label: "None" },
+
+// 	...Object.entries(PROJ_COLS)
+// 		.filter(([, column]) => column.groupable)
+// 		.map(([field, column]) => ({
+// 			value: field as ProjectGroupField,
+// 			label: column.label
+// 		}))
+// ] satisfies { value: ProjectGroupField; label: string }[];
+// export const Project_Group_Fields = [
+// 	{ value: "none", label: "None" },
+// 	{ value: "project", label: "Project" },
+// 	{ value: "primary", label: "Client" }
+// ] as const;
+
+
+// type ProjectGroup = GroupDefs<ProjectInfo>
+interface ProjectGroup {
+	key: string;
 	label: string;
-	sortField?: ProjectSortField;
-	width?: string;
+	projects: ProjectInfo[];
 }
 
-type ProjectColumnField =
-	"status" |
-	"project" |
-	"primary" |
-	"hoursToday" |
-	"hoursWeek" |
-	"sessionStart" |
-	"sessionAt" |
-	"newMeeting" |
-	"newIssue" |
-	"newTodo"
 
-const PROJ_COLS = new Map<ProjectColumnField, ProjectColumn>([
-	// render determines how the field is set when it's created
-	["status", {
-		field: "status",
-		label: "Status",
-		sortField: "status"
-	}],
-	["project", {
-		field: "project",
-		label: "Project",
-		sortField: "project"
-	}],
-	["primary", {
-		field: "primary",
-		label: "Client",
-		sortField: "primary"
-	}],
-	["hoursToday", {
-		field: "hoursToday",
-		label: "Today"
-	}],
-	["hoursWeek", {
-		field: "hoursWeek",
-		label: "This week"
-	}],
-	["sessionStart", {
-		field: "sessionStart",
-		label: ""
-	}],
-	["sessionAt", {
-		field: "sessionAt",
-		label: ""
-	}],
-	["newMeeting", {
-		field: "newMeeting",
-		label: ""
-	}],
-	["newIssue", {
-		field: "newIssue",
-		label: "",
-	}],
-	["newTodo", {
-		field: "newTodo",
-		label: "",
-	}]
-]);
+
+
+// interface ProjectColumn {
+// 	field: ProjectColumnField;
+// 	label: string;
+// 	sortField?: ProjectSortField;
+// 	width?: string;
+// }
+
 
 export class ProjectDashboardView extends ItemView {
-	private summaryPeriod: "week" | "month" = "week";  // to drive the summary period selection
+	private summaryPeriod: SummaryPeriod = "week";  // to drive the summary period selection
 	private periodOffset = 0;  // to drive the summary period selection, how far in the past to go
 
-	private projectStatusFilter: "Active" | "All" | "Archived" = "Active";  // to drive the summary period selection
+	private projectStatusFilter: "Active" | "All" | "Archived" = "Active";  // to drive which projects are visible
 
 	private projectMap = new Map<string, string>();
 
 	private projectTableEl!: HTMLTableElement;
 	private projectTableBodyEl!: HTMLTableSectionElement;
+	private summaryTableEl!: HTMLTableElement;
 	private summaryTableBodyEl!: HTMLTableSectionElement;
 	private rangeText!: HTMLElement;
 
@@ -123,7 +180,7 @@ export class ProjectDashboardView extends ItemView {
 		"newTodo"
 	]
 
-	private sortButtons = new Map<ProjectColumn, ButtonComponent>();
+	private sortButtons = new Map<ProjectColumnField, ButtonComponent>();
 
 	private groupButtons = new Map<ProjectGroupField, ButtonComponent>();
 
@@ -216,11 +273,14 @@ export class ProjectDashboardView extends ItemView {
 
 		const controlSection = projectSection.createDiv({ cls: 'project-controls' });
 
+		
+
 		// Create grouping buttons
 		// To add more group options, update Project_Group_Fields in types.ts and add the grouping logic to getGroupKey and getGroupLabel
-		controlSection.createEl("label", { text: 'Group by:' })
-		for (const group of Project_Group_Fields) {
-			const button = new ButtonComponent(controlSection)
+		const filterSection = controlSection.createDiv({ cls: 'project-controls' });
+		filterSection.createEl("label", { text: 'Group by:' })
+		for (const group of getGroupOptions(PROJ_COLS)) {
+			const button = new ButtonComponent(filterSection)
 				.setButtonText(group.label)
 				.onClick(async () => {
 					this.groupBy = group.value;
@@ -233,10 +293,10 @@ export class ProjectDashboardView extends ItemView {
 
 		new ButtonComponent(controlSection)
 			.setButtonText("New project...")
-			.setClass("button-right")
+			.setClass("new-project-button")
 			.onClick(async () => {
 				// TODO
-				await this.createProject();
+				await this.addProject();
 				await this.updateProjectTableRows();
 			});
 
@@ -272,7 +332,7 @@ export class ProjectDashboardView extends ItemView {
 		headerRow2.createEl('th', { text: '' }); // Issue
 */
 		
-		this.projectTableBodyEl = this.projectTableEl.createEl('tbody');
+		// this.projectTableBodyEl = this.projectTableEl.createEl('tbody');
 
 
 
@@ -309,7 +369,7 @@ export class ProjectDashboardView extends ItemView {
 
 			if (value === "week" || value === "month") {
 				this.summaryPeriod = value;
-				void this.updateSummary();
+				void this.updateSummaryRows();
 			}
 		});
 
@@ -320,9 +380,9 @@ export class ProjectDashboardView extends ItemView {
 			.setClass("arrow-button")
 			.onClick(async () => {
 				this.periodOffset--;
-				await this.updateSummary();
+				await this.updateSummaryRows();
 			});
-		const { start, end } = this.getSummaryPeriod();
+		const { start, end } = getSummaryPeriod(this.periodOffset, this.summaryPeriod);
 
 		let dateRangeText: string;
 		if (this.summaryPeriod === "week") {
@@ -340,28 +400,28 @@ export class ProjectDashboardView extends ItemView {
 			.setClass("arrow-button")
 			.onClick(async () => {
 				this.periodOffset++;
-				await this.updateSummary();
+				await this.updateSummaryRows();
 			})
 
 		new ButtonComponent(summaryControlsBottom)
 			.setButtonText("Now")
 			.onClick(async () => {
 				this.periodOffset = 0;
-				await this.updateSummary();
+				await this.updateSummaryRows();
 			})
 
 		// select.style.width = "100%";
 
+		
 		const sectionSummaryTableEl = summarySection.createEl('section');
 		sectionSummaryTableEl.addClass('project-dashboard');
-		const tableSummaryEl = sectionSummaryTableEl.createEl('table');
-		tableSummaryEl.addClass('project-table')
-		const tableSummaryHeaderEl = tableSummaryEl.createEl('thead');
-		const headerSummaryRowEl = tableSummaryHeaderEl.createEl('tr');
-		headerSummaryRowEl.createEl('th', { text: 'Project' });
-		headerSummaryRowEl.createEl('th', { text: 'Time' });
 
-		this.summaryTableBodyEl = tableSummaryEl.createEl('tbody');
+		this.summaryTableEl = sectionSummaryTableEl.createEl('table');
+		this.summaryTableEl.addClass('project-table')
+		this.createSummaryHeaders(this.summaryTableEl);
+
+
+		this.summaryTableBodyEl = this.summaryTableEl.createEl('tbody');
 	}
 
 	async updateProjectTableRows(): Promise<void> {
@@ -371,7 +431,7 @@ export class ProjectDashboardView extends ItemView {
 		this.projectTableBodyEl?.replaceWith(newBody);
 		this.projectTableBodyEl = newBody;
 
-		await this.updateSummary();
+		await this.updateSummaryRows();
 		await this.updateSummaryVars();
 	}
 
@@ -400,23 +460,23 @@ export class ProjectDashboardView extends ItemView {
 
 		const row = thead.createEl('tr');
 
-		for (const column of this.getVisibleCols()) {
+		for (const [field, column] of this.getVisibleCols()) {
 			const header = row.createEl('th');
 
 			// if (column.centered) {
 			// 	header.addClass("center-align")
 			// }
 
-			if (column.sortField) {
+			if (column.sortable) {
 				const button = new ButtonComponent(header)
 					// .setButtonText(column.label)
 					.setClass("project-dashboard-button")
 					.onClick(async () => {
 						// group is collapsed, uncollapse it
-						this.updateSort(column.sortField!);
-						await this.updateProjectRows();
+						this.updateSort(field);
+						await this.updateProjectTableRows();
 					});
-				this.sortButtons.set(column, button);
+				this.sortButtons.set(field, button);
 			} else {
 				header.setText(column.label)
 			}
@@ -424,21 +484,12 @@ export class ProjectDashboardView extends ItemView {
 
 		this.projectTableBodyEl = this.projectTableEl.createEl('tbody');
 
-		this.updateSortButtons();
-	}
-
-	async updateProjectRows(): Promise<void> {
-		// specifically for updating the rows without touching the headers
-		const newBody = createEl('tbody');
-		await this.buildProjectTableBody(newBody);
-		this.projectTableBodyEl?.replaceWith(newBody);
-		this.projectTableBodyEl = newBody;
-		await this.updateSummary();
+		updateSortButtons(this.sortButtons, this.sortBy, PROJ_COLS);
 	}
 
 	async buildProjectTableBody(tbody: HTMLTableSectionElement): Promise<void> {
 		// update the body of the table only and return the updated table for actual loading into the ui
-		this.updateGroupByButtons();
+		this.updateGroupByButtons(this.groupButtons);
 		
 		let projects = this.projectManager.getProjects();
 
@@ -446,7 +497,11 @@ export class ProjectDashboardView extends ItemView {
 			projects.map(project => [project.file.path, project.name])
 		);
 
-		projects = this.sortProjects(projects, this.sortBy)
+		projects = sortItems(
+			projects,
+			this.sortBy,
+			(a, b, field) => this.compareProjects(a, b, field)
+		)
 
 		const groups = this.groupProjects(projects)
 
@@ -468,12 +523,29 @@ export class ProjectDashboardView extends ItemView {
 				this.createProjectRow(tbody, project)
 			}
 		}
-
-
+		const activeSessions = await this.timeTracker.getActiveSessions();
+		if (activeSessions.length > 0) {
+			this.createStopRow(tbody)
+		}
 	}
 
-	private updateGroupByButtons(): void {
-		for (const [field, button] of this.groupButtons) {
+	// private getProjectGroupOptions(): {
+	// 	value: ProjectGroupField;
+	// 	label: string;
+	// }[] {
+	// 	return [
+	// 		{ value: "none", label: "None" },
+	// 		...Object.entries(PROJ_COLS)
+	// 			.filter(([, column]) => column.groupable)
+	// 			.map(([field, column]) => ({
+	// 				value: field as ProjectGroupField,
+	// 				label: column.label
+	// 			}))
+	// 	];
+	// }
+
+	private updateGroupByButtons(groupButtonMap: Map<ProjectGroupField, ButtonComponent>): void {
+		for (const [field, button] of groupButtonMap) {
 			button.buttonEl.toggleClass(
 				"button-selected",
 				this.groupBy === field
@@ -481,7 +553,7 @@ export class ProjectDashboardView extends ItemView {
 		}
 	}
 
-	private updateSort(field: ProjectSortField) {
+	private updateSort(field: ProjectColumnField) {
 		const index = this.sortBy.findIndex(sort => sort.field === field);
 
 		if (index === -1) {
@@ -506,31 +578,31 @@ export class ProjectDashboardView extends ItemView {
 		}
 
 
-		this.updateSortButtons();
+		updateSortButtons(this.sortButtons, this.sortBy, PROJ_COLS);
 
 	}
 
-	private sortProjects(
-		projects: ProjectInfo[],
-		sorts: ProjectSort[]
-	): ProjectInfo[] {
-		return [...projects].sort((a, b) => {
-			for (const sort of sorts) {
-				const compare = this.compareProjects(a, b, sort.field);
-				if (compare !== 0) {
-					return sort.dir === "asc"
-						? compare : -compare;
+	// private sortProjects(
+	// 	projects: ProjectInfo[],
+	// 	sorts: ProjectSort[]
+	// ): ProjectInfo[] {
+	// 	return [...projects].sort((a, b) => {
+	// 		for (const sort of sorts) {
+	// 			const compare = this.compareProjects(a, b, sort.field);
+	// 			if (compare !== 0) {
+	// 				return sort.dir === "asc"
+	// 					? compare : -compare;
 
-				}
-			}
-			return 0;
-		});
-	}
+	// 			}
+	// 		}
+	// 		return 0;
+	// 	});
+	// }
 
 	private compareProjects(
 		a: ProjectInfo,
 		b: ProjectInfo,
-		field: ProjectSortField
+		field: ProjectColumnField
 	): number {
 		switch (field) {
 			case "status": {
@@ -551,6 +623,9 @@ export class ProjectDashboardView extends ItemView {
 				return clientA.localeCompare(clientB);
 			}
 
+			default:
+				// we list all the sortable fields here, and if the field isn't sortable return 0 which means the values are equivalent (for this comparison)
+				return 0;
 			
 		}
 	}
@@ -645,7 +720,7 @@ export class ProjectDashboardView extends ItemView {
 				.onClick(async () => {
 					// group is collapsed, uncollapse it
 					this.collapsedGroups.delete(group.key);
-					await this.updateProjectRows();
+					await this.updateProjectTableRows();
 				});
 		} else {
 			new ButtonComponent(groupCell)
@@ -653,7 +728,7 @@ export class ProjectDashboardView extends ItemView {
 				.onClick(async () => {
 					// group isn't collapsed, collapse it
 					this.collapsedGroups.add(group.key);
-					await this.updateProjectRows();
+					await this.updateProjectTableRows();
 				});
 		}
 
@@ -662,15 +737,28 @@ export class ProjectDashboardView extends ItemView {
 	private createProjectRow(target: HTMLTableSectionElement, project: ProjectInfo) {
 		const row = target.createEl('tr');
 
-		for (const column of this.getVisibleCols()) {
+		for (const [field, ] of this.getVisibleCols()) {
 			const cell = row.createEl("td");
 
-			this.renderColumn(cell, column.field, project);
+			this.renderCell(cell, field, project);
 		}
 		
 	}
 
-	private getVisibleCols(): ProjectColumn[] {
+	private createStopRow(target: HTMLTableSectionElement) {
+		const row = target.createEl('tr');
+
+		for (const [field, ] of this.getVisibleCols()) {
+			const cell = row.createEl("td");
+			cell.addClass('summary-row')
+			this.renderSummaryCell(cell, field);
+		}
+		
+	}
+
+	private getVisibleCols(): Array<
+		[ProjectColumnField, TableColumn]
+	> {
 		switch (this.groupBy) {
 			case 'project':
 				this.colOrder = [
@@ -716,9 +804,11 @@ export class ProjectDashboardView extends ItemView {
 				]
 				break;
 		}
-		return this.colOrder
-			.map(field => PROJ_COLS.get(field))
-			.filter((column): column is ProjectColumn => column !== undefined);
+		return this.colOrder.map(field => [
+			field,
+			PROJ_COLS[field]
+		])
+
 	}
 
 	// async updateDashboard(): Promise<void> {
@@ -752,7 +842,435 @@ export class ProjectDashboardView extends ItemView {
 		this.dayTimeSumByPath = new Map(
 			this.daySummaryTotals.map(summary => [summary.projectPath, summary])
 		)
+
+
 	}
+
+	async rebuildSummaryTable(): Promise<void> {
+		const newTable = createEl('table');
+		this.createSummaryHeaders(newTable);
+		const newBody = newTable.createEl('tbody')
+		await this.buildSummaryTableBody(newBody);
+
+		this.projectTableEl.replaceWith(newTable);
+		this.projectTableEl = newTable;
+		this.projectTableBodyEl = newBody;
+	}
+
+	createSummaryHeaders(table: HTMLTableElement) {
+		
+		table.addClass('project-table')
+		const thead = table.createEl('thead');
+		const headerRow = thead.createEl('tr');
+
+		if (this.summaryPeriod === "month") {
+			headerRow.createEl('th', { text: 'Project' });
+			headerRow.createEl('th', { text: 'Time' });
+		} else {
+			headerRow.createEl('th', { text: 'Project' });
+
+			headerRow.createEl('th', { text: 'Sunday' });
+			headerRow.createEl('th', { text: 'Monday' });
+			headerRow.createEl('th', { text: 'Tuesday' });
+			headerRow.createEl('th', { text: 'Wednesday' });
+			headerRow.createEl('th', { text: 'Thursday' });
+			headerRow.createEl('th', { text: 'Friday' });
+			headerRow.createEl('th', { text: 'Saturday' });
+
+			headerRow.createEl('th', { text: 'Total' });
+			
+		}
+
+		this.summaryTableBodyEl = this.summaryTableEl.createEl('tbody');
+	}
+
+	async updateSummaryRows(): Promise<void> {
+		// function for updating the rows without touching the headers
+		
+		// create temporary body for table, then fill it and swap for the current one instead of clearing the whole thing
+		const newBody = createEl('tbody')
+		await this.buildSummaryTableBody(newBody);
+		
+		this.summaryTableBodyEl.replaceWith(newBody);
+		this.summaryTableBodyEl = newBody;
+	}
+
+	async buildSummaryTableBody(tbody: HTMLTableSectionElement): Promise<void> {
+		// update the body of the table only and return the updated table for actual loading into the ui
+		const { start, end } = getSummaryPeriod(this.periodOffset, this.summaryPeriod);
+
+		let dateRangeText: string;
+		if (this.summaryPeriod === "week") {
+			dateRangeText = `${window.moment(start).format("MMM DD")} - ${window.moment(end).format("MMM DD")}`
+		} else {
+			dateRangeText = window.moment(start).format("MMMM YYYY")
+		}
+		this.rangeText.setText(dateRangeText);
+
+		if (this.summaryPeriod === "month") {
+			const summaryTotals = await this.timeTracker.getTimeSummaryByClient(start, end);
+			/*
+				summaryTotals are returned as array of TimeSummary objects 
+				which is projectPath (string) and totalMinutes (number), so 
+				we have to loop through and assign to the table
+			*/
+			for (const timeSum of summaryTotals) {
+
+				// create row skeleton, and assign values to objects after (for cleaner visual code organization)
+				const row = tbody.createEl('tr');
+
+				const clientCell = row.createEl('td');
+				const totalCell = row.createEl('td');
+
+				const clientName = timeSum.client;
+				clientCell.setText(clientName);
+
+				const durationText = formatMinutesToDuration(timeSum.totalMinutes);
+				totalCell.setText(durationText)
+
+			}
+		} else {
+			const weeklyTotals = await this.timeTracker.getWeeklySummary(start);
+			
+			for (const [projectPath, dailyMinutes] of weeklyTotals.projects) {
+				const row = tbody.createEl('tr');
+
+				// Project
+				const projectCell = row.createEl("td")
+				projectCell.setText(projectPath);
+
+				for (const day of weeklyTotals.days) {
+					const dateStr = formatDate(day);
+					const minutes = dailyMinutes.get(dateStr) ?? 0;
+
+					const cell = row.createEl("td");
+					cell.setText(formatMinutesToDuration(minutes, true))
+				}
+			}
+		}
+	}
+
+	async createMeeting(
+		project: ProjectInfo
+	): Promise<void> {
+		let newFile: TFile;
+
+		const currDate = formatDate();
+		const projectName = project.name;
+		const meetingTitle = `${currDate} ${projectName} Meeting`
+
+		const filename = `${meetingTitle}`
+		const path = `Meeting Notes/${filename}.md`
+		const creationTS = formatTimestamp();
+		const content =
+			`---
+project: "[[${projectName}]]"
+topic: 
+date: "${creationTS}"
+people:
+- 
+tags:
+- meeting
+---
+
+# ${filename}
+
+
+
+`;
+
+		newFile = await this.app.vault.create(path, content);
+
+		await this.app.workspace.getLeaf(false).openFile(newFile);
+
+	}
+
+	async addProject(): Promise<void> {
+
+
+	}
+
+	/*
+	Responsible for setting a given cell with its appropriate value given the record it's on and the column
+	*/
+	private renderCell(
+		cell: HTMLTableCellElement,
+		field: ProjectColumnField,
+		project: ProjectInfo
+	): void {
+		const activeSession = this.activeSessionMap.get(project.file.path);
+
+		switch (field) {
+			case "status":
+				{
+					
+					// const isActive = activePaths.has(project.file.path);
+					if (activeSession) {
+						cell.setText("🟢");  //⏲
+					} else {
+						cell.setText("");
+					}
+					break;
+				}
+
+			case "project":
+				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
+					const projectLink = cell.createEl("a", { text: project.name });
+						projectLink.addEventListener("click", (event) => {
+							event.preventDefault();
+							const existingLeaf = this.app.workspace.getLeavesOfType(
+								"markdown"
+							).find(leaf => {
+								const view = leaf.view;
+								return view.getState().file === project.file.path;
+							});
+
+							if (existingLeaf) {
+								void this.app.workspace.revealLeaf(existingLeaf);
+							} else {
+								void this.app.workspace.getLeaf(false).openFile(project.file);
+							}
+						});
+					
+					break;
+				}
+
+			case "primary":
+				{
+					const file = this.app.vault.getAbstractFileByPath(project.file.path);
+					let client: string = '';
+					if (file instanceof TFile) {
+						client = this.projectManager.getFrontmatterString(file, "Primary").replace(/^\[\[|\]\]$/g, "")
+					}
+					cell.setText(client);
+
+					break;
+				}
+
+			case "hoursToday":
+				{
+					const dailyTimeSum = this.dayTimeSumByPath.get(project.file.path);
+					const dailyTimeText = formatMinutesToDuration(dailyTimeSum?.totalMinutes ?? 0);
+					cell.setText(dailyTimeText);
+
+					
+					break;
+				}
+
+			case 'hoursWeek':
+				{
+					const weekTimeSum = this.weekTimeSumByPath.get(project.file.path);
+					const weekTimeText = formatMinutesToDuration(weekTimeSum?.totalMinutes ?? 0);
+					cell.setText(weekTimeText);
+
+					break;
+				}
+
+			case 'sessionStart':
+				new ButtonComponent(cell)
+						.setButtonText(activeSession ? "Stop" : "Start")
+						.setClass("project-dashboard-button")
+						.onClick(async () => {
+							if (activeSession) {
+								await this.timeTracker.stopProjectSession(project)
+							} else {
+								await this.timeTracker.startProjectSession(project)
+							}
+							void this.updateProjectTableRows()
+						})
+
+				
+				break;
+
+			case 'sessionAt':
+				new ButtonComponent(cell)
+					.setButtonText(activeSession ? "Stop at" : "Start at")
+					.setClass("project-dashboard-button")
+					.onClick(async () => {
+						if (activeSession) {
+							new TimeModal(this.app, {
+								mode: 'stop',
+								sessions: [{
+									projectName: project.name,
+									startTime: activeSession.start
+								}],
+								onSubmit: async (timestamp: Date) => {
+									await this.timeTracker.stopProjectSession(
+										project,
+										timestamp
+									);
+									void this.updateProjectTableRows()
+								}
+							}).open();
+						} else {
+							new TimeModal(this.app, {
+								mode: 'start',
+								projectPath: project.file.path,
+								onSubmit: async (timestamp: Date) => {
+									await this.timeTracker.startProjectSession(
+										project,
+										timestamp
+									);
+									void this.updateProjectTableRows()
+								}
+							}).open();
+						}
+
+
+					})
+
+				break;
+
+			case 'newMeeting':
+				new ButtonComponent(cell)
+					.setButtonText("New meeting")
+					.setClass("project-dashboard-button")
+					.onClick(async () => {
+						await this.createMeeting(project)
+					})
+
+				break;
+
+			case 'newIssue':
+				new ButtonComponent(cell)
+					.setButtonText("New issue")
+					.setClass("project-dashboard-button")
+					.onClick(async () => {
+						await this.issueTracker.createProjectIssue(project);
+					})
+
+				break;
+
+			case 'newTodo':
+				new ButtonComponent(cell)
+					.setButtonText("New todo")
+					.setClass("project-dashboard-button")
+					.onClick(async () => {
+						await this.todoManager.startProjectTodoItem(project);
+
+					})
+
+				break;
+
+		}
+	}
+
+	private renderSummaryCell(
+		cell: HTMLTableCellElement,
+		field: ProjectColumnField,
+	): void {
+		// const activeSession = this.activeSessionMap.get(project.file.path);
+		cell.addClass('summary-row')
+
+		switch (field) {
+			case "project":
+				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
+					cell.setText("All active projects")
+
+					break;
+				}
+
+			// case "hoursToday":
+			// 	{
+			// 		const dailyTimeSum = this.dayTimeSumByPath.get(project.file.path);
+			// 		const dailyTimeText = formatMinutesToDuration(dailyTimeSum?.totalMinutes ?? 0);
+			// 		cell.setText(dailyTimeText);
+
+
+			// 		break;
+			// 	}
+
+			// case 'hoursWeek':
+			// 	{
+			// 		const weekTimeSum = this.weekTimeSumByPath.get(project.file.path);
+			// 		const weekTimeText = formatMinutesToDuration(weekTimeSum?.totalMinutes ?? 0);
+			// 		cell.setText(weekTimeText);
+
+			// 		break;
+			// 	}
+
+			case 'sessionStart':
+				new ButtonComponent(cell)
+					.setButtonText("Stop")
+					// .setClass("")
+					.onClick(async () => {
+						await this.timeTracker.stopAllSessions()
+					})
+
+				
+				break;
+
+			case 'sessionAt':
+				new ButtonComponent(cell)
+					.setButtonText("Stop at")
+					.onClick(async () => {
+						const activeSessions = await this.timeTracker.getActiveSessions()
+						const sessionDisplayInfo = activeSessions.map(session => {
+							const project = this.projectManager.findProjectByPath(session.projectPath);
+							return {
+								projectName: project?.name ?? "missing",
+								startTime: session.start
+							}
+						})
+						new TimeModal(this.app, {
+							mode: 'stop',
+							sessions: sessionDisplayInfo,
+							onSubmit: async (timestamp: Date) => {
+
+								await this.timeTracker.stopAllSessions(
+									timestamp
+								);
+							}
+						}).open();
+
+
+					})
+
+				break;
+
+			default:
+				
+				break;
+
+			
+
+		}
+	}
+/*
+	private updateSortButtons(): void {
+
+		for (const [col, button] of this.sortButtons) {
+			const sort = this.sortBy.find(s => s.field === col.sortField);
+			const sortIndex = this.sortBy.findIndex((sort) => sort.field === col.sortField);
+			let text = col.label;
+			if (sort?.dir === "asc") {
+				text += " ▲"
+			} else if (sort?.dir === "desc") {
+				text += " ▼"
+			}
+			if (sort?.dir) {
+				;
+				text += (sortIndex + 1)
+			}
+
+			button.setButtonText(text);
+		}
+	}
+
+	private getSummaryPeriod(periodOffset: number, summaryPeriod: SummaryPeriod): { start: Date; end: Date } {
+		const start = window.moment()
+			.add(periodOffset, summaryPeriod)
+			.startOf(summaryPeriod)
+			.toDate();
+
+		const end = window.moment()
+			.add(periodOffset, summaryPeriod)
+			.endOf(summaryPeriod)
+			.toDate();
+
+		return { start, end };
+	}
+*/
 
 	/*
 	async updateProjects(): Promise<void> {
@@ -903,277 +1421,5 @@ export class ProjectDashboardView extends ItemView {
 
 	}
 	*/
-
-	async updateSummary(): Promise<void> {
-		
-		const { start, end } = this.getSummaryPeriod();
-
-		let dateRangeText: string;
-		if (this.summaryPeriod === "week") {
-			dateRangeText = `${window.moment(start).format("MMM DD")} - ${window.moment(end).format("MMM DD")}`
-		} else {
-			dateRangeText = window.moment(start).format("MMMM YYYY")
-		}
-		this.rangeText.setText(dateRangeText);
-
-		// create temporary body for table, then fill it and swap for the current one instead of clearing the whole thing
-		const newBody2 = createEl('tbody')
-
-		const summaryTotals = await this.timeTracker.getTimeSummaryByClient(start, end);
-		/*
-			summaryTotals are returned as array of TimeSummary objects 
-			which is projectPath (string) and totalMinutes (number), so 
-			we have to loop through and assign to the table
-		*/
-		for (const timeSum of summaryTotals) {
-
-			// create row skeleton, and assign values to objects after (for cleaner visual code organization)
-			const row = newBody2.createEl('tr');
-
-			const clientCell = row.createEl('td');
-			const totalCell = row.createEl('td');
-
-			const clientName = timeSum.client;
-			clientCell.setText(clientName);
-			
-			const durationText = formatMinutesToDuration(timeSum.totalMinutes);
-			totalCell.setText(durationText)
-
-		}
-		// this.summaryTableBodyEl.empty();
-		this.summaryTableBodyEl.replaceWith(newBody2);
-		this.summaryTableBodyEl = newBody2;
-	}
-
-	async createMeeting(
-		project: ProjectInfo
-	): Promise<void> {
-		let newFile: TFile;
-
-		const currDate = formatDate();
-		const projectName = project.name;
-		const meetingTitle = `${currDate} ${projectName} Meeting`
-
-		const filename = `${meetingTitle}`
-		const path = `Meeting Notes/${filename}.md`
-		const creationTS = formatTimestamp();
-		const content =
-			`---
-project: "[[${projectName}]]"
-topic: 
-date: "${creationTS}"
-people:
-- 
-tags:
-- meeting
----
-
-# ${filename}
-
-
-
-`;
-
-		newFile = await this.app.vault.create(path, content);
-
-		await this.app.workspace.getLeaf(false).openFile(newFile);
-
-	}
-
-	async createProject(): Promise<void> {
-
-
-	}
-
-	private renderColumn(
-		cell: HTMLTableCellElement,
-		field: ProjectColumnField,
-		project: ProjectInfo
-	): void {
-		const activeSession = this.activeSessionMap.get(project.file.path);
-		switch (field) {
-			case "status":
-				{
-					
-					// const isActive = activePaths.has(project.file.path);
-					if (activeSession) {
-						cell.setText("🟢");  //⏲
-					} else {
-						cell.setText("");
-					}
-					break;
-				}
-
-			case "project":
-				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
-					const projectLink = cell.createEl("a", { text: project.name });
-					projectLink.addEventListener("click", (event) => {
-						event.preventDefault();
-						const existingLeaf = this.app.workspace.getLeavesOfType(
-							"markdown"
-						).find(leaf => {
-							const view = leaf.view;
-							return view.getState().file === project.file.path;
-						});
-
-						if (existingLeaf) {
-							void this.app.workspace.revealLeaf(existingLeaf);
-						} else {
-							void this.app.workspace.getLeaf(false).openFile(project.file);
-						}
-					});
-
-					break;
-				}
-
-			case "primary":
-				{
-					const file = this.app.vault.getAbstractFileByPath(project.file.path);
-					let client: string = '';
-					if (file instanceof TFile) {
-						client = this.projectManager.getFrontmatterString(file, "Primary").replace(/^\[\[|\]\]$/g, "")
-					}
-					cell.setText(client);
-
-					break;
-				}
-
-			case "hoursToday":
-				{
-					const dailyTimeSum = this.dayTimeSumByPath.get(project.file.path);
-					const dailyTimeText = formatMinutesToDuration(dailyTimeSum?.totalMinutes ?? 0);
-					cell.setText(dailyTimeText);
-
-					
-					break;
-				}
-
-			case 'hoursWeek':
-				{
-					const weekTimeSum = this.weekTimeSumByPath.get(project.file.path);
-					const weekTimeText = formatMinutesToDuration(weekTimeSum?.totalMinutes ?? 0);
-					cell.setText(weekTimeText);
-
-					break;
-				}
-
-			case 'sessionStart':
-
-				new ButtonComponent(cell)
-					.setButtonText(activeSession ? "Stop" : "Start")
-					.setClass("project-dashboard-button")
-					.onClick(async () => {
-						if (activeSession) {
-							await this.timeTracker.stopProjectSession(project)
-						} else {
-							await this.timeTracker.startProjectSession(project)
-						}
-					})
-
-				
-				break;
-
-			case 'sessionAt':
-				new ButtonComponent(cell)
-					.setButtonText(activeSession ? "Stop at" : "Start at")
-					.setClass("project-dashboard-button")
-					.onClick(async () => {
-						if (activeSession) {
-							new TimeModal(this.app, {
-								mode: 'stop',
-								projectPath: project.file.path,
-								sessionStart: activeSession.start,
-								onSubmit: async (timestamp: Date) => {
-									await this.timeTracker.stopProjectSession(
-										project,
-										timestamp
-									);
-								}
-							}).open();
-						} else {
-							new TimeModal(this.app, {
-								mode: 'start',
-								projectPath: project.file.path,
-								onSubmit: async (timestamp: Date) => {
-									await this.timeTracker.startProjectSession(
-										project,
-										timestamp
-									);
-								}
-							}).open();
-						}
-
-					})
-
-				break;
-
-			case 'newMeeting':
-				new ButtonComponent(cell)
-					.setButtonText("New meeting")
-					.setClass("project-dashboard-button")
-					.onClick(async () => {
-						await this.createMeeting(project)
-					})
-
-				break;
-
-			case 'newIssue':
-				new ButtonComponent(cell)
-					.setButtonText("New issue")
-					.setClass("project-dashboard-button")
-					.onClick(async () => {
-						await this.issueTracker.createProjectIssue(project);
-					})
-
-				break;
-
-			case 'newTodo':
-				new ButtonComponent(cell)
-					.setButtonText("New todo")
-					.setClass("project-dashboard-button")
-					.onClick(async () => {
-						await this.todoManager.startProjectTodoItem(project);
-
-					})
-
-				break;
-
-		}
-	}
-
-	private updateSortButtons(): void {
-
-		for (const [col, button] of this.sortButtons) {
-			const sort = this.sortBy.find(s => s.field === col.sortField);
-			const sortIndex = this.sortBy.findIndex((sort) => sort.field === col.sortField);
-			let text = col.label;
-			if (sort?.dir === "asc") {
-				text += " ▲"
-			} else if (sort?.dir === "desc") {
-				text += " ▼"
-			}
-			if (sort?.dir) {
-				;
-				text += (sortIndex + 1)
-			}
-
-			button.setButtonText(text);
-		}
-	}
-
-	private getSummaryPeriod(): { start: Date; end: Date } {
-		const start = window.moment()
-			.add(this.periodOffset, this.summaryPeriod)
-			.startOf(this.summaryPeriod)
-			.toDate();
-
-		const end = window.moment()
-			.add(this.periodOffset, this.summaryPeriod)
-			.endOf(this.summaryPeriod)
-			.toDate();
-
-		return { start, end };
-	}
-
 }
 

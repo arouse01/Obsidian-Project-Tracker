@@ -55,30 +55,20 @@ export const PRIORITIES: PriorityOption[] = [
 	{ value: 5, label: "5 - Urgent" },
 ]
 
-export interface ProjectSort {
-	field: ProjectSortField;
-	dir: SortDirection;
-}
-
-export const Project_Group_Fields = [
-	{ value: "none", label: "None" },
-	{ value: "project", label: "Project" },
-	{ value: "primary", label: "Client" }
-] as const;
-export type ProjectGroupField = typeof Project_Group_Fields[number]['value'];
-export type ProjectSortField = "status" | "project" | "primary" ;
 
 
-export interface ProjectGroup {
-	key: string;
-	label: string;
-	projects: ProjectInfo[];
-}
+
+
 export interface TimeSession {
 	id: string;
 	projectPath: string;
 	start: string;
 	end: string | null;  // null while session is active
+}
+
+export interface ActiveSessionDisplay {
+	projectName: string,
+	startTime: string
 }
 
 export interface TimeSummary {
@@ -91,10 +81,19 @@ export interface ClientTimeSummary {
 	totalMinutes: number;
 }
 
-export interface SessionContext {
-	mode: SessionAction;
+export interface WeeklyTimeSummary {
+	days: Date[];
+	projects: Map<string, Map<string, number>>;
+}
+
+export type SessionContext = {
+	mode: "start";
 	projectPath: string;
-	sessionStart?: string;
+	onSubmit: (timestamp: Date) => Promise<void>;
+}
+	| {
+	mode: "stop";
+	sessions: ActiveSessionDisplay[];
 	onSubmit: (timestamp: Date) => Promise<void>;
 }
 
@@ -144,18 +143,9 @@ export interface CreateTodoRequest {
 
 export type TodoStatus = "open" | "complete";
 
-export interface TodoSort {
-	field: TodoSortField;
-	dir: SortDirection;
-}
 
-export const Todo_Group_Fields = [
-	{ value: "none", label: "None" },
-	{ value: "project", label: "Project" },
-	{ value: "priority", label: "Priority" }
-] as const;
-export type TodoGroupField = typeof Todo_Group_Fields[number]['value'];
-export type TodoSortField = "name" | "project" | "priority" | "dueDate";
+
+
 export type SortDirection = "asc" | "desc";
 
 export interface TodoGroup {
@@ -163,5 +153,4 @@ export interface TodoGroup {
 	label: string;
 	todos: TodoItem[];
 }
-
 

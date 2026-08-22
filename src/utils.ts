@@ -28,10 +28,16 @@ export function formatDate(date: Date = new Date()): string {
 	].join("-")
 }
 
-export function formatMinutesToDuration(totalMinutes: number): string {
-	const hours = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
-	const minutes = (totalMinutes % 60).toString().padStart(2, '0');
-	return `${hours}:${minutes}`
+export function formatMinutesToDuration(totalMinutes: number, altDisplay: boolean = false): string {
+	if (altDisplay && totalMinutes == 0) {
+		return `-`
+	} else {
+		const hours = Math.floor(totalMinutes / 60).toString().padStart(1, '0');
+		const minutes = (totalMinutes % 60).toString().padStart(2, '0');
+	
+		return `${hours}:${minutes}`
+	}
+	
 }
 
 export function normalizeWikiLink(link: string): string {

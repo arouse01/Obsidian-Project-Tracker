@@ -21,6 +21,7 @@ export class TimeDashboardView extends ItemView {
 
 	private refreshInterval: number | null = null;
 
+
 	constructor(
 		leaf: WorkspaceLeaf,
 		private timeTracker: TimeTracker,
@@ -69,12 +70,47 @@ export class TimeDashboardView extends ItemView {
 			text: "Active projects"
 		});
 		controlSection.addClass('time-dashboard')
+
+		/*const stopButtonSection = controlSection.createDiv()
+		stopButtonSection.addClass('summary-controls')
+		this.stopAllButton = new ButtonComponent(stopButtonSection)
+			.setButtonText("Stop all")
+			// .setClass("")
+			.onClick(async () => {
+				await this.timeTracker.stopAllSessions()
+			})
+
+		this.stopAllAtButton = new ButtonComponent(stopButtonSection)
+			.setButtonText("Stop all at")
+			.onClick(async () => {
+				const activeSessions = await this.timeTracker.getActiveSessions()
+				const sessionDisplayInfo = activeSessions.map(session => {
+					const project = this.projectManager.findProjectByPath(session.projectPath);
+					return {
+						projectName: project?.name ?? "missing",
+						startTime: session.start
+					}
+				})
+				new TimeModal(this.app, {
+					mode: 'stop',
+					sessions: sessionDisplayInfo,
+					onSubmit: async (timestamp: Date) => {
+						
+						await this.timeTracker.stopAllSessions(
+							timestamp
+						);
+					}
+				}).open();
+				
+
+			})*/
+
 		const tableMainEl = controlSection.createEl('table');
 		const tableMainHeaderEl = tableMainEl.createEl('thead');
 		const headerMainRowEl = tableMainHeaderEl.createEl('tr');
 		headerMainRowEl.createEl('th', { text: 'Status' });
 		headerMainRowEl.createEl('th', { text: 'Project' });
-		headerMainRowEl.createEl('th', { text: 'Action' });
+		headerMainRowEl.createEl('th', { text: 'Action', attr: { colspan: 2 }});
 
 		this.projectTableBodyEl = tableMainEl.createEl('tbody');
 
@@ -177,6 +213,10 @@ export class TimeDashboardView extends ItemView {
 		const activeSessionMap = new Map(
 			activeSessions.map(session => [session.projectPath, session])
 		);
+
+		
+		
+
 		const newBody = createEl('tbody')
 
 		for (const project of projects) {
@@ -187,6 +227,7 @@ export class TimeDashboardView extends ItemView {
 			const statusCell = row.createEl('td');
 			const projectCell = row.createEl('td');
 			const actionCell = row.createEl('td');
+			const actionAtCell = row.createEl('td');
 			// const timeCell = row.createEl('td');
 
 			statusCell.addClass("time-dashboard-centered");
@@ -211,14 +252,16 @@ export class TimeDashboardView extends ItemView {
 					}
 				})
 
-			new ButtonComponent(actionCell)
+			new ButtonComponent(actionAtCell)
 				.setButtonText(activeSession ? "Stop at" : "Start at")
 				.onClick(async () => {
 					if (activeSession) {
 						new TimeModal(this.app, {
 							mode: 'stop',
-							projectPath: project.file.path,
-							sessionStart: activeSession.start,
+							sessions: [{
+								projectName: project.name,
+								startTime: activeSession.start
+							}],
 							onSubmit: async (timestamp: Date) => {
 								await this.timeTracker.stopProjectSession(
 									project,
@@ -238,6 +281,51 @@ export class TimeDashboardView extends ItemView {
 							}
 						}).open();
 					}
+
+				})
+		}
+
+		// add the stop all row
+		if (activeSessions.length > 0) {
+			const stopAllRow = newBody.createEl('tr');
+			stopAllRow.addClass('summary-row')
+			stopAllRow.createEl('td', { attr: { class: 'summary-row' } });
+			stopAllRow.createEl('td', { text: "All active projects", attr: { class: 'summary-row' } });
+
+			const actionCell = stopAllRow.createEl('td');
+			actionCell.addClass('summary-row')
+			const actionAtCell = stopAllRow.createEl('td');
+			actionAtCell.addClass('summary-row')
+
+			new ButtonComponent(actionCell)
+				.setButtonText("Stop")
+				// .setClass("")
+				.onClick(async () => {
+					await this.timeTracker.stopAllSessions()
+				})
+
+			new ButtonComponent(actionAtCell)
+				.setButtonText("Stop at")
+				.onClick(async () => {
+					const activeSessions = await this.timeTracker.getActiveSessions()
+					const sessionDisplayInfo = activeSessions.map(session => {
+						const project = this.projectManager.findProjectByPath(session.projectPath);
+						return {
+							projectName: project?.name ?? "missing",
+							startTime: session.start
+						}
+					})
+					new TimeModal(this.app, {
+						mode: 'stop',
+						sessions: sessionDisplayInfo,
+						onSubmit: async (timestamp: Date) => {
+
+							await this.timeTracker.stopAllSessions(
+								timestamp
+							);
+						}
+					}).open();
+
 
 				})
 		}

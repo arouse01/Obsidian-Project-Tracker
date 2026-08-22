@@ -4,98 +4,119 @@ import {
 	ButtonComponent
 } from 'obsidian';
 import { MyProjectManager } from './projectManager';
-
 import { TodoManager } from './todoTracker';
-
 import {
 	TodoItem,
-	TodoGroup,
-	TodoSort,
-	TodoGroupField,
-	Todo_Group_Fields,
-	TodoSortField,
 	PRIORITIES
 } from './types'
+import {
+	sortItems,
+	ColSort,
+	GroupDefs,
+	TableColumn,
+	updateSortButtons,
+	getGroupOptions
+} from './tableFunctions';
 
-interface TodoColumn {
-	field: TodoColumnField;
+const TODO_COLS = {
+
+	"name": {
+		label: "Name",
+		sortable: true,
+		groupable: false
+	},
+	"priority": {
+		label: "Priority",
+		sortable: true,
+		groupable: true,
+		centered: true
+	},
+	"notes": {
+		label: "Notes",
+		sortable: false,
+		groupable: false
+	},
+	"status": {
+		label: "",
+		sortable: false,
+		groupable: false,
+		centered: true
+	},
+	"project": {
+		label: "Project",
+		sortable: true,
+		groupable: true,
+		centered: true
+	},
+	"dueDate": {
+		label: "Due",
+		sortable: true,
+		groupable: false,
+		centered: true
+	},
+	"startDate": {
+		label: "Added",
+		sortable: false,
+		groupable: false,
+		centered: true
+	},
+	"action": {
+		label: "Action",
+		sortable: false,
+		groupable: false,
+		centered: true
+	}
+} satisfies Record<string, TableColumn>;
+
+// const Todo_Group_Fields = [
+// 	{ value: "none", label: "None" },
+// 	{ value: "project", label: "Project" },
+// 	{ value: "priority", label: "Priority" }
+// ] as const;
+
+type TodoColumnField = keyof typeof TODO_COLS;
+
+// type of ProjectColumnField here instead of SortField because it can now let any field be sorted, and that is defined by the master column list above
+type TodoSort = ColSort<TodoColumnField>
+
+type TodoGroupField =
+	| "none"
+	| {
+		[K in keyof typeof TODO_COLS]:
+		typeof TODO_COLS[K]["groupable"] extends true
+		? K
+		: never
+	}[keyof typeof TODO_COLS];
+
+// type TodoGroupField = typeof Todo_Group_Fields[number]['value'];
+
+// interface TodoColumn {
+// 	field: TodoColumnField;
+// 	label: string;
+// 	sortField?: TodoSortField;
+// 	centered?: boolean;
+// 	width?: string;
+// }
+interface TodoGroup {
+	key: string;
 	label: string;
-	sortField?: TodoSortField;
-	centered?: boolean;
-	width?: string;
+	todos: TodoItem[];
 }
 
-type TodoColumnField = 
-	"name" |
-	"notes" |
-	"project" |
-	"priority" |
-	"startDate" |
-	"dueDate" |
-	"status" |
-	"action"
+// type TodoSortField = "name" | "project" | "priority" | "dueDate";
 
-const TODO_COLS = new Map<TodoColumnField, TodoColumn>([
-	// render determines how the field is set when it's created
-	["name", {
-		field: "name",
-		label: "Name",
-		sortField: "name"
-	}],
-	["priority", {
-		field: "priority",
-		label: "Priority",
-		sortField: "priority",
-		centered: true
-	}],
-	["notes", {
-		field: "notes",
-		label: "Notes"
-	}],
-	["status", {
-		field: "status",
-		label: "",
-		// sortField: "status",
-		centered: true
-	}],
-	["project", {
-		field: "project",
-		label: "Project",
-		sortField: "project",
-		centered: true
-	}],
-	["dueDate", {
-		field: "dueDate",
-		label: "Due",
-		sortField: "dueDate",
-		centered: true
-	}],
-	["startDate", {
-		field: "startDate",
-		label: "Added",
-		// sortField: "startDate",
-		centered: true
-	}],
-	["action", {
-		field: "action",
-		label: "Action",
-		centered: true
-	}]
-]);
+// type TodoColumn = TableColumn<TodoColumnField, TodoSortField>
+
 
 export class TodoDashboardView extends ItemView {
-	// private summaryPeriod: "week" | "month" = "week";  // to drive the summary period selection
-	// private periodOffset = 0;  // to drive the summary period selection, how far in the past to go
 
 	private todoTableEl!: HTMLTableElement;
-	// private todoTableHeaderEl!: HTMLTableSectionElement;
+
 	private todoTableBodyEl!: HTMLTableSectionElement;
 
-	// private groupByProjectButton!: ButtonComponent;
-	// private groupByPriorityButton!: ButtonComponent;
-	// private groupByNoneButton!: ButtonComponent;
+	// currently the todo list can only be modified by itself, but at some point it might get modified by another process, so we want to keep it up to date
+	private refreshInterval: number | null = null;  
 
-	// private refreshInterval: number | null = null;
 	private groupBy: TodoGroupField = "none";
 	private sortBy: TodoSort[] = [
 		{ field: "priority", dir: "desc" },
@@ -113,7 +134,7 @@ export class TodoDashboardView extends ItemView {
 		"action"
 	]
 
-	private sortButtons = new Map<TodoColumn, ButtonComponent>();
+	private sortButtons = new Map<TodoColumnField, ButtonComponent>();
 
 	private groupButtons = new Map<TodoGroupField, ButtonComponent>();
 
@@ -152,16 +173,16 @@ export class TodoDashboardView extends ItemView {
 		this.buildDashboard();
 		await this.updateTodoRows();
 
-		// this.refreshInterval = window.setInterval(() => {
-		// 	void this.updateSummary();
-		// }, 60000);
+		this.refreshInterval = window.setInterval(() => {
+			void this.updateTodoRows();
+		}, 60000);
 	}
 
 	async onClose(): Promise<void> {
-		// if (this.refreshInterval !== null) {
-		// 	window.clearInterval(this.refreshInterval);
-		// 	this.refreshInterval = null;
-		// }
+		if (this.refreshInterval !== null) {
+			window.clearInterval(this.refreshInterval);
+			this.refreshInterval = null;
+		}
 	}
 
 	private buildDashboard() {
@@ -179,7 +200,7 @@ export class TodoDashboardView extends ItemView {
 		
 		// Create grouping buttons 
 		// To add a new value, update Todo_Group_Fields in types.ts and then 
-		for (const group of Todo_Group_Fields) {
+		for (const group of getGroupOptions(TODO_COLS)) {
 			const button = new ButtonComponent(controlSection)
 				.setButtonText(group.label)
 				.onClick(async () => {
@@ -190,6 +211,17 @@ export class TodoDashboardView extends ItemView {
 
 			this.groupButtons.set(group.value, button);
 		}
+		// for (const group of Todo_Group_Fields) {
+		// 	const button = new ButtonComponent(controlSection)
+		// 		.setButtonText(group.label)
+		// 		.onClick(async () => {
+		// 			this.groupBy = group.value;
+		// 			this.collapsedGroups.clear();
+		// 			await this.rebuildTodoTable();
+		// 		});
+
+		// 	this.groupButtons.set(group.value, button);
+		// }
 	
 		
 
@@ -216,28 +248,28 @@ export class TodoDashboardView extends ItemView {
 		const thead = table.createEl('thead');
 		const row = thead.createEl('tr');
 
-		for (const column of this.getVisibleCols()) {
+		for (const [field, column] of this.getVisibleCols()) {
 			const header = row.createEl('th');
 			
 			if (column.centered) {
 				header.addClass("center-align")
 			}
 
-			if (column.sortField) {
+			if (column.sortable) {
 				const button = new ButtonComponent(header)
 					// .setButtonText(column.label)
 					.setClass("todo-dashboard-button")
 					.onClick(async () => {
 						// group is collapsed, uncollapse it
-						this.updateSort(column.sortField!);
+						this.updateSort(field);
 						await this.updateTodoRows();
 					});
-				this.sortButtons.set(column, button);
+				this.sortButtons.set(field, button);
 			} else {
 				header.setText(column.label)
 			}
 		}
-		this.updateSortButtons();
+		updateSortButtons(this.sortButtons, this.sortBy, TODO_COLS);
 	}
 
 	async updateTodoRows(): Promise<void> {
@@ -272,7 +304,13 @@ export class TodoDashboardView extends ItemView {
 		// 	todos.map(todo => [todo.projectPath, todo])
 		// );
 
-		todos = this.sortTodos(todos, this.sortBy)
+		todos = sortItems(
+			todos,
+			this.sortBy,
+			(a, b, field) => this.compareTodos(a, b, field)
+		)
+
+		// todos = this.sortTodos(todos, this.sortBy)
 
 		const groups = this.groupTodos(todos)
 
@@ -335,12 +373,12 @@ export class TodoDashboardView extends ItemView {
 	private createTodoRow(target: HTMLTableSectionElement, todo: TodoItem) {
 		const row = target.createEl('tr');
 
-		for (const column of this.getVisibleCols()) {
+		for (const [field, column] of this.getVisibleCols()) {
 			const cell = row.createEl("td");
 			if (column.centered) {
 				cell.addClass("center-align")
 			}
-			this.renderColumn(cell, column.field, todo);
+			this.renderColumn(cell, field, todo);
 		}
 		/*const actionCell = row.createEl('td');
 		const priorityCell = row.createEl('td');
@@ -416,7 +454,9 @@ export class TodoDashboardView extends ItemView {
 		// 	})
 	}
 
-	private getVisibleCols(): TodoColumn[] {
+	private getVisibleCols(): Array<
+		[TodoColumnField, TableColumn]
+	> {
 		switch (this.groupBy) {
 			case 'project':
 				this.colOrder = [
@@ -453,10 +493,10 @@ export class TodoDashboardView extends ItemView {
 				]
 				break;
 		}
-
-		return this.colOrder
-			.map(field => TODO_COLS.get(field))
-			.filter((column): column is TodoColumn => column !== undefined);
+		return this.colOrder.map(field => [
+			field,
+			TODO_COLS[field]
+		])
 	}
 
 
@@ -514,27 +554,27 @@ export class TodoDashboardView extends ItemView {
 		}
 	}
 
-	private sortTodos(
-		todos: TodoItem[],
-		sorts: TodoSort[]
-	): TodoItem[] {
-		return [...todos].sort((a, b) => {
-			for (const sort of sorts) {
-				const compare = this.compareTodos(a, b, sort.field);
-				if (compare !== 0) {
-					return sort.dir === "asc"
-						? compare : -compare;
+	// private sortTodos(
+	// 	todos: TodoItem[],
+	// 	sorts: TodoSort[]
+	// ): TodoItem[] {
+	// 	return [...todos].sort((a, b) => {
+	// 		for (const sort of sorts) {
+	// 			const compare = this.compareTodos(a, b, sort.field);
+	// 			if (compare !== 0) {
+	// 				return sort.dir === "asc"
+	// 					? compare : -compare;
 				
-				}
-			}
-			return 0;
-		});
-	}
+	// 			}
+	// 		}
+	// 		return 0;
+	// 	});
+	// }
 
 	private compareTodos(
 		a: TodoItem,
 		b: TodoItem,
-		field: TodoSortField
+		field: TodoColumnField
 	): number {
 		switch (field) {
 			case "project": {
@@ -564,6 +604,9 @@ export class TodoDashboardView extends ItemView {
 				const nameB = b.name;
 				return nameA.localeCompare(nameB);
 			}
+
+			default:
+				return 0;
 		}
 	}
 
@@ -646,7 +689,7 @@ export class TodoDashboardView extends ItemView {
 		}
 	}
 
-	private updateSort(field: TodoSortField) {
+	private updateSort(field: TodoColumnField) {
 		const index = this.sortBy.findIndex(sort => sort.field === field);
 
 		if (index === -1) {
@@ -671,11 +714,11 @@ export class TodoDashboardView extends ItemView {
 		}
 
 
-		this.updateSortButtons();
+		updateSortButtons(this.sortButtons, this.sortBy, TODO_COLS);
 		
 	}
 
-	private updateSortButtons(): void {
+	/*private updateSortButtons(): void {
 
 		for (const [col, button] of this.sortButtons) {
 			const sort = this.sortBy.find(s => s.field === col.sortField);
@@ -693,6 +736,6 @@ export class TodoDashboardView extends ItemView {
 
 			button.setButtonText(text);
 		}
-	}
+	}*/
 }
 
