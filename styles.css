@@ -61,6 +61,18 @@
 	background-repeat: no-repeat;
 	background-position: right 6px center;
 }
+.summary-group-select {
+	height: 22px;
+/*	width: 100px;*/
+	-webkit-appearance: none;
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+	background-repeat: no-repeat;
+	background-position: right 6px center;
+	background-color: unset;
+	box-shadow: unset;
+	font-weight: 600;
+}
+
 .time-dashboard .timer-section {
 	margin-bottom: 20px;
 }
@@ -135,6 +147,8 @@
 .project-section {
 	width: fit-content;
 	max-width: 100%;
+	margin: 0 auto;
+	overflow-x: auto;
 }
 
 .project-controls {
@@ -161,8 +175,15 @@
 	border-top: 2px solid var(--background-modifier-border);
 	text-align: center;
 	vertical-align: middle;
-	/*	font-size: 14px;*/
 	font-weight: 700;
+}
+
+.project-dashboard tr .total-col, .project-dashboard th .total-col {
+	border-left: 1px solid var(--background-modifier-border);
+	text-align: center;
+	vertical-align: middle;
+	font-weight: 600;
+	padding: 0px 20px;
 }
 
 .project-dashboard th {
@@ -194,6 +215,10 @@
 	font-weight: 600;
 }
 
+.group-button {
+	text-align: left !important;
+}
+
 .project-controls button {
 	background: none;
 	border: none;
@@ -218,11 +243,13 @@
 }
 
 .project-table {
-/*	width: 100%;*/
 	width: fit-content;
+	table-layout: fixed;
 	margin: 0 auto;
 	border-collapse: collapse;
 }
+
+
 .project-table thead tr:first-child th {
 	font-size: 0.85em;
 	color: var(--text-muted);
@@ -244,12 +271,24 @@
 	flex: 0 0 auto;
 }
 
+.summary-col-header {
+	font-weight: 600;
+}
+
+.summary-col-subheader {
+	font-size: 0.85em;
+	opacity: 0.7;
+}
+
 .todo-dashboard th, .todo-dashboard td {
 	/*	padding: 0px 8px;*/
 	border-bottom: 1px solid var(--background-modifier-border);
 	text-align: left;
 	vertical-align: middle;
 	font-size: 12px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .todo-dashboard th {

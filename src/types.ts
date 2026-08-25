@@ -72,7 +72,7 @@ export interface ActiveSessionDisplay {
 }
 
 export interface TimeSummary {
-	projectPath: string;
+	key: string;
 	totalMinutes: number;
 }
 
@@ -81,9 +81,9 @@ export interface ClientTimeSummary {
 	totalMinutes: number;
 }
 
-export interface WeeklyTimeSummary {
+export interface PeriodicTimeSummary {
 	days: Date[];
-	projects: Map<string, Map<string, number>>;
+	entries: Map<string, Map<string, number>>;
 }
 
 export type SessionContext = {

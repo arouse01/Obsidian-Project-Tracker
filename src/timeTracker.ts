@@ -8,12 +8,12 @@ import {
 	ProjectInfo,
 	TimeSession,
 	TimeSummary,
-	ClientTimeSummary,
-	WeeklyTimeSummary
+	PeriodicTimeSummary
 } from "./types";
 import {
 	formatDate
 } from './utils'
+import { SummaryGroup } from './tableFunctions';
 
 
 export class TimeTracker extends Events {
@@ -240,9 +240,9 @@ export class TimeTracker extends Events {
 
 		const results: TimeSummary[] = [];
 
-		for (const [projectPath, totalMinutes] of summaryArray) {
+		for (const [key, totalMinutes] of summaryArray) {
 			results.push({
-				projectPath,
+				key,
 				totalMinutes
 			});
 		}
@@ -254,7 +254,7 @@ export class TimeTracker extends Events {
 	async getTimeSummaryByClient(
 		rangeStart: Date,
 		rangeEnd: Date
-	): Promise<ClientTimeSummary[]> {
+	): Promise<TimeSummary[]> {
 		// Get summary of time worked between start and end for all projects
 
 		const projects = this.projectManager.getProjects();
@@ -321,11 +321,11 @@ export class TimeTracker extends Events {
 			);
 		}
 
-		const results: ClientTimeSummary[] = [];
+		const results: TimeSummary[] = [];
 
-		for (const [client, totalMinutes] of summaryArray) {
+		for (const [key, totalMinutes] of summaryArray) {
 			results.push({
-				client,
+				key,
 				totalMinutes
 			});
 		}
@@ -335,12 +335,13 @@ export class TimeTracker extends Events {
 	}
 
 	async getWeeklySummary(
-		weekStart: Date
-	): Promise<WeeklyTimeSummary> {
+		weekStart: Date,
+		group: SummaryGroup = "project"
+	): Promise<PeriodicTimeSummary> {
 
-		const result: WeeklyTimeSummary = {
+		const result: PeriodicTimeSummary = {
 			days: [],
-			projects: new Map()
+			entries: new Map()
 		};
 
 		for (let i = 0; i < 7; i++) {
@@ -352,18 +353,61 @@ export class TimeTracker extends Events {
 
 			result.days.push(dayStart);
 
-			const dailySummary = await this.getTimeSummary(dayStart, dayEnd);
+			let dailySummary: TimeSummary[]
+			if (group === "project") {
+				dailySummary = await this.getTimeSummary(dayStart, dayEnd);
+			} else {
+				dailySummary = await this.getTimeSummaryByClient(dayStart, dayEnd);
+			}
 
 			for (const item of dailySummary) {
 				// make an entry for the selected project if there isn't already
-				if (!result.projects.has(item.projectPath)) {
-					result.projects.set(item.projectPath, new Map());
+				if (!result.entries.has(item.key)) {
+					result.entries.set(item.key, new Map());
 				}
-				result.projects
-					.get(item.projectPath)!
+				result.entries
+					.get(item.key)!
 					.set(formatDate(dayStart), item.totalMinutes);
 			}
 		}
+
+		return result;
+	}
+
+	async getMonthlySummary(
+		monthDate: Date,
+		group: SummaryGroup = "project"
+	): Promise<PeriodicTimeSummary> {
+
+		const result: PeriodicTimeSummary = {
+			days: [],
+			entries: new Map()
+		};
+
+		// for (let i = 0; i < 7; i++) {
+		const dayStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+		const dayEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+			
+
+			result.days.push(dayStart);
+
+			let dailySummary: TimeSummary[]
+			if (group === "project") {
+				dailySummary = await this.getTimeSummary(dayStart, dayEnd);
+			} else {
+				dailySummary = await this.getTimeSummaryByClient(dayStart, dayEnd);
+			}
+
+			for (const item of dailySummary) {
+				// make an entry for the selected project if there isn't already
+				if (!result.entries.has(item.key)) {
+					result.entries.set(item.key, new Map());
+				}
+				result.entries
+					.get(item.key)!
+					.set(formatDate(dayStart), item.totalMinutes);
+			}
+		// }
 
 		return result;
 	}

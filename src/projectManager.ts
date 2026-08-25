@@ -47,7 +47,7 @@ export class MyProjectManager {
 		);
 	}
 
-	findProjectByPath(path: string | null): ProjectInfo | null {
+	getProjectInfoByPath(path: string | null): ProjectInfo | null {
 		if (path === null) {
 			return null;
 		}
@@ -57,7 +57,17 @@ export class MyProjectManager {
 		) ?? null;
 	}
 
+	getProjectNameByPath(path: string | null): string | null {
+		if (path === null) {
+			return null;
+		}
 
+		const project = this.getActiveProjects().find(
+			p => p.file.path === path
+		) ?? null;
+
+		return project?.name ?? null;
+	}
 
 	private getFrontmatterValue(
 		// So we can access without worrying about spaces

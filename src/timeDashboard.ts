@@ -309,7 +309,7 @@ export class TimeDashboardView extends ItemView {
 				.onClick(async () => {
 					const activeSessions = await this.timeTracker.getActiveSessions()
 					const sessionDisplayInfo = activeSessions.map(session => {
-						const project = this.projectManager.findProjectByPath(session.projectPath);
+						const project = this.projectManager.getProjectInfoByPath(session.projectPath);
 						return {
 							projectName: project?.name ?? "missing",
 							startTime: session.start

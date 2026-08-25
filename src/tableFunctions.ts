@@ -23,13 +23,28 @@ export function getSummaryPeriod(periodOffset: number, summaryPeriod: SummaryPer
 	return { start, end };
 }
 
+export type SummaryGroup = "project" | "client";  // to drive the summary period selection
+
 // Grouping and sorting
 export interface TableColumn {
 	label: string;
 	sortable?: boolean;
 	groupable?: boolean;
 	width?: string;
+	minWidth?: string;
+	maxWidth?: string;
 	centered?: boolean;
+	cssClass?: string;
+	tableGroup?: string;
+}
+
+export interface SummaryColumn {
+	key: string,
+	label: string;
+	width?: string;
+	minWidth?: string;
+	maxWidth?: string;
+	format?: string;
 }
 
 export interface ColSort<Field> {
