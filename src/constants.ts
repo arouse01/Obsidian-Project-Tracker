@@ -3,6 +3,11 @@ import {
 	TFile
 } from 'obsidian';
 
+export const PROJECT_DASHBOARD_VIEW_TYPE = "project-dashboard";
+export const PROJECT_SINGLE_VIEW_TYPE = "project-single";
+export const TODO_DASHBOARD_VIEW_TYPE = "todo-dashboard";
+export const TIME_DASHBOARD_VIEW_TYPE = "time-dashboard";
+
 export interface IssueContext {
 	tempTitle: string;
 	selectedText: string;
@@ -57,7 +62,7 @@ export const PRIORITIES: PriorityOption[] = [
 
 
 
-export type ProjectStatus = "Active" | "Archived"
+
 
 export interface TimeSession {
 	id: string;

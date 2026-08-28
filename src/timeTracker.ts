@@ -334,6 +334,46 @@ export class TimeTracker extends Events {
 
 	}
 
+	async getDailySummary(
+		date: Date,
+		group: SummaryGroup = "project"
+	): Promise<PeriodicTimeSummary> {
+
+		const result: PeriodicTimeSummary = {
+			days: [],
+			entries: new Map()
+		};
+
+		
+		const dayStart = new Date(date);
+		dayStart.setDate(date.getDate());
+
+		const dayEnd = new Date(dayStart);
+		dayEnd.setDate(dayStart.getDate() + 1);
+
+		result.days.push(dayStart);
+
+		let dailySummary: TimeSummary[]
+		if (group === "project") {
+			dailySummary = await this.getTimeSummary(dayStart, dayEnd);
+		} else {
+			dailySummary = await this.getTimeSummaryByClient(dayStart, dayEnd);
+		}
+
+		for (const item of dailySummary) {
+			// make an entry for the selected project if there isn't already
+			if (!result.entries.has(item.key)) {
+				result.entries.set(item.key, new Map());
+			}
+			result.entries
+				.get(item.key)!
+				.set(formatDate(dayStart), item.totalMinutes);
+		}
+		
+
+		return result;
+	}
+
 	async getWeeklySummary(
 		weekStart: Date,
 		group: SummaryGroup = "project"

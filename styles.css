@@ -61,6 +61,7 @@
 	background-repeat: no-repeat;
 	background-position: right 6px center;
 }
+
 .summary-group-select {
 	height: 22px;
 /*	width: 100px;*/
@@ -69,8 +70,8 @@
 	background-repeat: no-repeat;
 	background-position: right 6px center;
 	background-color: unset;
-	box-shadow: unset;
-	font-weight: 600;
+/*	box-shadow: unset;*/
+/*	font-weight: 600;*/
 }
 
 .time-dashboard .timer-section {
@@ -150,19 +151,15 @@
 	margin: 0 auto;
 	overflow-x: auto;
 }
-
-.project-controls {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.project-controls .new-project-button {
-	margin-left: auto;
+.project-filter-select {
+	-webkit-appearance: none;
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+	background-repeat: no-repeat;
+	background-position: right 6px center;
 }
 
 .project-dashboard th, .project-dashboard td {
-	padding: 2px 8px;
+	padding: 2px 4px;
 	border-bottom: 1px solid var(--background-modifier-border);
 	text-align: center;
 	vertical-align: middle;
@@ -191,6 +188,18 @@
 	background-color: var(--background-secondary);
 }
 
+.project-dashboard .group-row {
+	font-weight: 500;
+	background-color: var(--background-secondary);
+}
+
+.underline {
+	text-decoration: underline;
+}
+
+.project-dashboard .group-row .small-icon {
+	font-size: 8px;
+}
 
 .project-dashboard tbody tr:hover {
 	background-color: var(--background-modifier-hover);
@@ -219,6 +228,16 @@
 	text-align: left !important;
 }
 
+.project-controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.new-project-button {
+	margin-left: auto;
+}
+
 .project-controls button {
 	background: none;
 	border: none;
@@ -227,6 +246,15 @@
 	color: var(--link-color);
 	cursor: pointer;
 	font: inherit;
+}
+
+.control-col {
+	flex-direction: column;
+	gap: 4px;
+}
+
+.control-row {
+	flex-direction: row;
 }
 
 .project-controls button:hover {

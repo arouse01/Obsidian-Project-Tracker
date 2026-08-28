@@ -14,22 +14,21 @@ import { TimeTracker } from "./timeTracker";
 // import { IssueModal } from "./issueModal"
 import IssueTracker from "./issueTracker"
 import { TodoManager } from "./todoTracker"
-// import { TodoModal } from "./todoModal"
-// import {
-// 	IssueContext,
-// 	IssueModalOptions,
-// 	PRIORITIES,
-// 	TodoContext
-// } from "./types";
-// import {
-// 	normalizeWikiLink
-// } from './utils';
+import {
+	PROJECT_DASHBOARD_VIEW_TYPE,
+	PROJECT_SINGLE_VIEW_TYPE,
+	TODO_DASHBOARD_VIEW_TYPE,
+	TIME_DASHBOARD_VIEW_TYPE
+} from "./constants"
 import {
 	TimeDashboardView
 } from './timeDashboard';
 import {
 	ProjectDashboardView
 } from './projectDashboard'
+import {
+	ProjectSingleView
+} from './projectView'
 import {
 	TodoDashboardView
 } from './todoDashboard'
@@ -67,8 +66,9 @@ export default class ProjectTrackerPlugin extends Plugin {
 			this.projectManager,
 			() => this.settings.todoLogPath
 		)
+
 		this.registerView(
-			"project-dashboard",
+			PROJECT_DASHBOARD_VIEW_TYPE,
 			leaf => new ProjectDashboardView(
 				leaf,
 				this.timeTracker,
@@ -79,7 +79,18 @@ export default class ProjectTrackerPlugin extends Plugin {
 		);
 
 		this.registerView(
-			"time-dashboard",
+			PROJECT_SINGLE_VIEW_TYPE,
+			leaf => new ProjectSingleView(
+				leaf,
+				this.timeTracker,
+				this.projectManager,
+				this.issueTracker,
+				this.todoManager
+			)
+		);
+
+		this.registerView(
+			TIME_DASHBOARD_VIEW_TYPE,
 			leaf => new TimeDashboardView(
 				leaf,
 				this.timeTracker,
@@ -88,7 +99,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 		);
 
 		this.registerView(
-			"todo-dashboard",
+			TODO_DASHBOARD_VIEW_TYPE,
 			leaf => new TodoDashboardView(
 				leaf,
 				this.todoManager,
@@ -231,7 +242,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 		const { workspace } = this.app;
 
 		let leaf = workspace.getLeavesOfType(
-			"project-dashboard"
+			PROJECT_DASHBOARD_VIEW_TYPE
 		)[0];
 
 		if (!leaf) {
@@ -242,7 +253,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 			}
 
 			await leaf.setViewState({
-				type: "project-dashboard",
+				type: PROJECT_DASHBOARD_VIEW_TYPE,
 				active: true
 			});
 		}
@@ -255,7 +266,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 		const { workspace } = this.app;
 
 		let leaf = workspace.getLeavesOfType(
-			"time-dashboard"
+			TIME_DASHBOARD_VIEW_TYPE
 		)[0];
 
 		if (!leaf) {
@@ -266,7 +277,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 			}
 
 			await leaf.setViewState({
-				type: "time-dashboard",
+				type: TIME_DASHBOARD_VIEW_TYPE,
 				active: true
 			});
 		}
@@ -279,7 +290,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 		const { workspace } = this.app;
 
 		let leaf = workspace.getLeavesOfType(
-			"todo-dashboard"
+			TODO_DASHBOARD_VIEW_TYPE
 		)[0];
 
 		if (!leaf) {
@@ -290,7 +301,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 			}
 
 			await leaf.setViewState({
-				type: "todo-dashboard",
+				type: TODO_DASHBOARD_VIEW_TYPE,
 				active: true
 			});
 		}

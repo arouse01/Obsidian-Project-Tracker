@@ -17,6 +17,9 @@ import {
 	updateSortButtons,
 	getGroupOptions
 } from './tableFunctions';
+import {
+	TODO_DASHBOARD_VIEW_TYPE
+} from "./constants"
 
 const TODO_COLS = {
 
@@ -68,11 +71,6 @@ const TODO_COLS = {
 	}
 } satisfies Record<string, TableColumn>;
 
-// const Todo_Group_Fields = [
-// 	{ value: "none", label: "None" },
-// 	{ value: "project", label: "Project" },
-// 	{ value: "priority", label: "Priority" }
-// ] as const;
 
 type TodoColumnField = keyof typeof TODO_COLS;
 
@@ -88,24 +86,13 @@ type TodoGroupField =
 		: never
 	}[keyof typeof TODO_COLS];
 
-// type TodoGroupField = typeof Todo_Group_Fields[number]['value'];
 
-// interface TodoColumn {
-// 	field: TodoColumnField;
-// 	label: string;
-// 	sortField?: TodoSortField;
-// 	centered?: boolean;
-// 	width?: string;
-// }
 interface TodoGroup {
 	key: string;
 	label: string;
 	todos: TodoItem[];
 }
 
-// type TodoSortField = "name" | "project" | "priority" | "dueDate";
-
-// type TodoColumn = TableColumn<TodoColumnField, TodoSortField>
 
 
 export class TodoDashboardView extends ItemView {
@@ -152,7 +139,7 @@ export class TodoDashboardView extends ItemView {
 	}
 
 	getViewType(): string {
-		return "todo-dashboard";
+		return TODO_DASHBOARD_VIEW_TYPE;
 	}
 
 	getDisplayText(): string {

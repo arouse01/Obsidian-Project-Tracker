@@ -148,3 +148,27 @@ export function getGroupOptions<
 			}))
 	];
 }
+
+type SortableFields<
+	Columns extends Record<string, TableColumn>
+> = {
+	[K in keyof Columns]:
+	Columns[K]["sortable"] extends true ? K : never
+	}[keyof Columns];
+
+export function getSortOptions<
+	Columns extends Record<string, TableColumn>
+>(
+	columns: Columns
+): { value: SortableFields<Columns>; label: string }[] {
+	return [
+		// { value: "none", label: "None" },
+		...Object.entries(columns)
+			.filter(([, column]) => column.sortable)
+			.map(([field, column]) => ({
+				value: field as SortableFields<Columns>,
+				label: column.label
+			}))
+	];
+}
+

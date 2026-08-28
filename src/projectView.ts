@@ -1,17 +1,71 @@
 import {
-	App,
-	TFile
+	ItemView,
+	Menu,
+	WorkspaceLeaf,
+	ButtonComponent,
+	TFile,
+	setIcon
 } from 'obsidian';
-
+import { MyProjectManager } from './projectManager';
 import {
+	PeriodicTimeSummary,
 	ProjectInfo,
-	ProjectStatus
+	TimeSession,
+	TimeSummary
 } from "./types";
+import {
+	formatTimestamp,
+	formatMinutesToDuration,
+	formatDate,
+	normalizeWikiLink
+} from './utils';
+import { TimeTracker } from './timeTracker';
+import { TimeModal } from './timeModal';
+import IssueTracker from './issueTracker';
+import { TodoManager } from './todoTracker';
+import {
+	SummaryPeriod,
+	getSummaryPeriod,
+	SummaryGroup,
+	sortItems,
+	GroupDefs,
+	ColSort,
+	TableColumn,
+	SummaryColumn,
+	updateSortButtons,
+	getGroupOptions
+} from './tableFunctions';
 
 
-export class MyProjectManager {
-	constructor(private app: App) {
-		this.app = app;
+export class ProjectSingleView extends ItemView {
+	constructor(
+		leaf: WorkspaceLeaf,
+		private timeTracker: TimeTracker,
+		private projectManager: MyProjectManager,
+		private issueTracker: IssueTracker,
+		private todoManager: TodoManager
+	) {
+		super(leaf);
+	}
+
+	getViewType(): string {
+		return "project-view";
+	}
+
+	getDisplayText(): string {
+		return "Project view";
+	}
+
+	getIcon(): string {
+		return 'square-chart-gantt';
+	}
+
+	async onOpen(): Promise<void> {
+		this.registerEvent(
+			this.timeTracker.on("time-tracker-updated", () => {
+				// void this.updateProjectTableRows()
+			})
+		);
 	}
 
 	getProjects(): ProjectInfo[] {
@@ -68,10 +122,6 @@ export class MyProjectManager {
 		) ?? null;
 
 		return project?.name ?? null;
-	}
-
-	goToProjectView(path: string) {
-
 	}
 
 	private getFrontmatterValue(
