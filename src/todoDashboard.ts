@@ -1,18 +1,24 @@
 import {
-	ItemView,
-	WorkspaceLeaf,
+	App,
+	Component,
 	ButtonComponent
 } from 'obsidian';
 import { MyProjectManager } from './projectManager';
 import { TodoManager } from './todoTracker';
 import {
-	TodoItem,
-	PRIORITIES
+	TodoItem
 } from './types'
+import {
+	formatDate
+} from './utils'
+import {
+	PRIORITIES,
+	// PriorityOrder
+} from "./constants";
 import {
 	sortItems,
 	ColSort,
-	GroupDefs,
+	// GroupDefs,
 	TableColumn,
 	updateSortButtons,
 	getGroupOptions
@@ -95,8 +101,8 @@ interface TodoGroup {
 
 
 
-export class TodoDashboardView extends ItemView {
-
+export class TodoDashboardView extends Component {
+	
 	private todoTableEl!: HTMLTableElement;
 
 	private todoTableBodyEl!: HTMLTableSectionElement;
@@ -129,13 +135,15 @@ export class TodoDashboardView extends ItemView {
 
 	private collapsedGroups = new Set<string>();  // which groups are collapsed in the table
 
-	
+
 	constructor(
-		leaf: WorkspaceLeaf,
+		private container: HTMLElement,
+		private app: App,
 		private todoManager: TodoManager,
 		private projectManager: MyProjectManager
 	) {
-		super(leaf);
+		super();
+		this.container = container;
 	}
 
 	getViewType(): string {
@@ -150,7 +158,7 @@ export class TodoDashboardView extends ItemView {
 		return 'list-todo';
 	}
 
-	async onOpen(): Promise<void> {
+	onload(): void {
 		this.registerEvent(
 			this.todoManager.on("todo-list-updated", () => {
 				void this.updateTodoRows()
@@ -158,7 +166,7 @@ export class TodoDashboardView extends ItemView {
 		);
 
 		this.buildDashboard();
-		await this.updateTodoRows();
+		void this.updateTodoRows();
 
 		this.refreshInterval = window.setInterval(() => {
 			void this.updateTodoRows();
@@ -173,7 +181,7 @@ export class TodoDashboardView extends ItemView {
 	}
 
 	private buildDashboard() {
-		const mainSection = this.contentEl.createEl("section");
+		const mainSection = this.container.createEl("section");
 		// mainSection.createEl("h3", {
 		// 	text: "Todo list"
 		// });
@@ -367,78 +375,7 @@ export class TodoDashboardView extends ItemView {
 			}
 			this.renderColumn(cell, field, todo);
 		}
-		/*const actionCell = row.createEl('td');
-		const priorityCell = row.createEl('td');
-		const nameCell = row.createEl('td');
-		const descCell = row.createEl('td');
-		const projectCell = row.createEl('td');
-		const dueDateCell = row.createEl('td');
 		
-		// const checkboxCell = row.createEl('td');
-		
-
-		actionCell.addClass("center-align");
-		const check = actionCell.createEl('input')
-		check.type = 'checkbox';
-		check.checked = todo.status;
-		check.addEventListener('change', (event: Event) => {
-			void this.todoCheckboxChange(event, todo.id)
-		});
-		nameCell.setText(todo.name);
-
-		descCell.setText(todo.notes ?? "");
-
-		const projectName = todo.projectPath ? this.projectMap.get(todo.projectPath) ?? "Unknown" : "None";
-		projectCell.setText(projectName);
-		projectCell.addClass('center-align');
-
-
-		priorityCell.setText(PRIORITIES.find(p => p.value === todo.priority)?.label ?? "Unknown")
-
-		dueDateCell.setText(todo.dueDate ?? "")
-		dueDateCell.addClass('center-align');*/
-
-		// actionCell.addClass("time-dashboard-centered");
-
-		// new ButtonComponent(actionCell)
-		// 	.setButtonText(activeSession ? "Stop" : "Start")
-		// 	.onClick(async () => {
-		// 		if (activeSession) {
-		// 			await this.todoManager.stopProjectSession(project)
-		// 		} else {
-		// 			await this.todoManager.startProjectSession(project)
-		// 		}
-		// 	})
-
-		// new ButtonComponent(actionCell)
-		// 	.setButtonText(activeSession ? "Stop at" : "Start at")
-		// 	.onClick(async () => {
-		// 		if (activeSession) {
-		// 			new TodoModal(this.app, {
-		// 				mode: 'stop',
-		// 				projectPath: project.file.path,
-		// 				sessionStart: activeSession.start,
-		// 				onSubmit: async (timestamp: Date) => {
-		// 					await this.todoManager.stopProjectSession(
-		// 						project,
-		// 						timestamp
-		// 					);
-		// 				}
-		// 			}).open();
-		// 		} else {
-		// 			new TodoModal(this.app, {
-		// 				mode: 'start',
-		// 				projectPath: project.file.path,
-		// 				onSubmit: async (timestamp: Date) => {
-		// 					await this.todoManager.startProjectSession(
-		// 						project,
-		// 						timestamp
-		// 					);
-		// 				}
-		// 			}).open();
-		// 		}
-
-		// 	})
 	}
 
 	private getVisibleCols(): Array<
@@ -529,9 +466,25 @@ export class TodoDashboardView extends ItemView {
 				cell.setText(todo.dateAdded)
 				break;
 
-			case 'dueDate':
-				cell.setText(todo.dueDate ?? "")
+			case 'dueDate': {
+				let dueDateFormat: string | undefined;
+				const dueDateRaw = todo.dueDate;
+				if (dueDateRaw !== undefined) {
+					const dueDate = new Date(dueDateRaw);
+					if (dueDate.getHours() === 0 &&
+						dueDate.getMinutes() === 0
+						) {
+						dueDateFormat = formatDate(dueDate, "date");
+					} else {
+						dueDateFormat = dueDateRaw;
+					}
+				} else {
+					dueDateFormat = ""
+				}
+				
+				cell.setText(dueDateFormat)
 				break;
+			}
 
 			case 'action':
 				break;
@@ -540,23 +493,6 @@ export class TodoDashboardView extends ItemView {
 
 		}
 	}
-
-	// private sortTodos(
-	// 	todos: TodoItem[],
-	// 	sorts: TodoSort[]
-	// ): TodoItem[] {
-	// 	return [...todos].sort((a, b) => {
-	// 		for (const sort of sorts) {
-	// 			const compare = this.compareTodos(a, b, sort.field);
-	// 			if (compare !== 0) {
-	// 				return sort.dir === "asc"
-	// 					? compare : -compare;
-				
-	// 			}
-	// 		}
-	// 		return 0;
-	// 	});
-	// }
 
 	private compareTodos(
 		a: TodoItem,
@@ -571,8 +507,12 @@ export class TodoDashboardView extends ItemView {
 				return projectA.localeCompare(projectB);
 			}
 
-			case "priority":
+			case "priority": {
+				// const aPriority = PriorityOrder.get(a.priority) ?? 0;
+				// const bPriority = PriorityOrder.get(b.priority) ?? 0;
+				// return aPriority - bPriority;
 				return a.priority - b.priority;
+			}
 
 			case "dueDate": {
 				const dateA = a.dueDate

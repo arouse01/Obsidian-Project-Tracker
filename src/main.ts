@@ -18,7 +18,8 @@ import {
 	PROJECT_DASHBOARD_VIEW_TYPE,
 	PROJECT_SINGLE_VIEW_TYPE,
 	TODO_DASHBOARD_VIEW_TYPE,
-	TIME_DASHBOARD_VIEW_TYPE
+	TIME_DASHBOARD_VIEW_TYPE,
+	VIEW_TYPE_TRACKER
 } from "./constants"
 import {
 	TimeDashboardView
@@ -32,6 +33,7 @@ import {
 import {
 	TodoDashboardView
 } from './todoDashboard'
+import { TrackerView } from './trackerView';
 
 
 
@@ -40,7 +42,8 @@ export default class ProjectTrackerPlugin extends Plugin {
 	settings!: IssueTrackerSettings;
 	timeTracker!: TimeTracker;
 	issueTracker!: IssueTracker;
-	todoManager!: TodoManager
+	todoManager!: TodoManager;
+
 
 	async onload() {
 
@@ -68,44 +71,57 @@ export default class ProjectTrackerPlugin extends Plugin {
 		)
 
 		this.registerView(
-			PROJECT_DASHBOARD_VIEW_TYPE,
-			leaf => new ProjectDashboardView(
-				leaf,
-				this.timeTracker,
-				this.projectManager,
-				this.issueTracker,
-				this.todoManager
-			)
+			VIEW_TYPE_TRACKER,
+			leaf => new TrackerView(leaf, this)
 		);
 
-		this.registerView(
-			PROJECT_SINGLE_VIEW_TYPE,
-			leaf => new ProjectSingleView(
-				leaf,
-				this.timeTracker,
-				this.projectManager,
-				this.issueTracker,
-				this.todoManager
-			)
-		);
+		// this.registerView(
+		// 	PROJECT_DASHBOARD_VIEW_TYPE,
+		// 	leaf => new ProjectDashboardView(
+		// 		leaf,
+		// 		this.timeTracker,
+		// 		this.projectManager,
+		// 		this.issueTracker,
+		// 		this.todoManager
+		// 	)
+		// );
 
-		this.registerView(
-			TIME_DASHBOARD_VIEW_TYPE,
-			leaf => new TimeDashboardView(
-				leaf,
-				this.timeTracker,
-				this.projectManager
-			)
-		);
+		// this.registerView(
+		// 	PROJECT_SINGLE_VIEW_TYPE,
+		// 	leaf => new ProjectSingleView(
+		// 		leaf,
+		// 		this.timeTracker,
+		// 		this.projectManager,
+		// 		this.issueTracker,
+		// 		this.todoManager
+		// 	)
+		// );
 
-		this.registerView(
-			TODO_DASHBOARD_VIEW_TYPE,
-			leaf => new TodoDashboardView(
-				leaf,
-				this.todoManager,
-				this.projectManager
-			)
-		);
+		// this.registerView(
+		// 	TIME_DASHBOARD_VIEW_TYPE,
+		// 	leaf => new TimeDashboardView(
+		// 		leaf,
+		// 		this.timeTracker,
+		// 		this.projectManager
+		// 	)
+		// );
+
+		// this.registerView(
+		// 	TODO_DASHBOARD_VIEW_TYPE,
+		// 	leaf => new TodoDashboardView(
+		// 		leaf,
+		// 		this.todoManager,
+		// 		this.projectManager
+		// 	)
+		// );
+
+		this.addCommand({
+			id: "open-tracker-dashboard",
+			name: "Open project management dashboard",
+			editorCallback: async () => {
+				await this.activateTrackerDashboard();
+			}
+		});
 
 		this.addCommand({
 			id: "open-project-dashboard",
@@ -179,12 +195,12 @@ export default class ProjectTrackerPlugin extends Plugin {
 				await this.activateTimeDashboard();
 			});
 
-		this.addRibbonIcon(
-			'list-todo',
-			'Open todo dashboard',
-			async (_evt: MouseEvent) => {
-				await this.activateTodoDashboard();
-			});
+		//this.addRibbonIcon(
+		//	'list-todo',
+		//	'Open todo dashboard',
+		//	async (_evt: MouseEvent) => {
+		//		await this.activateTodoDashboard();
+		//	});
 
 		/*
 				// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
@@ -237,12 +253,12 @@ export default class ProjectTrackerPlugin extends Plugin {
 		this.addSettingTab(new IssueTrackerSettingTab(this.app, this));
 	}
 
-	async activateProjectDashboard(): Promise<void> {
+	async activateTrackerDashboard(): Promise<void> {
 
 		const { workspace } = this.app;
 
 		let leaf = workspace.getLeavesOfType(
-			PROJECT_DASHBOARD_VIEW_TYPE
+			VIEW_TYPE_TRACKER
 		)[0];
 
 		if (!leaf) {
@@ -253,8 +269,33 @@ export default class ProjectTrackerPlugin extends Plugin {
 			}
 
 			await leaf.setViewState({
-				type: PROJECT_DASHBOARD_VIEW_TYPE,
+				type: VIEW_TYPE_TRACKER,
 				active: true
+			});
+		}
+
+		await workspace.revealLeaf(leaf);
+	}
+
+	async activateProjectDashboard(): Promise<void> {
+
+		const { workspace } = this.app;
+
+		let leaf = workspace.getLeavesOfType(
+			VIEW_TYPE_TRACKER
+		)[0];
+
+		if (!leaf) {
+			leaf = workspace.getLeaf("tab");
+
+			if (!leaf) {
+				return;
+			}
+
+			await leaf.setViewState({
+				type: VIEW_TYPE_TRACKER,
+				active: true,
+				state: { activeTab: "Projects"}
 			});
 		}
 
@@ -290,7 +331,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 		const { workspace } = this.app;
 
 		let leaf = workspace.getLeavesOfType(
-			TODO_DASHBOARD_VIEW_TYPE
+			VIEW_TYPE_TRACKER
 		)[0];
 
 		if (!leaf) {
@@ -301,8 +342,9 @@ export default class ProjectTrackerPlugin extends Plugin {
 			}
 
 			await leaf.setViewState({
-				type: TODO_DASHBOARD_VIEW_TYPE,
-				active: true
+				type: VIEW_TYPE_TRACKER,
+				active: true,
+				state: { activeTab: "Todos" }
 			});
 		}
 

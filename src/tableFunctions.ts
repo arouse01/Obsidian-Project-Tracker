@@ -70,7 +70,6 @@ export function sortItems<Item, Field>(
 }
 
 
-
 export interface GroupDefs<field, T> {
 	field: field;
 	getKey: (item: T) => string;

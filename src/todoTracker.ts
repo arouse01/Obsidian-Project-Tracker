@@ -11,9 +11,11 @@ import {
 	ProjectInfo,
 	TodoItem,
 	TodoContext,
-	CreateTodoRequest,
-	PRIORITIES
+	CreateTodoRequest
 } from "./types";
+import {
+	PRIORITIES
+} from "./constants";
 import { TodoModal } from './todoModal'
 import {
 	formatDate,
@@ -150,19 +152,15 @@ export class TodoManager extends Events {
 	async startBlankTodoItem(): Promise<void> {
 		const tempTitle = "";
 		const lines = -1;
-		// const sourceFile = view.file!;
+		// No selected project
 		const projectNames = null;
 		const projectPaths = null;
-		// get the project of the current document and its actual file location, if any
-
 
 		const context: TodoContext = {
 			tempTitle: tempTitle,
 			line: lines,
 			projectPaths: projectPaths,
 			projectNames: projectNames
-
-
 		}
 
 		// const selectedText = editor.getLine(editor.getCursor().line);

@@ -11,6 +11,9 @@ import {
 	TodoModalOptions,
 	CreateTodoRequest
 } from "./types";
+import {
+	formatDate
+} from './utils'
 
 
 export class TodoModal extends Modal {
@@ -248,13 +251,13 @@ export class TodoModal extends Modal {
 						// if (!this.selectedProject) {
 						// 	this.selectedProject = undefined
 						// }
-						
+						const dueDate = (this.dueDate !== undefined) ? formatDate(this.dueDate) : undefined;
 						// build the TodoData var to pass out
 						const request: CreateTodoRequest = {
 							todoInfo: {
 								name: this.name,
 								notes: this.notes,
-								dueDate: this.dueDate?.toISOString(),
+								dueDate: dueDate,
 								project: this.selectedProject,
 								priority: this.priority
 							},

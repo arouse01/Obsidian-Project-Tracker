@@ -4,8 +4,7 @@ import {
 } from 'obsidian';
 
 import {
-	ProjectInfo,
-	ProjectStatus
+	ProjectInfo
 } from "./types";
 
 

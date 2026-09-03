@@ -1,5 +1,6 @@
 import {
-	ItemView,
+	App,
+	Component,
 	Menu,
 	WorkspaceLeaf,
 	ButtonComponent,
@@ -14,7 +15,6 @@ import {
 	TimeSummary
 } from "./types";
 import {
-	formatTimestamp,
 	formatMinutesToDuration,
 	formatDate,
 	normalizeWikiLink
@@ -37,15 +37,16 @@ import {
 } from './tableFunctions';
 
 
-export class ProjectSingleView extends ItemView {
+export class ProjectSingleView extends Component {
 	constructor(
-		leaf: WorkspaceLeaf,
+		private container: HTMLElement,
+		private app: App,
 		private timeTracker: TimeTracker,
 		private projectManager: MyProjectManager,
 		private issueTracker: IssueTracker,
 		private todoManager: TodoManager
 	) {
-		super(leaf);
+		super();
 	}
 
 	getViewType(): string {

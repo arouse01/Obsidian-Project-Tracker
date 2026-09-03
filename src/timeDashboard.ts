@@ -54,6 +54,8 @@ const TIME_COLS = {
 type TimeColumnField = keyof typeof TIME_COLS;
 
 export class TimeDashboardView extends ItemView {
+	private container: HTMLElement;
+
 	private summaryPeriod: "week" | "month" = "week";  // to drive the summary period selection
 	private periodOffset = 0;  // to drive the summary period selection, how far in the past to go
 
@@ -68,11 +70,13 @@ export class TimeDashboardView extends ItemView {
 	private dayTimeSumByPath = new Map<string, TimeSummary>
 
 	constructor(
+		container: HTMLElement,
 		leaf: WorkspaceLeaf,
 		private timeTracker: TimeTracker,
 		private projectManager: MyProjectManager
 	) {
 		super(leaf);
+		this.container = container;
 	}
 
 	getViewType(): string {
@@ -98,7 +102,7 @@ export class TimeDashboardView extends ItemView {
 		await this.updateDashboard();
 
 		this.refreshInterval = window.setInterval(() => {
-			void this.updateSummaryTable();
+			void this.updateDashboard();
 		}, 60000);
 	}
 
@@ -110,7 +114,7 @@ export class TimeDashboardView extends ItemView {
 	}
 
 	private async buildDashboard() {
-		const controlSection = this.contentEl.createEl("section");
+		const controlSection = this.container.createEl("section");
 		controlSection.createEl("h3", {
 			text: "Active projects"
 		});
@@ -194,7 +198,7 @@ export class TimeDashboardView extends ItemView {
 		this.projectTableBodyEl = tableMainEl.createEl('tbody');
 
 
-		const summarySection = this.contentEl.createEl("section");
+		const summarySection = this.container.createEl("section");
 		summarySection.createEl("h3", {
 			text: "Summary"
 		});
@@ -323,17 +327,12 @@ export class TimeDashboardView extends ItemView {
 	}
 
 	async updateTimeRows(): Promise<void> {
-		const projects = this.projectManager.getActiveProjects();
+		//const projects = this.projectManager.getActiveProjects();
 		await this.updateSummaries();
-		
-
-
-		
 
 		const newBody = createEl('tbody')
 
 		await this.buildTimeTableBody(newBody)
-
 
 		this.projectTableBodyEl?.replaceWith(newBody);
 		this.projectTableBodyEl = newBody;
@@ -379,7 +378,6 @@ export class TimeDashboardView extends ItemView {
 			cell.addClass('summary-row')
 			this.renderTimeStopRowCell(cell, field);
 		}
-
 		
 	}
 
@@ -393,7 +391,6 @@ export class TimeDashboardView extends ItemView {
 		switch (field) {
 			case "status":
 				{
-
 					// const isActive = activePaths.has(project.file.path);
 					if (activeSession) {
 						cell.setText("🟢");  //⏲

@@ -1,7 +1,7 @@
 import {
-	ItemView,
+	App,
 	Menu,
-	WorkspaceLeaf,
+	Component,
 	ButtonComponent,
 	TFile
 } from 'obsidian';
@@ -11,10 +11,9 @@ import {
 	ProjectInfo,
 	// ProjectStatus,
 	TimeSession,
-	// TimeSummary
+	TimeSummaryStore
 } from "./types";
 import {
-	formatTimestamp,
 	formatMinutesToDuration,
 	formatDate,
 	normalizeWikiLink
@@ -36,7 +35,9 @@ import {
 	getSortOptions
 } from './tableFunctions';
 import {
-	PROJECT_DASHBOARD_VIEW_TYPE
+	PROJECT_DASHBOARD_VIEW_TYPE,
+	TimePeriod,
+	TimeSummaryGroup
 } from "./constants"
 
 
@@ -72,10 +73,17 @@ const PROJ_COLS = {
 		tableGroup: "Hours worked"
 	},
 	"hoursWeek": {
-		label: "This week",
+		label: "Week",
 		sortable: false,
 		groupable: false,
-		width: "80px",
+		width: "65px",
+		tableGroup: "Hours worked"
+	},
+	"hoursMonth": {
+		label: "Month",
+		sortable: false,
+		groupable: false,
+		width: "65px",
 		tableGroup: "Hours worked"
 	},
 	"sessionStart": {
@@ -140,7 +148,9 @@ const PROJECT_STATUS_FILTERS = ["Active", "All", "Archived"] as const;
 type ProjectStatusFilter = typeof PROJECT_STATUS_FILTERS[number];
 
 
-export class ProjectDashboardView extends ItemView {
+export class ProjectDashboardView extends Component{
+	// private container: HTMLElement;
+
 	private summaryPeriod: SummaryPeriod = "week";  // to drive the summary period selection
 	private periodOffset = 0;  // to drive the summary period selection, how far in the past to go
 	private summaryGroup: SummaryGroup = "client";
@@ -165,6 +175,7 @@ export class ProjectDashboardView extends ItemView {
 		"primary",
 		"hoursToday",
 		"hoursWeek",
+		"hoursMonth",
 		"sessionStart",
 		"sessionAt",
 		"action"
@@ -184,10 +195,26 @@ export class ProjectDashboardView extends ItemView {
 	// private dayTimeSumByClient = new Map<string, TimeSummary>
 	// private weekTimeSumByPath = new Map<string, TimeSummary>
 
-	private dayTimeByPath = new Map<string, number>
-	private dayTimeByClient = new Map<string, number>
-	private weekTimeByPath = new Map<string, number> 
-	private weekTimeByClient = new Map<string, number> 
+	private timeSummaries: TimeSummaryStore = {
+		day: {
+			project: new Map(),
+			client: new Map()
+		},
+		week: {
+			project: new Map(),
+			client: new Map()
+		},
+		month: {
+			project: new Map(),
+			client: new Map()
+		}
+	};
+	// private dayTimeByPath = new Map<string, number>
+	// private dayTimeByClient = new Map<string, number>
+	// private weekTimeByPath = new Map<string, number> 
+	// private weekTimeByClient = new Map<string, number>
+	// private monthTimeByPath = new Map<string, number>
+	// private monthTimeByClient = new Map<string, number> 
 	
 	// private dayStart = window.moment()
 	// 	.startOf("day")
@@ -201,13 +228,15 @@ export class ProjectDashboardView extends ItemView {
 	private collapsedGroups = new Set<string>();  // which groups are collapsed in the table
 
 	constructor(
-		leaf: WorkspaceLeaf,
+		private container: HTMLElement,
+		private app: App,
 		private timeTracker: TimeTracker,
 		private projectManager: MyProjectManager,
 		private issueTracker: IssueTracker,
 		private todoManager: TodoManager
 	) {
-		super(leaf);
+		super();
+		this.container = container
 	}
 
 	getViewType(): string {
@@ -222,15 +251,13 @@ export class ProjectDashboardView extends ItemView {
 		return 'folder-open-dot';
 	}
 
-	async onOpen(): Promise<void> {
+	onload(): void {
 		this.registerEvent(
 			this.timeTracker.on("time-tracker-updated", () => {
 				void this.updateProjectTableRows()
 			})
 		);
-		await this.updateSummaryVars();
-		await this.buildDashboard();
-		await this.updateProjectTableRows();
+		void this.initialize()
 
 		this.refreshInterval = window.setInterval(() => {
 			void this.updateProjectTableRows();
@@ -243,6 +270,12 @@ export class ProjectDashboardView extends ItemView {
 		// );
 	}
 
+	private async initialize(): Promise<void> {
+		await this.updateSummaryVars();
+		await this.buildDashboard();
+		await this.updateProjectTableRows();
+	}
+
 	async onClose(): Promise<void> {
 		if (this.refreshInterval !== null) {
 			window.clearInterval(this.refreshInterval);
@@ -252,7 +285,7 @@ export class ProjectDashboardView extends ItemView {
 
 	private async buildDashboard() {
 
-		const dashboardContainer = this.contentEl.createDiv({ cls: "project-section" })
+		const dashboardContainer = this.container.createDiv({ cls: "project-section" })
 		dashboardContainer.addClass('project-dashboard')
 		const projectSection = dashboardContainer.createDiv({ cls: "project-section" });
 		// projectSection.addClass("project-section")
@@ -812,12 +845,13 @@ export class ProjectDashboardView extends ItemView {
 			// 	break;
 			case 'primary':
 				this.colOrder = [
-					// "primary",
+					"primary",
 
 					"project",
 					"sessionStatus",
 					"hoursToday",
 					"hoursWeek",
+					"hoursMonth",
 					"sessionStart",
 					"sessionAt",
 					"action",
@@ -834,6 +868,7 @@ export class ProjectDashboardView extends ItemView {
 					"sessionStatus",
 					"hoursToday",
 					"hoursWeek",
+					"hoursMonth",
 					"sessionStart",
 					"sessionAt",
 					// "newMeeting",
@@ -868,17 +903,13 @@ export class ProjectDashboardView extends ItemView {
 			.endOf("week")
 			.toDate();
 		const weekSummaryTotals = await this.timeTracker.getTimeSummary(weekStart, weekEnd);
-		// this.weekTimeSumByPath = new Map(
-		// 	weekSummaryTotals.map(summary => [summary.key, summary])
+		// this.weekTimeByPath = new Map(
+		// 	weekSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
 		// )
-		this.weekTimeByPath = new Map(
-			weekSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
-		)
-
 		const weekClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(weekStart, weekEnd);
-		this.weekTimeByClient = new Map(
-			weekClientSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
-		)
+		// this.weekTimeByClient = new Map(
+		// 	weekClientSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
+		// )
 
 		const dayStart = window.moment()
 			.startOf("day")
@@ -887,35 +918,79 @@ export class ProjectDashboardView extends ItemView {
 			.endOf("day")
 			.toDate();
 		const daySummaryTotals = await this.timeTracker.getTimeSummary(dayStart, dayEnd);
-		this.dayTimeByPath = new Map(
-			daySummaryTotals.map(summary => [summary.key, summary.totalMinutes])
-		)
-		// this.dayTimeSumByPath = new Map(
-		// 	daySummaryTotals.map(summary => [summary.key, summary])
+		// this.dayTimeByPath = new Map(
+		// 	daySummaryTotals.map(summary => [summary.key, summary.totalMinutes])
 		// )
 
 		const dayClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(dayStart, dayEnd);
-		// this.dayTimeSumByClient = new Map(
-		// 	dayClientSummaryTotals.map(summary => [summary.key, summary])
+		// this.dayTimeByClient = new Map(
+		// 	dayClientSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
 		// )
-		this.dayTimeByClient = new Map(
-			dayClientSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
-		)
 
+		const monthStart = window.moment()
+			.startOf("month")
+			.toDate();
+		const monthEnd = window.moment()
+			.endOf("month")
+			.toDate();
+		const monthSummaryTotals = await this.timeTracker.getTimeSummary(monthStart, monthEnd);
+
+		// this.monthTimeByPath = new Map(
+		// 	monthSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
+		// )
+
+		const monthClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(monthStart, monthEnd);
+		// this.monthTimeByClient = new Map(
+		// 	monthClientSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
+		// )
+
+		this.timeSummaries.day.project = new Map(
+			daySummaryTotals.map(summary => [
+				summary.key,
+				summary.totalMinutes
+			])
+		);
+		this.timeSummaries.day.client = new Map(
+			dayClientSummaryTotals.map(summary => [
+				summary.key,
+				summary.totalMinutes
+			])
+		);
+		this.timeSummaries.week.project = new Map(
+			weekSummaryTotals.map(summary => [
+				summary.key,
+				summary.totalMinutes
+			])
+		);
+		this.timeSummaries.week.client = new Map(
+			weekClientSummaryTotals.map(summary => [
+				summary.key,
+				summary.totalMinutes
+			])
+		);
+		this.timeSummaries.month.project = new Map(
+			monthSummaryTotals.map(summary => [
+				summary.key,
+				summary.totalMinutes
+			])
+		);
+		this.timeSummaries.month.client = new Map(
+			monthClientSummaryTotals.map(summary => [
+				summary.key,
+				summary.totalMinutes
+			])
+		);
 
 	}
-
+	
 	async getSummaryData(): Promise<PeriodicTimeSummary> {
 		const { start, } = getSummaryPeriod(this.periodOffset, this.summaryPeriod);
 
 		let summaryTotals: PeriodicTimeSummary;
 
-
 		if (this.summaryPeriod === "month") {
-
 			summaryTotals = await this.timeTracker.getMonthlySummary(start, this.summaryGroup);
 		} else {
-
 			summaryTotals = await this.timeTracker.getWeeklySummary(start, this.summaryGroup);
 		}
 		return summaryTotals;
@@ -970,7 +1045,6 @@ export class ProjectDashboardView extends ItemView {
 					}),
 					width: "80px"
 				})),
-
 
 				{
 					key: "weekTotal",
@@ -1074,7 +1148,6 @@ export class ProjectDashboardView extends ItemView {
 					text: day.toLocaleDateString("en-US", { year: 'numeric' }),
 					cls: "summary-col-subheader"
 				})
-				
 			}
 
 		} else {
@@ -1088,9 +1161,7 @@ export class ProjectDashboardView extends ItemView {
 					text: day.toLocaleDateString("en-US", { day: '2-digit' }),
 					cls: "summary-col-subheader"
 				})
-				
 			}
-
 
 			const totalCell = headerRow.createEl('th', { text: 'Total' });
 			totalCell.addClass("total-col")
@@ -1146,72 +1217,7 @@ export class ProjectDashboardView extends ItemView {
 			const cell = row.createEl("td");
 			cell.addClass("total-col")
 			cell.setText(formatMinutesToDuration(runningTotal, true))
-			// const { start, end } = getSummaryPeriod(this.periodOffset, this.summaryPeriod);
-
-			// let dateRangeText: string;
-			// if (this.summaryPeriod === "week") {
-			// 	dateRangeText = `${window.moment(start).format("MMM DD")} - ${window.moment(end).format("MMM DD")}`
-			// } else {
-			// 	dateRangeText = window.moment(start).format("MMMM YYYY")
-			// }
-			// this.rangeText.setText(dateRangeText);
-
-			// if (this.summaryPeriod === "month") {
-			// 	const summaryTotals = await this.timeTracker.getTimeSummaryByClient(start, end);
-			// 	/*
-			// 		summaryTotals are returned as array of TimeSummary objects 
-			// 		which is projectPath (string) and totalMinutes (number), so 
-			// 		we have to loop through and assign to the table
-			// 	*/
-			/*for (const timeSum of summaryTotals) {
-
-				// create row skeleton, and assign values to objects after (for cleaner visual code organization)
-				const row = tbody.createEl('tr');
-
-				const clientCell = row.createEl('td');
-				const totalCell = row.createEl('td');
-
-				const clientName = timeSum.key;
-				clientCell.setText(clientName);
-
-				const durationText = formatMinutesToDuration(timeSum.totalMinutes);
-				totalCell.setText(durationText)
-
-			}
-		} else {
-			const weeklyTotals = await this.timeTracker.getWeeklySummary(start, this.summaryGroup);
 			
-			for (const [key, dailyMinutes] of weeklyTotals.entries) {
-				const row = tbody.createEl('tr');
-
-				// Project
-				const groupCell = row.createEl("td")
-				
-				let groupName = "";
-				if (this.summaryGroup === "client") {
-					groupName = key;
-				}
-				else if (this.summaryGroup === "project") {
-					groupName = this.projectManager.getProjectInfoByPath(key)?.name ?? "unknown";
-				} else {
-					groupName = "unknown"
-				}
-				groupCell.setText(groupName);
-
-				let runningTotal = 0;
-				for (const day of weeklyTotals.days) {
-					const dateStr = formatDate(day);
-					const minutes = dailyMinutes.get(dateStr) ?? 0;
-					runningTotal += minutes;
-					const cell = row.createEl("td");
-					cell.setText(formatMinutesToDuration(minutes, true))
-				}
-				// Total column
-				const cell = row.createEl("td");
-				cell.addClass("total-col")
-				cell.setText(formatMinutesToDuration(runningTotal, true))
-			}
-		}*/
 		}
 	}
 
@@ -1245,7 +1251,7 @@ export class ProjectDashboardView extends ItemView {
 
 		const filename = `${meetingTitle}`
 		const path = `Meeting Notes/${filename}.md`
-		const creationTS = formatTimestamp();
+		const creationTS = formatDate(undefined, "datetime_long");
 		const content =
 			`---
 project: "[[${projectName}]]"
@@ -1256,10 +1262,7 @@ people:
 tags:
 - meeting
 ---
-
 # ${filename}
-
-
 
 `;
 
@@ -1290,7 +1293,11 @@ tags:
 					
 					// const isActive = activePaths.has(project.file.path);
 					if (activeSession) {
-						cell.setText("🟢");  //⏲
+						const indicator = cell.createDiv({ cls: "active-indicator" });
+						indicator.createDiv({ cls: "blinky-circle-green" })
+						const span = indicator.createSpan();  //⏲
+						span.setText("🟢")
+						
 					} else {
 						cell.setText("");
 					}
@@ -1334,20 +1341,25 @@ tags:
 
 			case "hoursToday":
 				{
-					const dailyTimeSum = this.dayTimeByPath.get(project.file.path) ?? 0;
+					const dailyTimeSum = this.timeSummaries.day.project.get(project.file.path) ?? 0;
 					const dailyTimeText = formatMinutesToDuration(dailyTimeSum);
 					cell.setText(dailyTimeText);
-
-					
 					break;
 				}
 
 			case 'hoursWeek':
 				{
-					const weekTimeSum = this.weekTimeByPath.get(project.file.path) ?? 0;
+					const weekTimeSum = this.timeSummaries.week.project.get(project.file.path) ?? 0;
 					const weekTimeText = formatMinutesToDuration(weekTimeSum);
 					cell.setText(weekTimeText);
+					break;
+				}
 
+			case 'hoursMonth':
+				{
+					const weekTimeSum = this.timeSummaries.month.project.get(project.file.path) ?? 0;
+					const weekTimeText = formatMinutesToDuration(weekTimeSum);
+					cell.setText(weekTimeText);
 					break;
 				}
 
@@ -1364,7 +1376,6 @@ tags:
 							void this.updateProjectTableRows()
 						})
 
-				
 				break;
 
 			case 'sessionAt':
@@ -1532,19 +1543,13 @@ tags:
 								await this.updateProjectTableRows();
 							});
 					}
-					// const file = this.app.vault.getAbstractFileByPath(project.file.path);
-					// let client: string = '';
-					// if (file instanceof TFile) {
-					// 	client = this.projectManager.getFrontmatterString(file, "Primary").replace(/^\[\[|\]\]$/g, "")
-					// }
-					// cell.setText(client);
 
 					break;
 				}
 
 			case "hoursToday":
 				{
-					const dailyTimeSum = this.dayTimeByClient.get(group.key) ?? 0;
+					const dailyTimeSum = this.timeSummaries.day.client.get(group.key) ?? 0;
 					const dailyTimeText = formatMinutesToDuration(dailyTimeSum);
 					cell.setText(dailyTimeText);
 					cell.addClass("underline")
@@ -1554,7 +1559,16 @@ tags:
 
 			case 'hoursWeek':
 				{
-					const weekTimeSum = this.weekTimeByClient.get(group.key) ?? 0;
+					const weekTimeSum = this.timeSummaries.week.client.get(group.key) ?? 0;
+					const weekTimeText = formatMinutesToDuration(weekTimeSum);
+					cell.setText(weekTimeText);
+					cell.addClass("underline")
+					break;
+				}
+
+			case 'hoursMonth':
+				{
+					const weekTimeSum = this.timeSummaries.month.client.get(group.key) ?? 0;
 					const weekTimeText = formatMinutesToDuration(weekTimeSum);
 					cell.setText(weekTimeText);
 					cell.addClass("underline")
@@ -1562,50 +1576,14 @@ tags:
 				}
 
 			case 'sessionStart':
-				
-
 				break;
 
 			case 'sessionAt':
-
 				break;
 
 			case "action":
-				{
-					/*
-					new ButtonComponent(cell)
-						.setIcon("plus-circle")
-						// .setButtonText("Action")
-						.setClass("project-dashboard-button")
-						.onClick(async (event: MouseEvent) => {
+				break;
 
-							const menu = new Menu();
-
-							menu.addItem((item) => {
-								item.setTitle("New meeting")
-									.onClick(async () => {
-										await this.createMeeting(project)
-									});
-							});
-
-							menu.addItem((item) => {
-								item.setTitle("New issue")
-									.onClick(async () => {
-										await this.issueTracker.createProjectIssue(project);
-									});
-							});
-
-							menu.addItem((item) => {
-								item.setTitle("New todo")
-									.onClick(async () => {
-										await this.todoManager.startProjectTodoItem(project);
-									});
-							});
-							menu.showAtMouseEvent(event);
-						})
-					*/
-					break;
-				}
 			
 
 		}
@@ -1615,7 +1593,7 @@ tags:
 		cell: HTMLTableCellElement,
 		field: ProjectColumnField,
 	): void {
-		// const activeSession = this.activeSessionMap.get(project.file.path);
+		
 		cell.addClass('summary-row')
 
 		switch (field) {
@@ -1697,7 +1675,7 @@ tags:
 		cell: HTMLTableCellElement,
 		field: ProjectColumnField,
 	): void {
-		// const activeSession = this.activeSessionMap.get(project.file.path);
+
 		cell.addClass('summary-row')
 
 		switch (field) {
@@ -1725,190 +1703,5 @@ tags:
 
 		}
 	}
-/*
-	private updateSortButtons(): void {
-
-		for (const [col, button] of this.sortButtons) {
-			const sort = this.sortBy.find(s => s.field === col.sortField);
-			const sortIndex = this.sortBy.findIndex((sort) => sort.field === col.sortField);
-			let text = col.label;
-			if (sort?.dir === "asc") {
-				text += " ▲"
-			} else if (sort?.dir === "desc") {
-				text += " ▼"
-			}
-			if (sort?.dir) {
-				;
-				text += (sortIndex + 1)
-			}
-
-			button.setButtonText(text);
-		}
-	}
-
-	private getSummaryPeriod(periodOffset: number, summaryPeriod: SummaryPeriod): { start: Date; end: Date } {
-		const start = window.moment()
-			.add(periodOffset, summaryPeriod)
-			.startOf(summaryPeriod)
-			.toDate();
-
-		const end = window.moment()
-			.add(periodOffset, summaryPeriod)
-			.endOf(summaryPeriod)
-			.toDate();
-
-		return { start, end };
-	}
-*/
-
-	/*
-	async updateProjects(): Promise<void> {
-		this.updateFilterButtons();
-
-		let projects: ProjectInfo[];
-		if (this.projectStatusFilter === "Active") {
-			projects = this.projectManager.getActiveProjects();
-		} else if (this.projectStatusFilter === "Archived") {
-			projects = this.projectManager.getArchivedProjects();
-		} else {
-			projects = this.projectManager.getProjects();
-		}
-
-		await this.updateSummaryVars();
-
-		const activeSessions = await this.timeTracker.getActiveSessions();
-		this.activeSessionMap = new Map(
-			activeSessions.map(session => [session.projectPath, session])
-		);
-		const newBody = createEl('tbody'); // new object to store table before moving it entirely into the window so there's no flicker as the table is rebuilt
-
-		
-
-		for (const project of projects) {
-
-			// create row skeleton, and assign values to objects after (for cleaner visual code organization)
-			const row = newBody.createEl('tr');
-
-			const statusCell = row.createEl('td');
-			const projectCell = row.createEl('td');
-			const clientCell = row.createEl('td');
-			const dailyHoursCell = row.createEl('td');
-			const weeklyHoursCell = row.createEl('td');
-			
-			const startCell = row.createEl('td');
-			const startAtCell = row.createEl('td');
-			const meetingCell = row.createEl('td');
-			const issueCell = row.createEl('td');
-
-			statusCell.addClass("time-dashboard-centered");
-			const activeSession = this.activeSessionMap.get(project.file.path);
-			// const isActive = activePaths.has(project.file.path);
-			if (activeSession) {
-				statusCell.setText("🟢");  //⏲
-			} else {
-				statusCell.setText("");
-			}
-
-			// projectCell.setText(project.name);
-			const projectLink = projectCell.createEl("a", { text: project.name });
-			projectLink.addEventListener("click", (event) => {
-				event.preventDefault();
-				const existingLeaf = this.app.workspace.getLeavesOfType(
-					"markdown"
-				).find(leaf => {
-					const view = leaf.view;
-					return view.getState().file === project.file.path;
-				});
-
-				if (existingLeaf) {
-					void this.app.workspace.revealLeaf(existingLeaf);
-				} else {
-					void this.app.workspace.getLeaf(false).openFile(project.file);
-				}
-			}
-			)
-
-			const file = this.app.vault.getAbstractFileByPath(project.file.path);
-			let client: string = '';
-			if (file instanceof TFile) {
-				client = this.projectManager.getFrontmatterString(file, "Primary").replace(/^\[\[|\]\]$/g, "")
-			}
-			clientCell.setText(client);
-
-			const dailyTimeSum = dayTimeSumByPath.get(project.file.path);
-			const dailyTimeText = formatMinutesToDuration(dailyTimeSum?.totalMinutes ?? 0);
-			dailyHoursCell.setText(dailyTimeText);
-
-			const weekTimeSum = weekTimeSumByPath.get(project.file.path);
-			const weekTimeText = formatMinutesToDuration(weekTimeSum?.totalMinutes ?? 0);
-			weeklyHoursCell.setText(weekTimeText);
-			
-
-			startCell.addClass("time-dashboard-centered");
-			new ButtonComponent(startCell)
-				.setButtonText(activeSession ? "Stop" : "Start")
-				.setClass("project-dashboard-button")
-				.onClick(async () => {
-					if (activeSession) {
-						await this.timeTracker.stopProjectSession(project)
-					} else {
-						await this.timeTracker.startProjectSession(project)
-					}
-				})
-
-			new ButtonComponent(startAtCell)
-				.setButtonText(activeSession ? "Stop at" : "Start at")
-				.setClass("project-dashboard-button")
-				.onClick(async () => {
-					if (activeSession) {
-						new TimeModal(this.app, {
-							mode: 'stop',
-							projectPath: project.file.path,
-							sessionStart: activeSession.start,
-							onSubmit: async (timestamp: Date) => {
-								await this.timeTracker.stopProjectSession(
-									project,
-									timestamp
-								);
-							}
-						}).open();
-					} else {
-						new TimeModal(this.app, {
-							mode: 'start',
-							projectPath: project.file.path,
-							onSubmit: async (timestamp: Date) => {
-								await this.timeTracker.startProjectSession(
-									project,
-									timestamp
-								);
-							}
-						}).open();
-					}
-
-				})
-
-			new ButtonComponent(meetingCell)
-				.setButtonText("New meeting")
-				.setClass("project-dashboard-button")
-				.onClick(async () => {
-					await this.createMeeting(project)
-				})
-
-			new ButtonComponent(issueCell)
-				.setButtonText("New issue")
-				.setClass("project-dashboard-button")
-				.onClick(async () => {
-					await this.issueTracker.createProjectIssue(project)
-					
-				})
-		}
-		// this.projectTableBodyEl.empty();
-
-
-		this.projectTableBodyEl.replaceWith(newBody);
-		this.projectTableBodyEl = newBody;
-
-	}
-	*/
 }
 

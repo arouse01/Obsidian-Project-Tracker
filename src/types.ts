@@ -2,6 +2,10 @@ import {
 	Editor,
 	TFile
 } from 'obsidian';
+import {
+	TimePeriod,
+	TimeSummaryGroup
+} from './constants'
 
 export interface IssueContext {
 	tempTitle: string;
@@ -46,17 +50,6 @@ export interface PriorityOption {
 	label: string;
 }
 
-export const PRIORITIES: PriorityOption[] = [
-	{ value: 0, label: "0 - Unassigned" },
-	{ value: 1, label: "1 - Optional" },
-	{ value: 2, label: "2 - Low" },
-	{ value: 3, label: "3 - Medium" },
-	{ value: 4, label: "4 - High" },
-	{ value: 5, label: "5 - Urgent" },
-]
-
-
-
 export type ProjectStatus = "Active" | "Archived"
 
 export interface TimeSession {
@@ -85,6 +78,16 @@ export interface PeriodicTimeSummary {
 	days: Date[];
 	entries: Map<string, Map<string, number>>;
 }
+
+type TimeSummaryMaps = Record<
+	TimeSummaryGroup,
+	Map<string, number>
+>;
+
+export type TimeSummaryStore = Record<
+	TimePeriod,
+	TimeSummaryMaps
+>;
 
 export type SessionContext = {
 	mode: "start";

@@ -403,3 +403,97 @@
 .todo-dashboard td.center-align, .todo-dashboard th.center-align {
 	text-align: center;
 }
+
+.dashboard-tabs {
+/*	display: flex;*/
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.dashboard-tab {
+	position: relative;
+	margin-bottom: -1px;
+	border: 1px solid transparent;
+	border-bottom: none;
+	border-radius: 6px 6px 0 0;
+	background: transparent;
+}
+
+.dashboard-tabs button {
+	background: none;
+	border: 1px solid #ccc;
+	outline: none;
+	padding: 10px 20px;
+	font-size: 16px;
+	cursor: pointer; /* Changes mouse to pointer on hover */
+	transition: all 0.2s ease; /* Smooth visual transition */
+	border-radius: 6px 6px 0 0; /* Rounds only top left and right corners */
+	color: #555;
+	margin-bottom: -1px; /* Pulls active tab down to overlap container border */
+	box-shadow: none;
+}
+
+.dashboard-tabs .button-selected {
+	border-color: var(--background-modifier-border);
+	background: var(--background-primary);
+/*	background-color: #fff;*/
+/*	border: 2px solid #ccc;*/
+	border-bottom-color: transparent;  /* Hides line under active tab to merge with content */
+/*	color: #007bff;*/
+	font-weight: bold;
+}
+
+.dashboard-tabs button:hover {
+	background-color: #e9e9e9;
+	color: #000;
+}
+
+.dashboard-tab-table {
+/*	overflow: hidden;*/
+/*	border: 1px solid #ccc;*/
+	background-color: none;
+	display: flex;
+	border-bottom: 2px solid #ccc;
+}
+
+
+/* Section for basic animation of icons */
+.active-indicator {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+/*	justify-content: center;*/
+	width: 1.2em;
+	height: 1.2em;
+}
+
+.active-indicator span {
+	position: relative;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	line-height: 1;
+}
+
+
+.blinky-circle-green {
+	position: absolute;
+	width: 20px;
+	height: 20px;
+	background: #00FF55;
+	border-radius: 50%;
+	animation: blinky 2s infinite;
+	pointer-events: none;
+	z-index: 1;
+}
+
+@keyframes blinky {
+	0% {
+		transform: scale(0);
+		opacity: 1
+	}
+
+	100% {
+		transform: scale(1.5);
+		opacity: 0
+	}
+}

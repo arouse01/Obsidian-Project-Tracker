@@ -12,12 +12,14 @@ import {
 	IssueContext,
 	CreateIssueRequest,
 	ProjectInfo,
-	IssueModalOptions,
-	PRIORITIES
+	IssueModalOptions
 } from "./types";
 import {
+	PRIORITIES
+} from "./constants";
+import {
 	formatIssueID,
-	formatTimestamp,
+	formatDate,
 	normalizeWikiLink
 } from './utils';
 import { IssueModal } from './issueModal'
@@ -222,7 +224,7 @@ export default class IssueTracker {
 		const issueID = await this.getNextIssueID();
 		const filename = `${formatIssueID(issueID)} ${this.sanitizeFilename(request.issue.title)}`
 		const path = `Issues/${filename}.md`
-		const creationTS = formatTimestamp();
+		const creationTS = formatDate(undefined, "datetime_long");
 		const content =
 			`---
 ID: ${issueID}
@@ -234,7 +236,6 @@ Creation Date: "${creationTS}"
 tags:
 - issue
 ---
-
 # ${filename}
 
 ## Description

@@ -2,11 +2,14 @@ import {
 	Editor,
 	TFile
 } from 'obsidian';
+import { PriorityOption } from './types'
 
 export const PROJECT_DASHBOARD_VIEW_TYPE = "project-dashboard";
 export const PROJECT_SINGLE_VIEW_TYPE = "project-single";
 export const TODO_DASHBOARD_VIEW_TYPE = "todo-dashboard";
 export const TIME_DASHBOARD_VIEW_TYPE = "time-dashboard";
+export const VIEW_TYPE_TRACKER = "project-tracker"
+
 
 export interface IssueContext {
 	tempTitle: string;
@@ -46,21 +49,21 @@ export interface IssueModalOptions {
 	onSubmit: (request: CreateIssueRequest) => Promise<void>;
 }
 
-export interface PriorityOption {
-	value: number;
-	label: string;
-}
-
 export const PRIORITIES: PriorityOption[] = [
-	{ value: 0, label: "0 - Unassigned" },
-	{ value: 1, label: "1 - Optional" },
-	{ value: 2, label: "2 - Low" },
-	{ value: 3, label: "3 - Medium" },
-	{ value: 4, label: "4 - High" },
-	{ value: 5, label: "5 - Urgent" },
+	{ value: 0, label: "Unassigned" },
+	{ value: 1, label: "Optional" },
+	{ value: 2, label: "Low" },
+	{ value: 3, label: "Medium" },
+	{ value: 4, label: "High" },
+	{ value: 5, label: "Urgent" },
 ]
 
-
+export const PriorityOrder = new Map(
+	PRIORITIES.map(priority => [
+		priority.label,
+		priority.value
+	])
+);
 
 
 
@@ -86,10 +89,13 @@ export interface ClientTimeSummary {
 	totalMinutes: number;
 }
 
-export interface PeriodicTimeSummary {
-	days: Date[];
-	entries: Map<string, Map<string, number>>;
-}
+// export interface PeriodicTimeSummary {
+// 	days: Date[];
+// 	entries: Map<string, Map<string, number>>;
+// }
+
+export type TimePeriod = "day" | "week" | "month";
+export type TimeSummaryGroup = "project" | "client"
 
 export type SessionContext = {
 	mode: "start";
