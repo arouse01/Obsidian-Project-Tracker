@@ -36,12 +36,18 @@ import {
 } from './tableFunctions';
 import {
 	PROJECT_DASHBOARD_VIEW_TYPE,
-	TimePeriod,
-	TimeSummaryGroup
 } from "./constants"
 
 
 const PROJ_COLS = {
+	"collapse": {
+		label: "",
+		sortable: false,
+		groupable: false,
+		width: "20px",
+		tableGroup: "",
+		centered: true
+	},
 	"sessionStatus": {
 		label: "Status",
 		sortable: true,
@@ -70,50 +76,57 @@ const PROJ_COLS = {
 		sortable: false,
 		groupable: false,
 		width: "55px",
-		tableGroup: "Hours worked"
+		tableGroup: "Hours worked",
+		centered: true
 	},
 	"hoursWeek": {
 		label: "Week",
 		sortable: false,
 		groupable: false,
-		width: "65px",
-		tableGroup: "Hours worked"
+		width: "55px",
+		tableGroup: "Hours worked",
+		centered: true
 	},
 	"hoursMonth": {
 		label: "Month",
 		sortable: false,
 		groupable: false,
-		width: "65px",
-		tableGroup: "Hours worked"
+		width: "55px",
+		tableGroup: "Hours worked",
+		centered: true
 	},
 	"sessionStart": {
 		label: "",
 		sortable: false,
 		groupable: false,
 		width: "50px",
-		tableGroup: "Session"
+		tableGroup: "Session",
+		centered: true
 	},
 	"sessionAt": {
 		label: "",
 		sortable: false,
 		groupable: false,
-		width: "70px",
-		tableGroup: "Session"
+		width: "55px",
+		tableGroup: "Session",
+		centered: true
 	},
 	"action": {
 		label: "",
 		sortable: false,
 		groupable: false,
-		width: "80px",
-		tableGroup: "Actions"
+		width: "60px",
+		tableGroup: "Actions",
+		centered: true
 	},
-	// "newIssue": {
-	// 	label: "",
-	// 	sortable: false,
-	// 	groupable: false,
-	// 	width: "100px",
-	// 	tableGroup: "Actions"
-	// },
+	"goto": {
+		label: "",
+		sortable: false,
+		groupable: false,
+		width: "60px",
+		tableGroup: "Actions",
+		centered: true
+	},
 	// "newTodo": {
 	// 	label: "",
 	// 	sortable: false,
@@ -355,6 +368,7 @@ export class ProjectDashboardView extends Component{
 		// 	this.groupButtons.set(group.value, button);
 		// }
 
+/*
 		// Create grouping buttons
 		const controlRow2 = controlSection.createDiv({ cls: 'project-controls' });
 		controlRow2.addClass("control-row")
@@ -376,7 +390,7 @@ export class ProjectDashboardView extends Component{
 			this.sortButtons.set(group.value, button);
 			
 		}
-
+*/
 		const projectTableSection = projectSection.createDiv({ cls: 'project-section' });
 		projectTableSection.addClass('project-dashboard');
 
@@ -560,16 +574,21 @@ export class ProjectDashboardView extends Component{
 			const cell = headerRow1.createEl("th");
 			cell.colSpan = colGroupColumns.length;
 			cell.setText(colGroupName);
+			
 		}
 		
 
 		const row = thead.createEl('tr');
 
-		for (const [, column] of columns) {
+		for (const [field, column] of columns) {
 			const header = row.createEl('th');
 
-			header.setText(column.label)
-/*
+			// header.setText(column.label)
+			if (!column.centered) {
+				header.addClass("group-button")
+			}
+
+
 			if (column.sortable) {
 				const button = new ButtonComponent(header)
 					.setClass("project-dashboard-button")
@@ -581,7 +600,7 @@ export class ProjectDashboardView extends Component{
 				this.sortButtons.set(field, button);
 			} else {
 				header.setText(column.label)
-			}*/
+			}
 		}
 
 		this.projectTableBodyEl = this.projectTableEl.createEl('tbody');
@@ -623,14 +642,19 @@ export class ProjectDashboardView extends Component{
 		for (const group of groups) {
 
 			if (this.groupBy !== 'none') {
-				this.renderGroupHeader(tbody, group);
+
 				if (this.collapsedGroups.has(group.key)) {
+					this.renderGroupHeader(tbody, group);
 					continue;  // skip adding rows if the group is collapsed
 				}
 			}
 
-			for (const project of group.projects) {
-				this.createProjectRow(tbody, project)
+			for (const [index, project] of group.projects.entries()) {
+				this.createProjectRow(
+					tbody,
+					project,
+					this.groupBy !== 'none' && index === 0
+				);
 			}
 		}
 		this.createNewProjectRow(tbody)
@@ -804,14 +828,18 @@ export class ProjectDashboardView extends Component{
 		}
 	}
 
-	private createProjectRow(target: HTMLTableSectionElement, project: ProjectInfo) {
+	private createProjectRow(
+		target: HTMLTableSectionElement,
+		project: ProjectInfo,
+		firstInGroup: boolean = false
+	) {
 		const row = target.createEl('tr');
 
 		for (const [field, ] of this.getVisibleCols()) {
 
 			const cell = row.createEl("td");
 
-			this.renderCell(cell, field, project);
+			this.renderCell(cell, field, project, firstInGroup);
 		}
 		
 	}
@@ -845,6 +873,7 @@ export class ProjectDashboardView extends Component{
 			// 	break;
 			case 'primary':
 				this.colOrder = [
+					"collapse",
 					"primary",
 
 					"project",
@@ -1283,11 +1312,29 @@ tags:
 	private renderCell(
 		cell: HTMLTableCellElement,
 		field: ProjectColumnField,
-		project: ProjectInfo
+		project: ProjectInfo,
+		firstInGroup: boolean
 	): void {
 		const activeSession = this.activeSessionMap.get(project.file.path);
 
 		switch (field) {
+			case "collapse":
+				{
+					if (firstInGroup) {
+						new ButtonComponent(cell)
+							.setIcon(`list-chevrons-down-up`)
+							// .setClass("group-button")
+							.onClick(async () => {
+								// group isn't collapsed, collapse it
+								const groupKey = this.getGroupKey(project)
+								this.collapsedGroups.add(groupKey);
+								await this.updateProjectTableRows();
+							});
+					
+					}
+					break;
+				}
+
 			case "sessionStatus":
 				{
 					
@@ -1306,34 +1353,50 @@ tags:
 
 			case "project":
 				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
+					cell.addClass("group-button")
 					const projectLink = cell.createEl("a", { text: project.name });
-						projectLink.addEventListener("click", (event) => {
-							event.preventDefault();
-							const existingLeaf = this.app.workspace.getLeavesOfType(
-								"markdown"
-							).find(leaf => {
-								const view = leaf.view;
-								return view.getState().file === project.file.path;
-							});
-
-							if (existingLeaf) {
-								void this.app.workspace.revealLeaf(existingLeaf);
-							} else {
-								void this.app.workspace.getLeaf(false).openFile(project.file);
-							}
+					projectLink.addClass("group-button")
+					projectLink.addEventListener("click", (event) => {
+						event.preventDefault();
+						const existingLeaf = this.app.workspace.getLeavesOfType(
+							"markdown"
+						).find(leaf => {
+							const view = leaf.view;
+							return view.getState().file === project.file.path;
 						});
+
+						if (existingLeaf) {
+							void this.app.workspace.revealLeaf(existingLeaf);
+						} else {
+							void this.app.workspace.getLeaf(false).openFile(project.file);
+						}
+					});
 					
 					break;
 				}
 
 			case "primary":
 				{
+					if (firstInGroup) {
+						cell.addClass("group-button")
+						const groupKey = this.getGroupKey(project)
+						new ButtonComponent(cell)
+							.setButtonText(`${this.getGroupLabel(groupKey)}`)
+							.setClass("group-button")
+							.onClick(async () => {
+								// group isn't collapsed, collapse it
+								
+								this.collapsedGroups.add(groupKey);
+								await this.updateProjectTableRows();
+							});
+
+					}
 					if (this.groupBy !== field) {
 						const file = this.app.vault.getAbstractFileByPath(project.file.path);
 						let client: string = '';
 						if (file instanceof TFile) {
 							client = this.projectManager.getFrontmatterString(file, "Primary").replace(/^\[\[|\]\]$/g, "")
-						}
+						 }
 						cell.setText(client);
 					}
 					break;
@@ -1452,6 +1515,36 @@ tags:
 
 					break;
 				}
+			case "goto":
+				{
+					new ButtonComponent(cell)
+						.setIcon("square-arrow-up-right")
+						// .setButtonText("Action")
+						.setClass("project-dashboard-button")
+						.onClick(async (event: MouseEvent) => {
+
+							const menu = new Menu();
+
+							menu.addItem((item) => {
+								item.setTitle("View todos")
+									.onClick(async () => {
+										// await this.createMeeting(project)
+									});
+							});
+
+							menu.addItem((item) => {
+								item.setTitle("View issues")
+									.onClick(async () => {
+										// await this.issueTracker.createProjectIssue(project);
+									});
+							});
+
+							
+							menu.showAtMouseEvent(event);
+						})
+
+					break;
+				}
 			/*case 'newMeeting':
 				new ButtonComponent(cell)
 					.setButtonText("New meeting")
@@ -1496,24 +1589,43 @@ tags:
 			project => this.activeSessionMap.has(project.file.path)).length;
 
 		switch (field) {
+			case "collapse":
+				{
+					// cell.addClass("group-button")
+					new ButtonComponent(cell)
+						.setIcon(`list-chevrons-up-down`)
+						.onClick(async () => {
+							// group is collapsed, uncollapse it
+							this.collapsedGroups.delete(group.key);
+							await this.updateProjectTableRows();
+						});
+					break
+				}
 			case "sessionStatus":
 				{
 					
+
 					if (activeCount === 0) {
 						cell.setText("");
 						cell.removeClass("small-icon")
 					} else if (activeCount === group.projects.length) {
-						cell.setText("🟢");  //🟢
+						const indicator = cell.createDiv({ cls: "active-indicator" });
+						indicator.createDiv({ cls: "blinky-circle-green" })
+						const span = indicator.createSpan();  //⏲
+						span.setText("🟢")
 						cell.removeClass("small-icon")
 					} else {
 						// some but not all projects active
-						cell.setText("🟢");
+						const indicator = cell.createDiv({ cls: "active-indicator" });
+						indicator.createDiv({ cls: "blinky-circle-green" })
+						const span = indicator.createSpan();  //⏲
+						span.setText("🟢")
 						cell.addClass("small-icon")
 					}
 					break;
 				}
 
-			case "project":  // stacking like this means both cases resolve to the code below
+			// case "project":  // stacking like this means both cases resolve to the code below
 			case "primary":
 				{
 					/*
@@ -1521,7 +1633,18 @@ tags:
 						is not included. For the client value to be displayed, it has to get put in a column that IS present, 
 						and we're not summarizing the project names so that column is empty anyway
 					*/
-
+					// cell.setText(group.label)
+					cell.addClass("group-button")
+					new ButtonComponent(cell)
+						.setButtonText(`${group.label}`)
+						.setClass("group-button")
+						.onClick(async () => {
+							// group is collapsed, uncollapse it
+							this.collapsedGroups.delete(group.key);
+							await this.updateProjectTableRows();
+						});
+					break
+/*
 					cell.addClass("group-button")
 
 					if (this.collapsedGroups.has(group.key)) {
@@ -1543,8 +1666,9 @@ tags:
 								await this.updateProjectTableRows();
 							});
 					}
-
 					break;
+*/
+
 				}
 
 			case "hoursToday":

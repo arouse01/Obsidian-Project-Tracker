@@ -15,24 +15,21 @@ import { TimeTracker } from "./timeTracker";
 import IssueTracker from "./issueTracker"
 import { TodoManager } from "./todoTracker"
 import {
-	PROJECT_DASHBOARD_VIEW_TYPE,
-	PROJECT_SINGLE_VIEW_TYPE,
-	TODO_DASHBOARD_VIEW_TYPE,
 	TIME_DASHBOARD_VIEW_TYPE,
 	VIEW_TYPE_TRACKER
 } from "./constants"
 import {
 	TimeDashboardView
 } from './timeDashboard';
-import {
-	ProjectDashboardView
-} from './projectDashboard'
-import {
-	ProjectSingleView
-} from './projectView'
-import {
-	TodoDashboardView
-} from './todoDashboard'
+// import {
+// 	ProjectDashboardView
+// } from './projectDashboard'
+// import {
+// 	ProjectSingleView
+// } from './projectView'
+// import {
+// 	TodoDashboardView
+// } from './todoDashboard'
 import { TrackerView } from './trackerView';
 
 
@@ -97,14 +94,14 @@ export default class ProjectTrackerPlugin extends Plugin {
 		// 	)
 		// );
 
-		// this.registerView(
-		// 	TIME_DASHBOARD_VIEW_TYPE,
-		// 	leaf => new TimeDashboardView(
-		// 		leaf,
-		// 		this.timeTracker,
-		// 		this.projectManager
-		// 	)
-		// );
+		this.registerView(
+			TIME_DASHBOARD_VIEW_TYPE,
+			leaf => new TimeDashboardView(
+				leaf,
+				this.timeTracker,
+				this.projectManager
+			)
+		);
 
 		// this.registerView(
 		// 	TODO_DASHBOARD_VIEW_TYPE,

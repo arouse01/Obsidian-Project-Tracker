@@ -2,7 +2,6 @@ import {
 	App,
 	Component,
 	Menu,
-	WorkspaceLeaf,
 	ButtonComponent,
 	TFile,
 	setIcon

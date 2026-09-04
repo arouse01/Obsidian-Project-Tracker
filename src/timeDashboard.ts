@@ -54,7 +54,6 @@ const TIME_COLS = {
 type TimeColumnField = keyof typeof TIME_COLS;
 
 export class TimeDashboardView extends ItemView {
-	private container: HTMLElement;
 
 	private summaryPeriod: "week" | "month" = "week";  // to drive the summary period selection
 	private periodOffset = 0;  // to drive the summary period selection, how far in the past to go
@@ -70,13 +69,11 @@ export class TimeDashboardView extends ItemView {
 	private dayTimeSumByPath = new Map<string, TimeSummary>
 
 	constructor(
-		container: HTMLElement,
 		leaf: WorkspaceLeaf,
 		private timeTracker: TimeTracker,
 		private projectManager: MyProjectManager
 	) {
 		super(leaf);
-		this.container = container;
 	}
 
 	getViewType(): string {
@@ -114,7 +111,7 @@ export class TimeDashboardView extends ItemView {
 	}
 
 	private async buildDashboard() {
-		const controlSection = this.container.createEl("section");
+		const controlSection = this.contentEl.createEl("section");
 		controlSection.createEl("h3", {
 			text: "Active projects"
 		});
@@ -198,7 +195,7 @@ export class TimeDashboardView extends ItemView {
 		this.projectTableBodyEl = tableMainEl.createEl('tbody');
 
 
-		const summarySection = this.container.createEl("section");
+		const summarySection = this.contentEl.createEl("section");
 		summarySection.createEl("h3", {
 			text: "Summary"
 		});
