@@ -6,6 +6,8 @@ import {
 	SortDirection
 } from './types'
 
+export type GroupPosition = "first" | "last" | "middle" | null;
+
 // Time summary functions
 export type SummaryPeriod = "week" | "month";  // to drive the summary period selection
 

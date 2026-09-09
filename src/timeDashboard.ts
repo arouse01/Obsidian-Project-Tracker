@@ -11,7 +11,8 @@ import {
 import {
 	ProjectInfo,
 	TimeSummary,
-	TimeSession
+	TimeSession,
+	TimeSummaryStore
 } from './types'
 import { TimeTracker } from './timeTracker';
 import { TimeModal } from './timeModal';
@@ -19,8 +20,10 @@ import {
 	TIME_DASHBOARD_VIEW_TYPE
 } from "./constants"
 import {
+	ColSort,
 	TableColumn,
-	SummaryColumn
+	SummaryColumn,
+	updateSortButtons
 } from './tableFunctions';
 
 const TIME_COLS = {
@@ -28,32 +31,70 @@ const TIME_COLS = {
 		label: "Status",
 		sortable: true,
 		width: "45px",
+		centered: true
 	},
 	"project": {
 		label: "Project",
-		sortable: true
+		sortable: true,
+		centered: true,
+		minWidth: "170px" 
 	},
 	"hoursToday": {
 		label: "Today",
 		sortable: false,
 		width: "50px",
+		centered: true
+	},
+	"hoursWeek": {
+		label: "Week",
+		sortable: false,
+		width: "50px",
+		centered: true
+	},
+	"hoursMonth": {
+		label: "Month",
+		sortable: false,
+		width: "50px",
+		centered: true
 	},
 	"sessionStart": {
 		label: "",
 		sortable: false,
 		width: "40px",
+		centered: true
 	},
 	"sessionAt": {
 		label: "",
 		sortable: false,
 		width: "50px",
+		centered: true
 
 	}
 } satisfies Record<string, TableColumn>;
 
 type TimeColumnField = keyof typeof TIME_COLS;
+type TimeSort = ColSort<TimeColumnField>
+
 
 export class TimeDashboardView extends ItemView {
+	private timeSummaries: TimeSummaryStore = {
+		day: {
+			project: new Map(),
+			client: new Map()
+		},
+		week: {
+			project: new Map(),
+			client: new Map()
+		},
+		month: {
+			project: new Map(),
+			client: new Map()
+		}
+	};
+	private sortBy: TimeSort[] = [
+		{ field: "project", dir: "asc" }
+	];
+	private sortButtons = new Map<TimeColumnField, ButtonComponent>();
 
 	private summaryPeriod: "week" | "month" = "week";  // to drive the summary period selection
 	private periodOffset = 0;  // to drive the summary period selection, how far in the past to go
@@ -112,56 +153,72 @@ export class TimeDashboardView extends ItemView {
 
 	private async buildDashboard() {
 		const controlSection = this.contentEl.createEl("section");
-		controlSection.createEl("h3", {
-			text: "Active projects"
+		controlSection.addClass('dashboard');
+		controlSection.addClass('font-size-12');
+
+		const title = controlSection.createEl("h3", {
+			text: "Time tracker"
 		});
-		controlSection.addClass('time-dashboard')
+		title.addClass("text-centered");
 
-		
 		const tableMainEl = controlSection.createEl('table');
-
+		tableMainEl.addClass('dashboard-table')
 		// create colgroup so we can specify column sizes
 		const colGroup = tableMainEl.createEl('colgroup');
-		let timeCols: SummaryColumn[];
-		timeCols = [
-			{
-				key: "status", 
-				label: "Status",
-				width: "55px",
-			},
-			{
-				key: "project",
-				label: "Project"
-			},
-			{
-				key: "hoursToday",
-				label: "Today",
-				width: "50px",
-			},
-			{
-				key: "sessionStart",
-				label: "",
-				width: "50px",
-				format: "timeGroup"
-			},
-			{
-				key: "sessionAt",
-				label: "",
-				width: "70px",
-				format: "timeGroup"
-			}]
+		const timeCols = this.getVisibleCols()
+		// let timeCols: SummaryColumn[];
+		// timeCols = [
+		// 	{
+		// 		key: "status", 
+		// 		label: "Status",
+		// 		width: "55px",
+		// 	},
+		// 	{
+		// 		key: "project",
+		// 		label: "Project",
+		// 		width: "250px",
+		// 		maxWidth: "300px"
+		// 	},
+		// 	{
+		// 		key: "hoursToday",
+		// 		label: "Today",
+		// 		width: "50px",
+		// 	},
+		// 	{
+		// 		key: "hoursWeek",
+		// 		label: "Week",
+		// 		width: "50px",
+		// 	},
+		// 	{
+		// 		key: "sessionStart",
+		// 		label: "",
+		// 		width: "40px",
+		// 		format: "timeGroup"
+		// 	},
+		// 	{
+		// 		key: "sessionAt",
+		// 		label: "",
+		// 		width: "50px",
+		// 		format: "timeGroup"
+		// 	}]
 		
-		for (const column of timeCols) {
+		for (const [, column] of timeCols) {
 			const col = colGroup.createEl("col")
 			if (column.width) {
 				col.style.width = column.width;
+			}
+			if (column.minWidth) {
+				col.style.minWidth = column.minWidth;
+			}
+			if (column.maxWidth) {
+				col.style.maxWidth = column.maxWidth;
 			}
 		}
 
 		// Create headers
 
-		const tableMainHeaderEl = tableMainEl.createEl('thead');
-		const headerMainRowEl = tableMainHeaderEl.createEl('tr');
+		// const tableMainHeaderEl = tableMainEl.createEl('thead');
+		// const headerMainRowEl = tableMainHeaderEl.createEl('tr');
 
 		/*
 		// const colGroups = new Map<string, TableColumn[]>();
@@ -187,21 +244,28 @@ export class TimeDashboardView extends ItemView {
 		*/
 
 		// manually creating headers because this table is so simple
-		headerMainRowEl.createEl('th', { text: 'Status' });
-		headerMainRowEl.createEl('th', { text: 'Project' });
-		headerMainRowEl.createEl('th', { text: 'Today' });
-		headerMainRowEl.createEl('th', { text: 'Action', attr: { colspan: 2 } });
+		// headerMainRowEl.createEl('th', { text: 'Status' })
+		// 	.addClass("text-centered");
+		// headerMainRowEl.createEl('th', { text: 'Project' })
+		// 	.addClass("text-centered");
+		// headerMainRowEl.createEl('th', { text: 'Today' })
+		// 	.addClass("text-centered");
+		// headerMainRowEl.createEl('th', { text: 'Action', attr: { colspan: 2 } })
+		// 	.addClass("text-centered");
+		this.createTimeTableHeaders(tableMainEl, timeCols)
 
 		this.projectTableBodyEl = tableMainEl.createEl('tbody');
-
+		
+/*
 
 		const summarySection = this.contentEl.createEl("section");
+		summarySection.addClass("dashboard")
 		summarySection.createEl("h3", {
 			text: "Summary"
 		});
 
 
-		summarySection.addClass('time-dashboard')
+		summarySection.addClass('font-size-12')
 
 		const summaryControlsTop = summarySection.createDiv();
 		summaryControlsTop.addClass('summary-controls')
@@ -211,7 +275,7 @@ export class TimeDashboardView extends ItemView {
 			attr: { for: 'period-selector' }
 		});
 		const periodSelect = summaryControlsTop.createEl('select', {
-			cls: 'summary-period-select',
+			cls: 'dropdown-new',
 			attr: { id: 'period-selector' }
 		});
 		periodSelect.createEl('option', {
@@ -269,34 +333,38 @@ export class TimeDashboardView extends ItemView {
 				this.periodOffset = 0;
 				await this.updateSummaryTable();
 			})
-
+*/
 		// select.style.width = "100%";
 
-		const tableSummaryEl = summarySection.createEl('table');
-		tableSummaryEl.addClass('summary-section')
-		const tableSummaryHeaderEl = tableSummaryEl.createEl('thead');
-		const headerSummaryRowEl = tableSummaryHeaderEl.createEl('tr');
-		headerSummaryRowEl.createEl('th', { text: 'Project' });
-		headerSummaryRowEl.createEl('th', { text: 'Time' });
+		// const tableSummaryEl = summarySection.createEl('table');
+		// tableSummaryEl.addClass('summary-section')
+		// tableSummaryEl.addClass('dashboard-table')
 
-		this.summaryTableBodyEl = tableSummaryEl.createEl('tbody');
+
+		// const tableSummaryHeaderEl = tableSummaryEl.createEl('thead');
+		// const headerSummaryRowEl = tableSummaryHeaderEl.createEl('tr');
+		// headerSummaryRowEl.createEl('th', { text: 'Project' });
+		// headerSummaryRowEl.createEl('th', { text: 'Time' });
+
+		// this.summaryTableBodyEl = tableSummaryEl.createEl('tbody');
 	}
 
 	async updateDashboard(): Promise<void> {
 		await this.updateTimeRows();
-		await this.updateSummaryTable();
+		// await this.updateSummaryTable();
 	}
 
 	private getVisibleCols(): Array<
 		[TimeColumnField, TableColumn]
 	> {
 		const colOrder: TimeColumnField[] = [
-					"status",
-					"project",
-					"hoursToday",
-					"sessionStart",
-					"sessionAt"
-				]
+			"status",
+			"project",
+			"hoursToday",
+			"hoursWeek",
+			"sessionStart",
+			"sessionAt"
+		]
 				
 		return colOrder.map(field => [
 			field,
@@ -305,22 +373,124 @@ export class TimeDashboardView extends ItemView {
 
 	}
 
-	async updateSummaries(): Promise<void> {
-		const dayStart = window.moment()
-			.startOf("day")
-			.toDate();
-		const dayEnd = window.moment()
-			.endOf("day")
-			.toDate();
-		const daySummaryTotals = await this.timeTracker.getTimeSummary(dayStart, dayEnd);
-		this.dayTimeSumByPath = new Map(
-			daySummaryTotals.map(summary => [summary.key, summary])
-		)
+	private createTimeTableHeaders(
+		table: HTMLTableElement,
+		columns: Array<[TimeColumnField, TableColumn]>
+	): void {
+		const thead = table.createEl('thead');
+		const row = thead.createEl('tr');
 
+		for (const [field, column] of columns) {
+			const header = row.createEl('th');
+
+			if (!column.centered) {
+				header.addClass("left-align")
+			}
+
+			if (column.sortable) {
+				const button = new ButtonComponent(header)
+					// .setButtonText(column.label)
+					// .setClass("todo-dashboard-button")
+					.onClick(async () => {
+						// group is collapsed, uncollapse it
+						this.updateSort(field);
+						await this.updateTimeRows();
+					});
+				this.sortButtons.set(field, button);
+			} else {
+				header.setText(column.label)
+			}
+		}
+		updateSortButtons(this.sortButtons, this.sortBy, TIME_COLS);
+	}
+
+	private updateSort(field: TimeColumnField) {
+		const index = this.sortBy.findIndex(sort => sort.field === field);
+
+		if (index === -1) {
+			// index of -1 means it's not in the list at all, add it
+			this.sortBy.unshift({
+				field,
+				dir: "asc"
+			});
+		} else {
+			const sort = this.sortBy[index];
+			if (sort!.dir === "asc") {
+				// currently ascending, change to descending
+				sort!.dir = "desc";
+
+				// move to front of array
+				this.sortBy.splice(index, 1);
+				this.sortBy.unshift(sort!);
+			} else {
+				// dir can only be asc, desc, or none (not present)
+				this.sortBy.splice(index, 1);
+			}
+		}
+
+
+		updateSortButtons(this.sortButtons, this.sortBy, TIME_COLS);
+
+	}
+
+	async updateSummaries(): Promise<void> {
 		const activeSessions = await this.timeTracker.getActiveSessions();
 		this.activeSessionMap = new Map(
 			activeSessions.map(session => [session.projectPath, session])
 		);
+
+		const weekStart = window.moment().startOf("week").toDate();
+		const weekEnd = window.moment().endOf("week").toDate();
+		const weekSummaryTotals = await this.timeTracker.getTimeSummary(weekStart, weekEnd);
+		const weekClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(weekStart, weekEnd);
+
+		const dayStart = window.moment().startOf("day").toDate();
+		const dayEnd = window.moment().endOf("day").toDate();
+		const daySummaryTotals = await this.timeTracker.getTimeSummary(dayStart, dayEnd);
+		const dayClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(dayStart, dayEnd);
+
+		const monthStart = window.moment().startOf("month").toDate();
+		const monthEnd = window.moment().endOf("month").toDate();
+		const monthSummaryTotals = await this.timeTracker.getTimeSummary(monthStart, monthEnd);
+		const monthClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(monthStart, monthEnd);
+
+		this.timeSummaries.day.project = new Map(
+			daySummaryTotals.map(summary => [
+				summary.key,
+				summary.totalMinutes
+			])
+		);
+		this.timeSummaries.day.client = new Map(
+			dayClientSummaryTotals.map(summary => [
+				summary.key,
+				summary.totalMinutes
+			])
+		);
+		this.timeSummaries.week.project = new Map(
+			weekSummaryTotals.map(summary => [
+				summary.key,
+				summary.totalMinutes
+			])
+		);
+		this.timeSummaries.week.client = new Map(
+			weekClientSummaryTotals.map(summary => [
+				summary.key,
+				summary.totalMinutes
+			])
+		);
+		this.timeSummaries.month.project = new Map(
+			monthSummaryTotals.map(summary => [
+				summary.key,
+				summary.totalMinutes
+			])
+		);
+		this.timeSummaries.month.client = new Map(
+			monthClientSummaryTotals.map(summary => [
+				summary.key,
+				summary.totalMinutes
+			])
+		);
+		
 	}
 
 	async updateTimeRows(): Promise<void> {
@@ -390,7 +560,11 @@ export class TimeDashboardView extends ItemView {
 				{
 					// const isActive = activePaths.has(project.file.path);
 					if (activeSession) {
-						cell.setText("🟢");  //⏲
+						const indicator = cell.createDiv({ cls: "active-indicator" });
+						indicator.createDiv({ cls: "blinky-circle-green" })
+						const span = indicator.createSpan();  //⏲
+						span.setText("🟢")
+
 					} else {
 						cell.setText("");
 					}
@@ -422,19 +596,32 @@ export class TimeDashboardView extends ItemView {
 			
 			case "hoursToday":
 				{
-					const dailyTimeSum = this.dayTimeSumByPath.get(project.file.path);
-					const dailyTimeText = formatMinutesToDuration(dailyTimeSum?.totalMinutes ?? 0);
+					const dailyTimeSum = this.timeSummaries.day.project.get(project.file.path) ?? 0;
+					const dailyTimeText = formatMinutesToDuration(dailyTimeSum);
 					cell.setText(dailyTimeText);
-
-
 					break;
 				}
 
-			
+			case "hoursWeek":
+				{
+					const weekTimeSum = this.timeSummaries.week.project.get(project.file.path) ?? 0;
+					const weekTimeText = formatMinutesToDuration(weekTimeSum);
+					cell.setText(weekTimeText);
+					break;
+				}
+
+			case "hoursMonth":
+				{
+					const monthTimeSum = this.timeSummaries.month.project.get(project.file.path) ?? 0;
+					const monthTimeText = formatMinutesToDuration(monthTimeSum);
+					cell.setText(monthTimeText);
+					break;
+				}
+
 			case 'sessionStart':
 				new ButtonComponent(cell)
 					.setButtonText(activeSession ? "Stop" : "Start")
-					.setClass("project-dashboard-button")
+					.setClass("dashboard")
 					.onClick(async () => {
 						if (activeSession) {
 							await this.timeTracker.stopProjectSession(project)
@@ -450,7 +637,7 @@ export class TimeDashboardView extends ItemView {
 			case 'sessionAt':
 				new ButtonComponent(cell)
 					.setButtonText(activeSession ? "Stop at" : "Start at")
-					.setClass("project-dashboard-button")
+					.setClass("button")
 					.onClick(async () => {
 						if (activeSession) {
 							new TimeModal(this.app, {
@@ -573,7 +760,7 @@ export class TimeDashboardView extends ItemView {
 	}
 
 
-	async updateSummaryTable(): Promise<void> {
+	/*async updateSummaryTable(): Promise<void> {
 		
 		const { start, end } = this.getSummaryPeriod();
 
@@ -589,11 +776,11 @@ export class TimeDashboardView extends ItemView {
 		const newBody = createEl('tbody')
 
 		const summaryTotals = await this.timeTracker.getTimeSummary(start, end);
-		/*
+		*//*
 			summaryTotals are returned as array of TimeSummary objects 
 			which is projectPath (string) and totalMinutes (number), so 
 			we have to loop through and assign to the table
-		*/
+		*//*
 		for (const timeSum of summaryTotals) {
 
 			// create row skeleton, and assign values to objects after (for cleaner visual code organization)
@@ -633,7 +820,7 @@ export class TimeDashboardView extends ItemView {
 
 		return { start, end };
 	}
-
+*/
 	
 }
 

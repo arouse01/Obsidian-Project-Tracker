@@ -18,7 +18,7 @@ import {
 import {
 	sortItems,
 	ColSort,
-	// GroupDefs,
+	SummaryColumn,
 	TableColumn,
 	updateSortButtons,
 	getGroupOptions
@@ -32,48 +32,56 @@ const TODO_COLS = {
 	"name": {
 		label: "Name",
 		sortable: true,
-		groupable: false
+		groupable: false,
+		width: "250px"
 	},
 	"priority": {
 		label: "Priority",
 		sortable: true,
 		groupable: true,
-		centered: true
+		centered: true,
+		width: "75px"
 	},
 	"notes": {
 		label: "Notes",
 		sortable: false,
-		groupable: false
+		groupable: false,
+		minWidth: "350px"
 	},
 	"status": {
 		label: "",
 		sortable: false,
 		groupable: false,
-		centered: true
+		centered: true,
+		width: "30px"
 	},
 	"project": {
 		label: "Project",
 		sortable: true,
 		groupable: true,
-		centered: true
+		centered: true,
+		width: "250px"
 	},
 	"dueDate": {
 		label: "Due",
 		sortable: true,
 		groupable: false,
-		centered: true
+		centered: true,
+		width: "75px"
 	},
 	"startDate": {
 		label: "Added",
 		sortable: false,
 		groupable: false,
-		centered: true
+		centered: true,
+		width: "75px"
 	},
 	"action": {
 		label: "Action",
 		sortable: false,
 		groupable: false,
-		centered: true
+		centered: true,
+		width: "55px"
 	}
 } satisfies Record<string, TableColumn>;
 
@@ -182,12 +190,14 @@ export class TodoDashboardView extends Component {
 
 	private buildDashboard() {
 		const mainSection = this.container.createEl("section");
+		mainSection.addClass("dashboard")
+		mainSection.addClass("font-size-12")
 		// mainSection.createEl("h3", {
 		// 	text: "Todo list"
 		// });
-		mainSection.addClass("todo-dashboard")
+		
 		const controlSection = mainSection.createEl("section");
-		controlSection.addClass('todo-controls');
+		controlSection.addClass('summary-controls');
 		
 		const groupingLabelDiv = controlSection.createDiv()
 		groupingLabelDiv.createEl("label", { text: 'Group by:' })
@@ -221,9 +231,15 @@ export class TodoDashboardView extends Component {
 		
 
 		const todoSection = mainSection.createEl("section");
-		todoSection.addClass("todo-dashboard")
+		// todoSection.addClass("todo-dashboard")
 		this.todoTableEl = todoSection.createEl('table');
-		this.createTodoTableHeaders(this.todoTableEl);
+		this.todoTableEl.addClass('dashboard-table')
+
+		// create colgroup so we can specify column sizes
+		
+		const columns = this.getVisibleCols();
+		this.createTodoTableColGroup(this.todoTableEl, columns);
+		this.createTodoTableHeaders(this.todoTableEl, columns);
 
 		this.todoTableBodyEl = this.todoTableEl.createEl('tbody')
 
@@ -231,7 +247,7 @@ export class TodoDashboardView extends Component {
 		const bottomSection = mainSection.createEl("section");
 		new ButtonComponent(bottomSection)
 			.setButtonText("Create new todo")
-			.setClass("todo-dashboard-button-add")
+			// .setClass("todo-dashboard-button-add")
 			.onClick(async () => {
 				await this.todoManager.startBlankTodoItem();
 			})
@@ -239,21 +255,44 @@ export class TodoDashboardView extends Component {
 
 	}
 
-	private createTodoTableHeaders(table: HTMLTableElement): void {
+	private createTodoTableColGroup(
+		table: HTMLTableElement,
+		columns: Array<[TodoColumnField, TableColumn]>
+	): void {
+		const colGroup = table.createEl('colgroup');
+
+		for (const [, column] of columns) {
+			const col = colGroup.createEl("col")
+			if (column.width) {
+				col.style.width = column.width;
+			}
+			if (column.minWidth) {
+				col.style.minWidth = column.minWidth;
+			}
+			if (column.maxWidth) {
+				col.style.maxWidth = column.maxWidth;
+			}
+		}
+	}
+
+	private createTodoTableHeaders(
+		table: HTMLTableElement,
+		columns: Array<[TodoColumnField, TableColumn]>
+	): void {
 		const thead = table.createEl('thead');
 		const row = thead.createEl('tr');
 
-		for (const [field, column] of this.getVisibleCols()) {
+		for (const [field, column] of columns) {
 			const header = row.createEl('th');
 			
-			if (column.centered) {
-				header.addClass("center-align")
+			if (!column.centered) {
+				header.addClass("left-align")
 			}
 
 			if (column.sortable) {
 				const button = new ButtonComponent(header)
 					// .setButtonText(column.label)
-					.setClass("todo-dashboard-button")
+					// .setClass("todo-dashboard-button")
 					.onClick(async () => {
 						// group is collapsed, uncollapse it
 						this.updateSort(field);
@@ -278,7 +317,8 @@ export class TodoDashboardView extends Component {
 
 	async rebuildTodoTable(): Promise<void> {
 		const newTable = createEl('table')
-		this.createTodoTableHeaders(newTable);
+		const columns = this.getVisibleCols();
+		this.createTodoTableHeaders(newTable, columns);
 		const newBody = newTable.createEl('tbody')
 		await this.buildTodoTableBody(newBody);
 
@@ -347,7 +387,7 @@ export class TodoDashboardView extends Component {
 		if (this.collapsedGroups.has(group.key)) {
 			new ButtonComponent(groupCell)
 				.setButtonText(`${group.label} ▶`)
-				.setClass("todo-dashboard-button")
+				// .setClass("todo-dashboard-button")
 				.onClick(async () => {
 					// group is collapsed, uncollapse it
 					this.collapsedGroups.delete(group.key);
@@ -371,7 +411,7 @@ export class TodoDashboardView extends Component {
 		for (const [field, column] of this.getVisibleCols()) {
 			const cell = row.createEl("td");
 			if (column.centered) {
-				cell.addClass("center-align")
+				cell.addClass("text-centered")
 			}
 			this.renderColumn(cell, field, todo);
 		}
@@ -438,7 +478,7 @@ export class TodoDashboardView extends Component {
 				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
 					const projectName = todo.projectPath ? this.projectMap.get(todo.projectPath) ?? "Unknown" : "None";
 					cell.setText(projectName);
-					cell.addClass('center-align');
+					cell.addClass('text-centered');
 					break;
 				}
 
@@ -448,7 +488,7 @@ export class TodoDashboardView extends Component {
 
 			case "status":
 				{
-					cell.addClass("center-align");
+					cell.addClass("text-centered");
 					const check = cell.createEl('input')
 					check.type = 'checkbox';
 					check.checked = todo.status;

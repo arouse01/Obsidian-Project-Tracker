@@ -23,6 +23,7 @@ import { TimeModal } from './timeModal';
 import IssueTracker from './issueTracker';
 import { TodoManager } from './todoTracker';
 import {
+	GroupPosition,
 	SummaryPeriod,
 	getSummaryPeriod,
 	SummaryGroup,
@@ -44,7 +45,7 @@ const PROJ_COLS = {
 		label: "",
 		sortable: false,
 		groupable: false,
-		width: "20px",
+		width: "25px",
 		tableGroup: "",
 		centered: true
 	},
@@ -53,7 +54,7 @@ const PROJ_COLS = {
 		sortable: true,
 		groupable: false,
 		width: "55px",
-		tableGroup: ""
+		tableGroup: "Project"
 	},
 	"project": {
 		label: "Project",
@@ -316,7 +317,7 @@ export class ProjectDashboardView extends Component{
 		// filterSection.addClass("control-row")
 		filterSection.createEl("label", { text: 'Show only:' })
 		const filterSelect = filterSection.createEl('select', {
-			cls: 'project-filter-select'
+			cls: 'dropdown-new'
 		});
 		for (const filter of PROJECT_STATUS_FILTERS) {
 			filterSelect.createEl('option', {
@@ -337,11 +338,11 @@ export class ProjectDashboardView extends Component{
 
 		// To add more group options, update Project_Group_Fields in types.ts and add the grouping logic to getGroupKey and getGroupLabel
 		const groupingSection = controlRow1.createDiv({ cls: 'project-controls' });
-		groupingSection.addClass("new-project-button")
+		groupingSection.addClass("right-align")
 		// groupingSection.addClass("control-row")
 		groupingSection.createEl("label", { text: 'Group by:' })
 		const groupSelect = groupingSection.createEl('select', {
-			cls: 'project-filter-select'
+			cls: 'dropdown-new'
 		});
 		for (const group of getGroupOptions(PROJ_COLS)) {
 			groupSelect.createEl('option', {
@@ -374,14 +375,14 @@ export class ProjectDashboardView extends Component{
 		controlRow2.addClass("control-row")
 		
 		const sortingSection = controlRow2.createDiv({ cls: 'project-controls' });
-		sortingSection.addClass("new-project-button")
+		sortingSection.addClass("right-align")
 		// sortingSection.addClass("control-row")
 		sortingSection.createEl("label", { text: 'Sort by:' })
 		for (const group of getSortOptions(PROJ_COLS)) {
 
 			const button = new ButtonComponent(sortingSection)
 					// .setButtonText(column.label)
-					.setClass("project-dashboard-button")
+					.setClass("dashboard")
 					.onClick(async () => {
 						// group is collapsed, uncollapse it
 						this.updateSort(group.value);
@@ -393,9 +394,10 @@ export class ProjectDashboardView extends Component{
 */
 		const projectTableSection = projectSection.createDiv({ cls: 'project-section' });
 		projectTableSection.addClass('project-dashboard');
+		projectTableSection.addClass('dashboard');
 
 		this.projectTableEl = projectTableSection.createEl('table');
-		this.projectTableEl.addClass("project-table")
+		this.projectTableEl.addClass("dashboard-table")
 		const columns = this.getVisibleCols();
 		this.createProjectTableColGroup(this.projectTableEl, columns);
 		this.createProjectTableHeaders(this.projectTableEl, columns);
@@ -406,7 +408,7 @@ export class ProjectDashboardView extends Component{
 		// controlBottomSection.addClass("control-col")
 		// new ButtonComponent(controlBottomSection)
 		// 	.setButtonText("New project...")
-		// 	.setClass("new-project-button")
+		// 	.setClass("right-align")
 		// 	.onClick(async () => {
 		// 		await this.addProject();
 		// 		await this.updateProjectTableRows();
@@ -429,7 +431,7 @@ export class ProjectDashboardView extends Component{
 			attr: { for: 'period-selector' }
 		});
 		const periodSelect = summaryControlsTop.createEl('select', {
-			cls: 'summary-period-select',
+			cls: 'dropdown-new',
 			attr: { id: 'period-selector' }
 		});
 		periodSelect.createEl('option', {
@@ -496,7 +498,8 @@ export class ProjectDashboardView extends Component{
 		sectionSummaryTableEl.addClass('project-dashboard');
 
 		this.summaryTableEl = sectionSummaryTableEl.createEl('table');
-		this.summaryTableEl.addClass('project-table')
+		this.summaryTableEl.addClass("dashboard-table")
+		this.summaryTableEl.addClass("text-centered")
 		const summaryData = await this.getSummaryData()
 		const summaryCols = this.getSummaryColumns(summaryData);
 		this.createSummaryTableColGroup(this.summaryTableEl, summaryCols);
@@ -585,13 +588,13 @@ export class ProjectDashboardView extends Component{
 
 			// header.setText(column.label)
 			if (!column.centered) {
-				header.addClass("group-button")
+				header.addClass("left-align")
 			}
 
 
 			if (column.sortable) {
 				const button = new ButtonComponent(header)
-					.setClass("project-dashboard-button")
+					.setClass("dashboard")
 					.onClick(async () => {
 						// group is collapsed, uncollapse it
 						this.updateSort(field);
@@ -644,16 +647,27 @@ export class ProjectDashboardView extends Component{
 			if (this.groupBy !== 'none') {
 
 				if (this.collapsedGroups.has(group.key)) {
-					this.renderGroupHeader(tbody, group);
+					this.renderGroupHeaderRow(tbody, group);
 					continue;  // skip adding rows if the group is collapsed
 				}
 			}
 
 			for (const [index, project] of group.projects.entries()) {
+				let groupPos: GroupPosition = null;
+				if (this.groupBy !== 'none') {
+					if (index === 0) {
+						groupPos = "first";
+					} else if (index === group.projects.length - 1) {
+						groupPos = "last"
+					} else {
+						groupPos = "middle"
+					}
+				}
+				
 				this.createProjectRow(
 					tbody,
 					project,
-					this.groupBy !== 'none' && index === 0
+					groupPos
 				);
 			}
 		}
@@ -817,8 +831,9 @@ export class ProjectDashboardView extends Component{
 		}
 	}
 
-	private renderGroupHeader(target: HTMLTableSectionElement, group: ProjectGroup) {
+	private renderGroupHeaderRow(target: HTMLTableSectionElement, group: ProjectGroup) {
 		const groupRow = target.createEl('tr');
+		groupRow.addClass("first")
 		groupRow.addClass("group-row")
 		for (const [field,] of this.getVisibleCols()) {
 
@@ -831,15 +846,17 @@ export class ProjectDashboardView extends Component{
 	private createProjectRow(
 		target: HTMLTableSectionElement,
 		project: ProjectInfo,
-		firstInGroup: boolean = false
+		groupPos: GroupPosition = null,
 	) {
 		const row = target.createEl('tr');
-
+		if (groupPos === "first") {
+			row.addClass("first")
+		}
 		for (const [field, ] of this.getVisibleCols()) {
 
 			const cell = row.createEl("td");
 
-			this.renderCell(cell, field, project, firstInGroup);
+			this.renderCell(cell, field, project, groupPos);
 		}
 		
 	}
@@ -1143,7 +1160,7 @@ export class ProjectDashboardView extends Component{
 		const groupCell = headerRow.createEl('th');
 		
 		const groupSelect = groupCell.createEl('select', {
-			cls: 'summary-group-select'
+			cls: 'dropdown-new'
 		});
 		groupSelect.createEl('option', {
 			value: 'project',
@@ -1313,25 +1330,58 @@ tags:
 		cell: HTMLTableCellElement,
 		field: ProjectColumnField,
 		project: ProjectInfo,
-		firstInGroup: boolean
+		groupPos: GroupPosition
 	): void {
 		const activeSession = this.activeSessionMap.get(project.file.path);
 
 		switch (field) {
 			case "collapse":
 				{
-					if (firstInGroup) {
-						new ButtonComponent(cell)
-							.setIcon(`list-chevrons-down-up`)
-							// .setClass("group-button")
-							.onClick(async () => {
-								// group isn't collapsed, collapse it
-								const groupKey = this.getGroupKey(project)
-								this.collapsedGroups.add(groupKey);
-								await this.updateProjectTableRows();
-							});
-					
+					cell.addClass("group-member")
+					switch (groupPos) {
+						case "first":
+							{
+								cell.addClass("first")
+								new ButtonComponent(cell)
+									// .setIcon(`list-chevrons-down-up`)
+									.setButtonText("⊟")
+									// .setClass("first")
+									.onClick(async () => {
+										// group isn't collapsed, collapse it
+										const groupKey = this.getGroupKey(project)
+										this.collapsedGroups.add(groupKey);
+										await this.updateProjectTableRows();
+									});
+								// const wrapper = cell.createDiv({ cls: "group-tree-wrapper" })
+								// wrapper.createSpan({ cls: "group-tree-line-first" })
+								break;
+							}
+						case "middle":
+							{
+								const wrapper = cell.createDiv({ cls: "group-tree-wrapper" })
+								wrapper.createSpan({ cls: "group-tree-line" })
+								wrapper.createSpan({ cls: "group-tree-branch" })
+								// cell.createDiv({ cls: "group-tree-line" })
+								// 	.setText("├")
+								// cell.addClass("group-tree-line")
+								// cell.setText("|");
+								// cell.addClass("group-member");
+								break;
+							}
+						case "last":
+							{
+								const wrapper = cell.createDiv({ cls: "group-tree-wrapper" })
+								wrapper.createSpan({ cls: "group-tree-line-last" })
+								wrapper.createSpan({ cls: "group-tree-branch" })
+								// wrapper.createDiv({ cls: "group-tree-line" })
+									// .setText("└");
+								// cell.addClass("group-member");
+								break;
+							}
+						default:
+							break;
 					}
+					
 					break;
 				}
 
@@ -1353,36 +1403,37 @@ tags:
 
 			case "project":
 				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
-					cell.addClass("group-button")
-					const projectLink = cell.createEl("a", { text: project.name });
-					projectLink.addClass("group-button")
-					projectLink.addEventListener("click", (event) => {
-						event.preventDefault();
-						const existingLeaf = this.app.workspace.getLeavesOfType(
-							"markdown"
-						).find(leaf => {
-							const view = leaf.view;
-							return view.getState().file === project.file.path;
-						});
+					cell.addClass("left-align")
+					new ButtonComponent(cell)
+						.setButtonText(project.name)
+						.setClass("left-align")
+						.onClick(async (event) => {
+							event.preventDefault();
+							const existingLeaf = this.app.workspace.getLeavesOfType(
+								"markdown"
+							).find(leaf => {
+								const view = leaf.view;
+								return view.getState().file === project.file.path;
+							});
 
-						if (existingLeaf) {
-							void this.app.workspace.revealLeaf(existingLeaf);
-						} else {
-							void this.app.workspace.getLeaf(false).openFile(project.file);
-						}
-					});
+							if (existingLeaf) {
+								void this.app.workspace.revealLeaf(existingLeaf);
+							} else {
+								void this.app.workspace.getLeaf(false).openFile(project.file);
+							}
+						});
 					
 					break;
 				}
 
 			case "primary":
 				{
-					if (firstInGroup) {
-						cell.addClass("group-button")
+					// if (groupPos === "first") {
+						cell.addClass("left-align")
 						const groupKey = this.getGroupKey(project)
 						new ButtonComponent(cell)
 							.setButtonText(`${this.getGroupLabel(groupKey)}`)
-							.setClass("group-button")
+							.setClass("left-align")
 							.onClick(async () => {
 								// group isn't collapsed, collapse it
 								
@@ -1390,7 +1441,7 @@ tags:
 								await this.updateProjectTableRows();
 							});
 
-					}
+					// }
 					if (this.groupBy !== field) {
 						const file = this.app.vault.getAbstractFileByPath(project.file.path);
 						let client: string = '';
@@ -1420,16 +1471,16 @@ tags:
 
 			case 'hoursMonth':
 				{
-					const weekTimeSum = this.timeSummaries.month.project.get(project.file.path) ?? 0;
-					const weekTimeText = formatMinutesToDuration(weekTimeSum);
-					cell.setText(weekTimeText);
+					const monthTimeSum = this.timeSummaries.month.project.get(project.file.path) ?? 0;
+					const monthTimeText = formatMinutesToDuration(monthTimeSum);
+					cell.setText(monthTimeText);
 					break;
 				}
 
 			case 'sessionStart':
 				new ButtonComponent(cell)
 						.setButtonText(activeSession ? "Stop" : "Start")
-						.setClass("project-dashboard-button")
+						.setClass("dashboard")
 						.onClick(async () => {
 							if (activeSession) {
 								await this.timeTracker.stopProjectSession(project)
@@ -1444,7 +1495,7 @@ tags:
 			case 'sessionAt':
 				new ButtonComponent(cell)
 					.setButtonText(activeSession ? "Stop at" : "Start at")
-					.setClass("project-dashboard-button")
+					.setClass("dashboard")
 					.onClick(async () => {
 						if (activeSession) {
 							new TimeModal(this.app, {
@@ -1485,7 +1536,7 @@ tags:
 					new ButtonComponent(cell)
 						.setIcon("plus-circle")
 						// .setButtonText("Action")
-						.setClass("project-dashboard-button")
+						.setClass("dashboard")
 						.onClick(async (event: MouseEvent) => {
 
 							const menu = new Menu();
@@ -1520,7 +1571,7 @@ tags:
 					new ButtonComponent(cell)
 						.setIcon("square-arrow-up-right")
 						// .setButtonText("Action")
-						.setClass("project-dashboard-button")
+						.setClass("dashboard")
 						.onClick(async (event: MouseEvent) => {
 
 							const menu = new Menu();
@@ -1548,7 +1599,7 @@ tags:
 			/*case 'newMeeting':
 				new ButtonComponent(cell)
 					.setButtonText("New meeting")
-					.setClass("project-dashboard-button")
+					.setClass("dashboard")
 					.onClick(async () => {
 						await this.createMeeting(project)
 					})
@@ -1558,7 +1609,7 @@ tags:
 			case 'newIssue':
 				new ButtonComponent(cell)
 					.setButtonText("New issue")
-					.setClass("project-dashboard-button")
+					.setClass("dashboard")
 					.onClick(async () => {
 						await this.issueTracker.createProjectIssue(project);
 					})
@@ -1568,7 +1619,7 @@ tags:
 			case 'newTodo':
 				new ButtonComponent(cell)
 					.setButtonText("New todo")
-					.setClass("project-dashboard-button")
+					.setClass("dashboard")
 					.onClick(async () => {
 						await this.todoManager.startProjectTodoItem(project);
 
@@ -1591,15 +1642,26 @@ tags:
 		switch (field) {
 			case "collapse":
 				{
-					// cell.addClass("group-button")
+					cell.addClass("group-member")
+					cell.addClass("first")
 					new ButtonComponent(cell)
-						.setIcon(`list-chevrons-up-down`)
+						// .setIcon(`list-chevrons-down-up`)
+						.setButtonText('⊞')
+						// .setClass("first")
 						.onClick(async () => {
 							// group is collapsed, uncollapse it
 							this.collapsedGroups.delete(group.key);
 							await this.updateProjectTableRows();
 						});
-					break
+					break;
+					
+					/*new ButtonComponent(cell)
+						// .setIcon(`list-chevrons-up-down`)
+						
+						.onClick(async () => {
+							
+						});
+					break*/
 				}
 			case "sessionStatus":
 				{
@@ -1607,20 +1669,17 @@ tags:
 
 					if (activeCount === 0) {
 						cell.setText("");
-						cell.removeClass("small-icon")
-					} else if (activeCount === group.projects.length) {
+					/*} else if (activeCount === group.projects.length) {
 						const indicator = cell.createDiv({ cls: "active-indicator" });
 						indicator.createDiv({ cls: "blinky-circle-green" })
 						const span = indicator.createSpan();  //⏲
-						span.setText("🟢")
-						cell.removeClass("small-icon")
+						span.setText("🟢")*/
 					} else {
 						// some but not all projects active
 						const indicator = cell.createDiv({ cls: "active-indicator" });
 						indicator.createDiv({ cls: "blinky-circle-green" })
 						const span = indicator.createSpan();  //⏲
 						span.setText("🟢")
-						cell.addClass("small-icon")
 					}
 					break;
 				}
@@ -1634,10 +1693,10 @@ tags:
 						and we're not summarizing the project names so that column is empty anyway
 					*/
 					// cell.setText(group.label)
-					cell.addClass("group-button")
+					cell.addClass("left-align")
 					new ButtonComponent(cell)
 						.setButtonText(`${group.label}`)
-						.setClass("group-button")
+						.setClass("left-align")
 						.onClick(async () => {
 							// group is collapsed, uncollapse it
 							this.collapsedGroups.delete(group.key);
@@ -1645,12 +1704,12 @@ tags:
 						});
 					break
 /*
-					cell.addClass("group-button")
+					cell.addClass("left-align")
 
 					if (this.collapsedGroups.has(group.key)) {
 						new ButtonComponent(cell)
 							.setButtonText(`[+] ${group.label}`)
-							.setClass("group-button")
+							.setClass("left-align")
 							.onClick(async () => {
 								// group is collapsed, uncollapse it
 								this.collapsedGroups.delete(group.key);
@@ -1659,7 +1718,7 @@ tags:
 					} else {
 						new ButtonComponent(cell)
 							.setButtonText(`[-] ${group.label}`)
-							.setClass("group-button")
+							.setClass("left-align")
 							.onClick(async () => {
 								// group isn't collapsed, collapse it
 								this.collapsedGroups.add(group.key);
@@ -1807,7 +1866,7 @@ tags:
 				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
 					new ButtonComponent(cell)
 						.setButtonText("New project...")
-						.setClass("new-project-button")
+						.setClass("right-align")
 						.onClick(async () => {
 							// TODO
 							await this.addProject();

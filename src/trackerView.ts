@@ -176,7 +176,7 @@ export class TrackerView extends ItemView {
 			this.tabButtons.set(tab, button);
 		}
 		/*const tabSelect = tabArea.createEl('select', {
-			cls: 'project-filter-select'
+			cls: 'dropdown-new'
 		});
 		for (const tab of DASHBOARD_TABS) {
 			tabSelect.createEl('option', {

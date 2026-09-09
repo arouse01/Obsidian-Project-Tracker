@@ -224,7 +224,7 @@ export class TodoModal extends Modal {
 				// time has been entered, build timestamp with time
 				this.dueDate = new Date(
 					`${dueDateInput.value}T${dueTimeInput.value}`
-				);
+				));
 			} else {
 				this.dueDate = new Date(
 					`${dueDateInput.value}T00:00`
@@ -232,7 +232,6 @@ export class TodoModal extends Modal {
 			}
 		}
 
-		// dueDateInput.value = this.getDateTimeLocalValue(this.dueDate);
 		dueDateInput.addEventListener("change", updateDueDate);
 		dueTimeInput.addEventListener("change", updateDueDate);
 

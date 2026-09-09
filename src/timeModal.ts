@@ -42,7 +42,7 @@ export class TimeModal extends Modal {
 		contentEl.empty();
 
 		const form = contentEl.createDiv({ cls: "issue-form" });
-		form.addClass('time-dashboard')
+		form.addClass('font-size-12')
 		if (this.options.mode === "stop") {
 
 			const infoText = form.createDiv();
