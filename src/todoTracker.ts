@@ -71,10 +71,22 @@ export class TodoManager extends Events {
 		return todos.filter(s => !s.status)  // return any todos with with a status of false, meaning incomplete
 	}
 
-	async getActiveTodos(): Promise<TodoItem[]> {
+	async getTodos(status: string = "active", project: string | null = null): Promise<TodoItem[]> {
 
 		const todos = await this.loadTodos();
-		return this.findActiveTodos(todos)
+		let fetchedTodos: TodoItem[]
+		if (status === "active") {
+			fetchedTodos = this.findActiveTodos(todos)
+		} else {
+			fetchedTodos = todos;
+		}
+		let filteredTodos: TodoItem[]
+		if (project) {
+			filteredTodos = fetchedTodos.filter((path): path is TodoItem => path.projectPath === project);
+		} else {
+			filteredTodos = fetchedTodos
+		}
+		return filteredTodos;
 
 	}
 

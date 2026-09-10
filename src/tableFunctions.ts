@@ -6,6 +6,7 @@ import {
 	SortDirection
 } from './types'
 
+
 export type GroupPosition = "first" | "last" | "middle" | null;
 
 // Time summary functions
@@ -172,4 +173,42 @@ export function getSortOptions<
 			}))
 	];
 }
+
+
+/* Table building functions */
+export function createTableColGroup(
+	table: HTMLTableElement,
+	columns: Array<[string, TableColumn]> | TableColumn[]
+): void {
+	const columnDefs = columns.map(column =>
+		Array.isArray(column) ? column[1] : column
+	);
+
+	const colGroup = table.createEl('colgroup');
+
+	for(const column of columnDefs) {
+		const col = colGroup.createEl("col")
+		if (column.width) {
+			col.style.width = column.width;
+		}
+		if (column.minWidth) {
+			col.style.minWidth = column.minWidth;
+		}
+		if (column.maxWidth) {
+			col.style.maxWidth = column.maxWidth;
+		}
+	}
+}
+
+export interface TimeSummaryState {
+	period: SummaryPeriod;
+	offset: number;
+}
+
+// export interface TimeSummaryTable {
+// 	setPeriod(period: SummaryPeriod): Promise<void>;
+// 	setOffset(offset: number): Promise<void>;
+// 	refresh(): Promise<void>;
+// }
+
 

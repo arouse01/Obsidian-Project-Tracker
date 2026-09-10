@@ -146,6 +146,10 @@ export interface CreateTodoRequest {
 
 export type TodoStatus = "open" | "complete";
 
+export interface ProjectOption {
+	path: string;
+	name: string;
+}
 
 
 

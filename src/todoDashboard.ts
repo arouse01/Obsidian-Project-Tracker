@@ -6,7 +6,8 @@ import {
 import { MyProjectManager } from './projectManager';
 import { TodoManager } from './todoTracker';
 import {
-	TodoItem
+	TodoItem,
+	ProjectInfo
 } from './types'
 import {
 	formatDate
@@ -17,95 +18,27 @@ import {
 } from "./constants";
 import {
 	sortItems,
-	ColSort,
-	SummaryColumn,
+	// SummaryColumn,
+	GroupPosition,
 	TableColumn,
 	updateSortButtons,
-	getGroupOptions
+	getGroupOptions,
+	createTableColGroup
 } from './tableFunctions';
+import {
+	TODO_COLS,
+	TodoColumnField,
+	TodoSort,
+	TodoGroupField,
+	TodoGroup
+} from "./tableConstants"
 import {
 	TODO_DASHBOARD_VIEW_TYPE
 } from "./constants"
 
-const TODO_COLS = {
-
-	"name": {
-		label: "Name",
-		sortable: true,
-		groupable: false,
-		width: "250px"
-	},
-	"priority": {
-		label: "Priority",
-		sortable: true,
-		groupable: true,
-		centered: true,
-		width: "75px"
-	},
-	"notes": {
-		label: "Notes",
-		sortable: false,
-		groupable: false,
-		minWidth: "350px"
-	},
-	"status": {
-		label: "",
-		sortable: false,
-		groupable: false,
-		centered: true,
-		width: "30px"
-	},
-	"project": {
-		label: "Project",
-		sortable: true,
-		groupable: true,
-		centered: true,
-		width: "250px"
-	},
-	"dueDate": {
-		label: "Due",
-		sortable: true,
-		groupable: false,
-		centered: true,
-		width: "75px"
-	},
-	"startDate": {
-		label: "Added",
-		sortable: false,
-		groupable: false,
-		centered: true,
-		width: "75px"
-	},
-	"action": {
-		label: "Action",
-		sortable: false,
-		groupable: false,
-		centered: true,
-		width: "55px"
-	}
-} satisfies Record<string, TableColumn>;
 
 
-type TodoColumnField = keyof typeof TODO_COLS;
 
-// type of ProjectColumnField here instead of SortField because it can now let any field be sorted, and that is defined by the master column list above
-type TodoSort = ColSort<TodoColumnField>
-
-type TodoGroupField =
-	| "none"
-	| {
-		[K in keyof typeof TODO_COLS]:
-		typeof TODO_COLS[K]["groupable"] extends true
-		? K
-		: never
-	}[keyof typeof TODO_COLS];
-
-
-interface TodoGroup {
-	key: string;
-	label: string;
-	todos: TodoItem[];
-}
 
 
 
@@ -148,7 +81,8 @@ export class TodoDashboardView extends Component {
 		private container: HTMLElement,
 		private app: App,
 		private todoManager: TodoManager,
-		private projectManager: MyProjectManager
+		private projectManager: MyProjectManager,
+		private selectedProject: string | null = null
 	) {
 		super();
 		this.container = container;
@@ -188,6 +122,13 @@ export class TodoDashboardView extends Component {
 		}
 	}
 
+	async selectProject(project: string) {
+		this.container.empty()
+		this.selectedProject = project;
+		this.buildDashboard()
+		void this.updateTodoRows();
+	}
+
 	private buildDashboard() {
 		const mainSection = this.container.createEl("section");
 		mainSection.addClass("dashboard")
@@ -195,26 +136,11 @@ export class TodoDashboardView extends Component {
 		// mainSection.createEl("h3", {
 		// 	text: "Todo list"
 		// });
+		if (!this.selectedProject) {
+			const controlSection = mainSection.createEl("section");
+			controlSection.addClass('summary-controls');
 		
-		const controlSection = mainSection.createEl("section");
-		controlSection.addClass('summary-controls');
-		
-		const groupingLabelDiv = controlSection.createDiv()
-		groupingLabelDiv.createEl("label", { text: 'Group by:' })
-		controlSection.createDiv()
-		
-		// Create grouping buttons 
-		// To add a new value, update Todo_Group_Fields in types.ts and then 
-		for (const group of getGroupOptions(TODO_COLS)) {
-			const button = new ButtonComponent(controlSection)
-				.setButtonText(group.label)
-				.onClick(async () => {
-					this.groupBy = group.value;
-					this.collapsedGroups.clear();
-					await this.rebuildTodoTable();
-				});
-
-			this.groupButtons.set(group.value, button);
+			this.createGroupingControls(controlSection)
 		}
 		// for (const group of Todo_Group_Fields) {
 		// 	const button = new ButtonComponent(controlSection)
@@ -238,40 +164,41 @@ export class TodoDashboardView extends Component {
 		// create colgroup so we can specify column sizes
 		
 		const columns = this.getVisibleCols();
-		this.createTodoTableColGroup(this.todoTableEl, columns);
+		createTableColGroup(this.todoTableEl, columns);
 		this.createTodoTableHeaders(this.todoTableEl, columns);
 
 		this.todoTableBodyEl = this.todoTableEl.createEl('tbody')
 
 
 		const bottomSection = mainSection.createEl("section");
+		const projInfo = this.projectManager.getProjectInfoByPath(this.selectedProject)
 		new ButtonComponent(bottomSection)
 			.setButtonText("Create new todo")
 			// .setClass("todo-dashboard-button-add")
 			.onClick(async () => {
-				await this.todoManager.startBlankTodoItem();
+				await this.todoManager.startProjectTodoItem(projInfo!);
 			})
 
 
 	}
 
-	private createTodoTableColGroup(
-		table: HTMLTableElement,
-		columns: Array<[TodoColumnField, TableColumn]>
-	): void {
-		const colGroup = table.createEl('colgroup');
+	private createGroupingControls(section: HTMLElement) {
+		const groupingLabelDiv = section.createDiv()
+		groupingLabelDiv.createEl("label", { text: 'Group by:' })
+		section.createDiv()
 
-		for (const [, column] of columns) {
-			const col = colGroup.createEl("col")
-			if (column.width) {
-				col.style.width = column.width;
-			}
-			if (column.minWidth) {
-				col.style.minWidth = column.minWidth;
-			}
-			if (column.maxWidth) {
-				col.style.maxWidth = column.maxWidth;
-			}
+		// Create grouping buttons 
+		// To add a new value, update Todo_Group_Fields in types.ts and then 
+		for (const group of getGroupOptions(TODO_COLS)) {
+			const button = new ButtonComponent(section)
+				.setButtonText(group.label)
+				.onClick(async () => {
+					this.groupBy = group.value;
+					this.collapsedGroups.clear();
+					await this.rebuildTodoTable();
+				});
+
+			this.groupButtons.set(group.value, button);
 		}
 	}
 
@@ -317,7 +244,9 @@ export class TodoDashboardView extends Component {
 
 	async rebuildTodoTable(): Promise<void> {
 		const newTable = createEl('table')
+		newTable.addClass('dashboard-table')
 		const columns = this.getVisibleCols();
+		createTableColGroup(newTable, columns);
 		this.createTodoTableHeaders(newTable, columns);
 		const newBody = newTable.createEl('tbody')
 		await this.buildTodoTableBody(newBody);
@@ -330,14 +259,13 @@ export class TodoDashboardView extends Component {
 	async buildTodoTableBody(tbody: HTMLTableSectionElement): Promise<void> {
 		// update the body of the table only and return the updated table for actual loading into the ui
 		this.updateGroupByButtons();
+		
 		const projects = this.projectManager.getProjects();
+		
 		this.projectMap = new Map(
 			projects.map(project => [project.file.path, project.name])
 		);
-		let todos = await this.todoManager.getActiveTodos();
-		// const activeTodoMap = new Map(
-		// 	todos.map(todo => [todo.projectPath, todo])
-		// );
+		let todos = await this.todoManager.getTodos("active", this.selectedProject);
 
 		todos = sortItems(
 			todos,
@@ -345,26 +273,31 @@ export class TodoDashboardView extends Component {
 			(a, b, field) => this.compareTodos(a, b, field)
 		)
 
-		// todos = this.sortTodos(todos, this.sortBy)
-
 		const groups = this.groupTodos(todos)
-
-		// const newTable = createEl('table')
-		// this.createTodoTableHeaders(targetTable);
-
 		
 		for (const group of groups) {
 
 			// create row skeleton, and assign values to objects after (for cleaner visual code organization)
 			if (this.groupBy !== 'none') {
-				this.renderGroupHeader(tbody, group);
+
 				if (this.collapsedGroups.has(group.key)) {
+					this.renderCollapsedGroupRow(tbody, group);
 					continue;  // skip adding rows if the group is collapsed
 				}
 			}
-			
-			for (const todo of group.todos) {
-				this.createTodoRow(tbody, todo)			
+
+			for (const [index, todo] of group.todos.entries()) {
+				let groupPos: GroupPosition = null;
+				if (this.groupBy !== 'none') {
+					if (index === 0) {
+						groupPos = "first";
+					} else if (index === group.todos.length - 1) {
+						groupPos = "last"
+					} else {
+						groupPos = "middle"
+					}
+				}
+				this.createTodoRow(tbody, todo, groupPos)			
 			}
 		}
 
@@ -380,9 +313,20 @@ export class TodoDashboardView extends Component {
 		}
 	}
 
-	private renderGroupHeader(target: HTMLTableSectionElement, group: TodoGroup) {
+	private renderCollapsedGroupRow(target: HTMLTableSectionElement, group: TodoGroup) {
 		const groupRow = target.createEl('tr');
-		const groupCell = groupRow.createEl('td');
+		groupRow.addClass("first")
+		groupRow.addClass("group-row")
+
+		for (const [field,] of this.getVisibleCols()) {
+
+			const cell = groupRow.createEl("td");
+
+			this.renderCollapsedGroupCell(cell, field, group);
+		}
+
+		
+		/*const groupCell = groupRow.createEl('td');
 		groupCell.colSpan = this.colOrder.length;
 		if (this.collapsedGroups.has(group.key)) {
 			new ButtonComponent(groupCell)
@@ -402,18 +346,25 @@ export class TodoDashboardView extends Component {
 					await this.updateTodoRows();
 				});
 		}
-		
+		*/
 	}
 
-	private createTodoRow(target: HTMLTableSectionElement, todo: TodoItem) {
+	private createTodoRow(
+		target: HTMLTableSectionElement,
+		todo: TodoItem,
+		groupPos: GroupPosition = null
+	) {
 		const row = target.createEl('tr');
+		if (groupPos === "first") {
+			row.addClass("first")
+		}
 
 		for (const [field, column] of this.getVisibleCols()) {
 			const cell = row.createEl("td");
-			if (column.centered) {
-				cell.addClass("text-centered")
+			if (!column.centered) {
+				cell.addClass("left-align")
 			}
-			this.renderColumn(cell, field, todo);
+			this.renderCell(cell, field, todo, groupPos);
 		}
 		
 	}
@@ -421,41 +372,57 @@ export class TodoDashboardView extends Component {
 	private getVisibleCols(): Array<
 		[TodoColumnField, TableColumn]
 	> {
-		switch (this.groupBy) {
-			case 'project':
-				this.colOrder = [
-					"status",
-					"priority",
-					"name",
-					"notes",
-					"startDate",
-					"dueDate",
-					//"action"
-				]
-				break;
-			case 'priority':
-				this.colOrder = [
-					"status",
-					"name",
-					"notes",
-					"project",
-					"startDate",
-					"dueDate",
-					//"action"
-				]
-				break;
-			case 'none':
-				this.colOrder = [
-					"status",
-					"priority",
-					"name",
-					"notes",
-					"project",
-					"startDate",
-					"dueDate",
-					//"action"
-				]
-				break;
+		if (this.selectedProject) {
+			this.colOrder = [
+				"status",
+				"priority",
+				"name",
+				"notes",
+				"startDate",
+				"dueDate",
+				//"action"
+			]
+		} else {
+			switch (this.groupBy) {
+				case 'project':
+					this.colOrder = [
+						"collapse",
+						"project",
+						"status",
+						"priority",
+						"name",
+						"notes",
+						"startDate",
+						"dueDate",
+						//"action"
+					]
+					break;
+				case 'priority':
+					this.colOrder = [
+						"collapse",
+						"priority",
+						"status",
+						"name",
+						"notes",
+						"project",
+						"startDate",
+						"dueDate",
+						//"action"
+					]
+					break;
+				case 'none':
+					this.colOrder = [
+						"status",
+						"priority",
+						"name",
+						"notes",
+						"project",
+						"startDate",
+						"dueDate",
+						//"action"
+					]
+					break;
+			}
 		}
 		return this.colOrder.map(field => [
 			field,
@@ -463,13 +430,113 @@ export class TodoDashboardView extends Component {
 		])
 	}
 
-
-	private renderColumn(
+	private renderCollapsedGroupCell(
 		cell: HTMLTableCellElement,
 		field: TodoColumnField,
-		todo: TodoItem
+		group: TodoGroup
+	): void {
+
+		switch (field) {
+			case "collapse":
+				{
+					cell.addClass("group-member")
+					cell.addClass("first")
+					new ButtonComponent(cell)
+						// .setIcon(`list-chevrons-down-up`)
+						.setButtonText('⊞')
+						// .setClass("first")
+						.onClick(async () => {
+							// group is collapsed, uncollapse it
+							this.collapsedGroups.delete(group.key);
+							await this.updateTodoRows();
+						});
+					break;
+
+					/*new ButtonComponent(cell)
+						// .setIcon(`list-chevrons-up-down`)
+						
+						.onClick(async () => {
+							
+						});
+					break*/
+				}
+
+			case "priority":
+			case "project":  // both are groupby targets, so if either are selected as group target then render the value in the correct column
+				{
+					if (this.groupBy === field) {
+						// cell.setText(group.label)
+						cell.addClass("left-align")
+						new ButtonComponent(cell)
+							.setButtonText(`${group.label}`)
+							.setClass("left-align")
+							.onClick(async () => {
+								// group is collapsed, uncollapse it
+								this.collapsedGroups.delete(group.key);
+								await this.updateTodoRows();
+							});
+					}
+					break
+					
+
+				}
+
+			
+			case "action":
+				break;
+
+			default:
+				break;
+
+
+		}
+	}
+
+	private renderCell(
+		cell: HTMLTableCellElement,
+		field: TodoColumnField,
+		todo: TodoItem,
+		groupPos: GroupPosition
 	): void {
 		switch (field) {
+			case "collapse":
+				{
+				cell.addClass("group-member")
+					switch (groupPos) {
+						case "first":
+							{
+								cell.addClass("first")
+								new ButtonComponent(cell)
+									.setButtonText("⊟")
+									.onClick(async () => {
+										// group isn't collapsed, collapse it
+										const groupKey = this.getGroupKey(todo)
+										this.collapsedGroups.add(groupKey);
+										await this.updateTodoRows();
+									});
+								break;
+							}
+						case "middle":
+							{
+								const wrapper = cell.createDiv({ cls: "group-tree-wrapper" })
+								wrapper.createSpan({ cls: "group-tree-line" })
+								wrapper.createSpan({ cls: "group-tree-branch" })
+								break;
+							}
+						case "last":
+							{
+								const wrapper = cell.createDiv({ cls: "group-tree-wrapper" })
+								wrapper.createSpan({ cls: "group-tree-line-last" })
+								wrapper.createSpan({ cls: "group-tree-branch" })
+								break;
+							}
+						default:
+							break;
+					}
+
+				break;
+			}
+
 			case "name":
 				cell.setText(todo.name);
 				break;
@@ -478,7 +545,7 @@ export class TodoDashboardView extends Component {
 				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
 					const projectName = todo.projectPath ? this.projectMap.get(todo.projectPath) ?? "Unknown" : "None";
 					cell.setText(projectName);
-					cell.addClass('text-centered');
+					// cell.addClass('text-centered');
 					break;
 				}
 
@@ -488,7 +555,7 @@ export class TodoDashboardView extends Component {
 
 			case "status":
 				{
-					cell.addClass("text-centered");
+					// cell.addClass("text-centered");
 					const check = cell.createEl('input')
 					check.type = 'checkbox';
 					check.checked = todo.status;

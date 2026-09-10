@@ -7,7 +7,6 @@ import {
 } from 'obsidian';
 import { MyProjectManager } from './projectManager';
 import {
-    PeriodicTimeSummary,
 	ProjectInfo,
 	// ProjectStatus,
 	TimeSession,
@@ -24,158 +23,37 @@ import IssueTracker from './issueTracker';
 import { TodoManager } from './todoTracker';
 import {
 	GroupPosition,
-	SummaryPeriod,
-	getSummaryPeriod,
-	SummaryGroup,
 	sortItems,
-	ColSort,
+	// ColSort,
 	TableColumn,
-	SummaryColumn,
 	updateSortButtons,
 	getGroupOptions,
-	getSortOptions
+	createTableColGroup
 } from './tableFunctions';
+import {
+	PROJ_COLS,
+	ProjectColumnField,
+	ProjectGroup,
+	ProjectGroupField,
+	ProjectSort
+} from './tableConstants'
 import {
 	PROJECT_DASHBOARD_VIEW_TYPE,
 } from "./constants"
+import { TimeSummaryTable } from './timeSummaryTable'
 
-
-const PROJ_COLS = {
-	"collapse": {
-		label: "",
-		sortable: false,
-		groupable: false,
-		width: "25px",
-		tableGroup: "",
-		centered: true
-	},
-	"sessionStatus": {
-		label: "Status",
-		sortable: true,
-		groupable: false,
-		width: "55px",
-		tableGroup: "Project"
-	},
-	"project": {
-		label: "Project",
-		sortable: true,
-		groupable: false,
-		tableGroup: "Project",
-		width: "250px",
-		maxWidth: "300px"
-	},
-	"primary": {
-		label: "Client",
-		sortable: true,
-		groupable: true,
-		tableGroup: "Project",
-		width: "250px",
-		maxWidth: "300px"
-	},
-	"hoursToday": {
-		label: "Today",
-		sortable: false,
-		groupable: false,
-		width: "55px",
-		tableGroup: "Hours worked",
-		centered: true
-	},
-	"hoursWeek": {
-		label: "Week",
-		sortable: false,
-		groupable: false,
-		width: "55px",
-		tableGroup: "Hours worked",
-		centered: true
-	},
-	"hoursMonth": {
-		label: "Month",
-		sortable: false,
-		groupable: false,
-		width: "55px",
-		tableGroup: "Hours worked",
-		centered: true
-	},
-	"sessionStart": {
-		label: "",
-		sortable: false,
-		groupable: false,
-		width: "50px",
-		tableGroup: "Session",
-		centered: true
-	},
-	"sessionAt": {
-		label: "",
-		sortable: false,
-		groupable: false,
-		width: "55px",
-		tableGroup: "Session",
-		centered: true
-	},
-	"action": {
-		label: "",
-		sortable: false,
-		groupable: false,
-		width: "60px",
-		tableGroup: "Actions",
-		centered: true
-	},
-	"goto": {
-		label: "",
-		sortable: false,
-		groupable: false,
-		width: "60px",
-		tableGroup: "Actions",
-		centered: true
-	},
-	// "newTodo": {
-	// 	label: "",
-	// 	sortable: false,
-	// 	groupable: false,
-	// 	width: "100px",
-	// 	tableGroup: "Actions"
-	// }
-} satisfies Record<string, TableColumn>;
-
-
-type ProjectColumnField = keyof typeof PROJ_COLS;
-
-// type of ProjectColumnField here instead of SortField because it can now let any field be sorted, and that is defined by the master column list above
-type ProjectSort = ColSort<ProjectColumnField>
-
-type ProjectGroupField =
-	| "none"
-	| {
-		[K in keyof typeof PROJ_COLS]:
-		typeof PROJ_COLS[K]["groupable"] extends true
-		? K
-		: never
-	}[keyof typeof PROJ_COLS];
-
-interface ProjectGroup {
-	key: string;
-	label: string;
-	projects: ProjectInfo[];
-}
 
 const PROJECT_STATUS_FILTERS = ["Active", "All", "Archived"] as const;
 type ProjectStatusFilter = typeof PROJECT_STATUS_FILTERS[number];
 
-
 export class ProjectDashboardView extends Component{
 	// private container: HTMLElement;
 
-	private summaryPeriod: SummaryPeriod = "week";  // to drive the summary period selection
-	private periodOffset = 0;  // to drive the summary period selection, how far in the past to go
-	private summaryGroup: SummaryGroup = "client";
-
+	private summaryTable!: TimeSummaryTable;
 	// private projectMap = new Map<string, string>();
 
 	private projectTableEl!: HTMLTableElement;
 	private projectTableBodyEl!: HTMLTableSectionElement;
-	private summaryTableEl!: HTMLTableElement;
-	private summaryTableBodyEl!: HTMLTableSectionElement;
-	private rangeText!: HTMLElement;
 
 	private filterBy: ProjectStatusFilter = "Active";  // to drive which projects are visible
 	private groupBy: ProjectGroupField = "primary";
@@ -277,11 +155,6 @@ export class ProjectDashboardView extends Component{
 			void this.updateProjectTableRows();
 		}, 60000);
 		
-
-		// const projects = this.projectManager.getProjects();
-		// this.projectMap = new Map(
-		// 	projects.map(project => [project.file.path, project.name])
-		// );
 	}
 
 	private async initialize(): Promise<void> {
@@ -301,6 +174,7 @@ export class ProjectDashboardView extends Component{
 
 		const dashboardContainer = this.container.createDiv({ cls: "project-section" })
 		dashboardContainer.addClass('project-dashboard')
+
 		const projectSection = dashboardContainer.createDiv({ cls: "project-section" });
 		// projectSection.addClass("project-section")
 		// projectSection.createEl("h3", {
@@ -357,41 +231,7 @@ export class ProjectDashboardView extends Component{
 			void this.rebuildProjectTable();
 
 		});
-		// for (const group of getGroupOptions(PROJ_COLS)) {
-		// 	const button = new ButtonComponent(groupingSection)
-		// 		.setButtonText(group.label)
-		// 		.onClick(async () => {
-		// 			this.groupBy = group.value;
-		// 			this.collapsedGroups.clear();
-		// 			await this.rebuildProjectTable();
-		// 		});
-
-		// 	this.groupButtons.set(group.value, button);
-		// }
-
-/*
-		// Create grouping buttons
-		const controlRow2 = controlSection.createDiv({ cls: 'project-controls' });
-		controlRow2.addClass("control-row")
 		
-		const sortingSection = controlRow2.createDiv({ cls: 'project-controls' });
-		sortingSection.addClass("right-align")
-		// sortingSection.addClass("control-row")
-		sortingSection.createEl("label", { text: 'Sort by:' })
-		for (const group of getSortOptions(PROJ_COLS)) {
-
-			const button = new ButtonComponent(sortingSection)
-					// .setButtonText(column.label)
-					.setClass("dashboard")
-					.onClick(async () => {
-						// group is collapsed, uncollapse it
-						this.updateSort(group.value);
-						await this.updateProjectTableRows();
-					});
-			this.sortButtons.set(group.value, button);
-			
-		}
-*/
 		const projectTableSection = projectSection.createDiv({ cls: 'project-section' });
 		projectTableSection.addClass('project-dashboard');
 		projectTableSection.addClass('dashboard');
@@ -399,21 +239,10 @@ export class ProjectDashboardView extends Component{
 		this.projectTableEl = projectTableSection.createEl('table');
 		this.projectTableEl.addClass("dashboard-table")
 		const columns = this.getVisibleCols();
-		this.createProjectTableColGroup(this.projectTableEl, columns);
+		createTableColGroup(this.projectTableEl, columns);
 		this.createProjectTableHeaders(this.projectTableEl, columns);
 
 		this.projectTableBodyEl = this.projectTableEl.createEl('tbody')
-
-		// const controlBottomSection = projectSection.createDiv({ cls: 'project-controls' });
-		// controlBottomSection.addClass("control-col")
-		// new ButtonComponent(controlBottomSection)
-		// 	.setButtonText("New project...")
-		// 	.setClass("right-align")
-		// 	.onClick(async () => {
-		// 		await this.addProject();
-		// 		await this.updateProjectTableRows();
-		// 	});
-
 
 		// Summary table below the main one
 		const summarySection = dashboardContainer.createDiv({ cls: "project-section" });
@@ -423,94 +252,12 @@ export class ProjectDashboardView extends Component{
 
 		summarySection.addClass('project-dashboard')
 
-		const summaryControlsTop = summarySection.createDiv();
-		summaryControlsTop.addClass('summary-controls')
-		
-		summaryControlsTop.createEl('label', {
-			text: 'Summarize by:',
-			attr: { for: 'period-selector' }
-		});
-		const periodSelect = summaryControlsTop.createEl('select', {
-			cls: 'dropdown-new',
-			attr: { id: 'period-selector' }
-		});
-		periodSelect.createEl('option', {
-			value: 'week',
-			text: "Week"
-		});
-		periodSelect.createEl('option', {
-			value: 'month',
-			text: "Month"
-		});
-		periodSelect.value = this.summaryPeriod;
-
-		periodSelect.addEventListener("change", () => {
-			const value = periodSelect.value;
-
-			if (value === "week" || value === "month") {
-				this.summaryPeriod = value;
-				void this.rebuildSummaryTable();
-			}
-		});
-
-		
-		const summaryControlsBottom = summarySection.createDiv();
-		summaryControlsBottom.addClass('summary-controls')
-		new ButtonComponent(summaryControlsBottom)
-			.setButtonText("⏴")
-			.setClass("arrow-button")
-			.onClick(async () => {
-				this.periodOffset--;
-				await this.rebuildSummaryTable();
-			});
-		const { start, end } = getSummaryPeriod(this.periodOffset, this.summaryPeriod);
-
-		let dateRangeText: string;
-		if (this.summaryPeriod === "week") {
-			dateRangeText = `${window.moment(start).format("MMM DD")} - ${window.moment(end).format("MMM DD")}`
-		} else {
-			dateRangeText = window.moment(start).format("MMMM YYYY")
-		}
-		this.rangeText = summaryControlsBottom.createSpan({
-			text: dateRangeText,
-			cls: "fixed-width-date-range"
-		})
-
-		new ButtonComponent(summaryControlsBottom)
-			.setButtonText("⏵")
-			.setClass("arrow-button")
-			.onClick(async () => {
-				this.periodOffset++;
-				await this.rebuildSummaryTable();
-			})
-
-		new ButtonComponent(summaryControlsBottom)
-			.setButtonText("Now")
-			.onClick(async () => {
-				this.periodOffset = 0;
-				await this.rebuildSummaryTable();
-			})
-
-		// select.style.width = "100%";
-
-		
-		const sectionSummaryTableEl = summarySection.createEl('section');
-		sectionSummaryTableEl.addClass('project-dashboard');
-
-		this.summaryTableEl = sectionSummaryTableEl.createEl('table');
-		this.summaryTableEl.addClass("dashboard-table")
-		this.summaryTableEl.addClass("text-centered")
-		const summaryData = await this.getSummaryData()
-		const summaryCols = this.getSummaryColumns(summaryData);
-		this.createSummaryTableColGroup(this.summaryTableEl, summaryCols);
-		this.createSummaryHeaders(this.summaryTableEl, summaryData);
-
-		// this.summaryTableBodyEl = this.summaryTableEl.createEl('tbody');
+		this.summaryTable = new TimeSummaryTable(this.timeTracker, this.projectManager, summarySection, "week", 0)
 	}
 
 	async updateProjectTableRows(): Promise<void> {
 		// specifically for updating the rows without touching the headers
-		await this.updateSummaryRows();
+		await this.summaryTable.updateSummaryRows();
 		await this.updateSummaryVars();
 
 		const newBody = createEl('tbody');
@@ -523,7 +270,7 @@ export class ProjectDashboardView extends Component{
 
 	async rebuildProjectTable(): Promise<void> {
 		const newTable = createEl('table')
-		newTable.addClass("project-table")
+		newTable.addClass("dashboard-table")
 		const columns = this.getVisibleCols();
 		this.createProjectTableColGroup(newTable, columns);
 		this.createProjectTableHeaders(newTable, columns);
@@ -647,7 +394,7 @@ export class ProjectDashboardView extends Component{
 			if (this.groupBy !== 'none') {
 
 				if (this.collapsedGroups.has(group.key)) {
-					this.renderGroupHeaderRow(tbody, group);
+					this.renderCollapsedGroupRow(tbody, group);
 					continue;  // skip adding rows if the group is collapsed
 				}
 			}
@@ -831,7 +578,7 @@ export class ProjectDashboardView extends Component{
 		}
 	}
 
-	private renderGroupHeaderRow(target: HTMLTableSectionElement, group: ProjectGroup) {
+	private renderCollapsedGroupRow(target: HTMLTableSectionElement, group: ProjectGroup) {
 		const groupRow = target.createEl('tr');
 		groupRow.addClass("first")
 		groupRow.addClass("group-row")
@@ -839,7 +586,7 @@ export class ProjectDashboardView extends Component{
 
 			const cell = groupRow.createEl("td");
 			
-			this.renderGroupHeaderCell(cell, field, group);
+			this.renderCollapsedGroupCell(cell, field, group);
 		}
 	}
 
@@ -930,11 +677,6 @@ export class ProjectDashboardView extends Component{
 		])
 
 	}
-
-	// async updateDashboard(): Promise<void> {
-	// 	await this.updateProjects();
-	// 	await this.updateSummary();
-	// }
 
 	private async updateSummaryVars() {
 		const activeSessions = await this.timeTracker.getActiveSessions();
@@ -1029,244 +771,7 @@ export class ProjectDashboardView extends Component{
 
 	}
 	
-	async getSummaryData(): Promise<PeriodicTimeSummary> {
-		const { start, } = getSummaryPeriod(this.periodOffset, this.summaryPeriod);
-
-		let summaryTotals: PeriodicTimeSummary;
-
-		if (this.summaryPeriod === "month") {
-			summaryTotals = await this.timeTracker.getMonthlySummary(start, this.summaryGroup);
-		} else {
-			summaryTotals = await this.timeTracker.getWeeklySummary(start, this.summaryGroup);
-		}
-		return summaryTotals;
-	}
-
-	async rebuildSummaryTable(): Promise<void> {
-		// Get summary data first, then use it to build the summary table. Works different from the project table because the columns that appear are much more dependent on app state, which also affects how the calculations work
-		const summaryTotals = await this.getSummaryData();
-		const { start, end } = getSummaryPeriod(this.periodOffset, this.summaryPeriod);
-
-		let dateRangeText: string;
-		// let summaryTotals: PeriodicTimeSummary;
-
-		const newTable = createEl('table');
-
-		if (this.summaryPeriod === "month") {
-			dateRangeText = window.moment(start).format("MMMM YYYY")
-		} else {
-			dateRangeText = `${window.moment(start).format("MMM DD")} - ${window.moment(end).format("MMM DD")}`
-		}
-			
-		this.rangeText.setText(dateRangeText);
-		const summaryCols = this.getSummaryColumns(summaryTotals);
-		this.createSummaryTableColGroup(newTable, summaryCols);
-		this.createSummaryHeaders(newTable, summaryTotals);
-		const newBody = newTable.createEl('tbody')
-		await this.buildSummaryTableBody(newBody, summaryTotals);
-
-		this.summaryTableEl.replaceWith(newTable);
-		this.summaryTableEl = newTable;
-		this.summaryTableBodyEl = newBody;
-	}
-
-	private getSummaryColumns(
-		summaryTotals: PeriodicTimeSummary
-	): SummaryColumn[] {
-		let summaryCols: SummaryColumn[];
-		if (this.summaryPeriod === "week") {
-			summaryCols = [
-				{
-					key: "group",
-					label: "",
-					minWidth: "120px",
-					width: "250px",
-					maxWidth: "500px"
-				},
-				...summaryTotals.days.map(day => ({
-					key: formatDate(day),
-					label: day.toLocaleDateString("en-US", {
-						weekday: "short",
-						day: "2-digit"
-					}),
-					width: "80px"
-				})),
-
-				{
-					key: "weekTotal",
-					label: "Week Total",
-					width: "120px"
-				}
-			]
-		}
-		else {
-			summaryCols = [
-				{
-					key: "group",
-					label: "",
-					minWidth: "120px",
-					maxWidth: "500px"
-				},
-				...summaryTotals.days.map(day => ({
-					key: formatDate(day),
-					label: day.toLocaleDateString("en-US", {
-						month: "short"
-					}),
-					width: "80px"
-				})),
-
-				{
-					key: "yearTotal",
-					label: "Yearly Total",
-					width: "120px"
-				}
-			]
-		}
-		
-		return summaryCols;
-	}
-
-	private createSummaryTableColGroup(
-		table: HTMLTableElement,
-		columns: SummaryColumn[]
-	): void {
-		const colGroup = table.createEl('colgroup');
-
-		for (const column of columns) {
-			const col = colGroup.createEl("col")
-			if (column.width) {
-				col.style.width = column.width;
-			}
-			if (column.minWidth) {
-				col.style.minWidth = column.minWidth;
-			}
-			if (column.maxWidth) {
-				col.style.maxWidth = column.maxWidth;
-			}
-		}
-
-	}
-
-	createSummaryHeaders(
-		table: HTMLTableElement,
-		summaryData: PeriodicTimeSummary
-	) {
-
-		table.addClass('project-table')
-		const thead = table.createEl('thead');
-		const headerRow = thead.createEl('tr');
-
-		// create group column (grouping by project or client)
-		const groupCell = headerRow.createEl('th');
-		
-		const groupSelect = groupCell.createEl('select', {
-			cls: 'dropdown-new'
-		});
-		groupSelect.createEl('option', {
-			value: 'project',
-			text: "Project"
-		});
-		groupSelect.createEl('option', {
-			value: 'client',
-			text: "Client"
-		});
-		groupSelect.value = this.summaryGroup;
-
-		groupSelect.addEventListener("change", () => {
-			const value = groupSelect.value;
-
-			if (value === "project" || value === "client") {
-				this.summaryGroup = value;
-				void this.updateSummaryRows();
-			}
-		});
-
-		// rest of columns
-		
-		if (this.summaryPeriod === "month") {
-			for (const day of summaryData.days) {
-				const headerCell = headerRow.createEl('th');
-				headerCell.createDiv({
-					text: day.toLocaleDateString("en-US", { month: 'short' }),
-					cls: "summary-col-header"
-				})
-				headerCell.createDiv({
-					text: day.toLocaleDateString("en-US", { year: 'numeric' }),
-					cls: "summary-col-subheader"
-				})
-			}
-
-		} else {
-			for (const day of summaryData.days) {
-				const headerCell = headerRow.createEl('th');
-				headerCell.createDiv({
-					text: day.toLocaleDateString("en-US", { weekday: 'short' }),
-					cls: "summary-col-header"
-				})
-				headerCell.createDiv({
-					text: day.toLocaleDateString("en-US", { day: '2-digit' }),
-					cls: "summary-col-subheader"
-				})
-			}
-
-			const totalCell = headerRow.createEl('th', { text: 'Total' });
-			totalCell.addClass("total-col")
-			
-		}
-
-		this.summaryTableBodyEl = this.summaryTableEl.createEl('tbody');
-	}
-
-	async updateSummaryRows(): Promise<void> {
-		// function for updating the rows without touching the headers
-		
-		// create temporary body for table, then fill it and swap for the current one instead of clearing the whole thing
-		const newBody = createEl('tbody')
-		const summaryData = await this.getSummaryData()
-		await this.buildSummaryTableBody(newBody, summaryData);
-		
-		this.summaryTableBodyEl.replaceWith(newBody);
-		this.summaryTableBodyEl = newBody;
-	}
-
-	async buildSummaryTableBody(
-		tbody: HTMLTableSectionElement,
-		summaryData: PeriodicTimeSummary
-	): Promise<void> {
-		// build a separate updated summary table body into the provided HTMLTableSectionElement
-		for (const [key, dailyMinutes] of summaryData.entries) {
-			const row = tbody.createEl('tr');
-
-			// Project
-			const groupCell = row.createEl("td")
-
-			let groupName = "";
-			if (this.summaryGroup === "client") {
-				groupName = key;
-			}
-			else if (this.summaryGroup === "project") {
-				groupName = this.projectManager.getProjectInfoByPath(key)?.name ?? "unknown";
-			} else {
-				groupName = "unknown"
-			}
-			groupCell.setText(groupName);
-
-			let runningTotal = 0;
-			for (const day of summaryData.days) {
-				const dateStr = formatDate(day);
-				const minutes = dailyMinutes.get(dateStr) ?? 0;
-				runningTotal += minutes;
-				const cell = row.createEl("td");
-				cell.setText(formatMinutesToDuration(minutes, true))
-			}
-			// Total column
-			const cell = row.createEl("td");
-			cell.addClass("total-col")
-			cell.setText(formatMinutesToDuration(runningTotal, true))
-			
-		}
-	}
-
+	
 	async toggleGroupCollapse(open: boolean) {
 		if (open) {
 			this.collapsedGroups.clear();
@@ -1630,7 +1135,7 @@ tags:
 		}
 	}
 
-	private renderGroupHeaderCell(
+	private renderCollapsedGroupCell(
 		cell: HTMLTableCellElement,
 		field: ProjectColumnField,
 		group: ProjectGroup

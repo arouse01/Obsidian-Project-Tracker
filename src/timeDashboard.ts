@@ -2,7 +2,7 @@ import {
 	ItemView,
 	WorkspaceLeaf,
 	ButtonComponent,
-	TFile
+	// TFile
 } from 'obsidian';
 import { MyProjectManager } from './projectManager';
 import {
@@ -20,60 +20,17 @@ import {
 	TIME_DASHBOARD_VIEW_TYPE
 } from "./constants"
 import {
-	ColSort,
 	TableColumn,
-	SummaryColumn,
-	updateSortButtons
+	// SummaryColumn,
+	updateSortButtons,
+	createTableColGroup
 } from './tableFunctions';
+import {
+	TIME_COLS,
+	TimeColumnField,
+	TimeSort
+} from "./tableConstants"
 
-const TIME_COLS = {
-	"status": {
-		label: "Status",
-		sortable: true,
-		width: "45px",
-		centered: true
-	},
-	"project": {
-		label: "Project",
-		sortable: true,
-		centered: true,
-		minWidth: "170px" 
-	},
-	"hoursToday": {
-		label: "Today",
-		sortable: false,
-		width: "50px",
-		centered: true
-	},
-	"hoursWeek": {
-		label: "Week",
-		sortable: false,
-		width: "50px",
-		centered: true
-	},
-	"hoursMonth": {
-		label: "Month",
-		sortable: false,
-		width: "50px",
-		centered: true
-	},
-	"sessionStart": {
-		label: "",
-		sortable: false,
-		width: "40px",
-		centered: true
-	},
-	"sessionAt": {
-		label: "",
-		sortable: false,
-		width: "50px",
-		centered: true
-
-	}
-} satisfies Record<string, TableColumn>;
-
-type TimeColumnField = keyof typeof TIME_COLS;
-type TimeSort = ColSort<TimeColumnField>
 
 
 export class TimeDashboardView extends ItemView {
@@ -164,56 +121,22 @@ export class TimeDashboardView extends ItemView {
 		const tableMainEl = controlSection.createEl('table');
 		tableMainEl.addClass('dashboard-table')
 		// create colgroup so we can specify column sizes
-		const colGroup = tableMainEl.createEl('colgroup');
-		const timeCols = this.getVisibleCols()
-		// let timeCols: SummaryColumn[];
-		// timeCols = [
-		// 	{
-		// 		key: "status", 
-		// 		label: "Status",
-		// 		width: "55px",
-		// 	},
-		// 	{
-		// 		key: "project",
-		// 		label: "Project",
-		// 		width: "250px",
-		// 		maxWidth: "300px"
-		// 	},
-		// 	{
-		// 		key: "hoursToday",
-		// 		label: "Today",
-		// 		width: "50px",
-		// 	},
-		// 	{
-		// 		key: "hoursWeek",
-		// 		label: "Week",
-		// 		width: "50px",
-		// 	},
-		// 	{
-		// 		key: "sessionStart",
-		// 		label: "",
-		// 		width: "40px",
-		// 		format: "timeGroup"
-		// 	},
-		// 	{
-		// 		key: "sessionAt",
-		// 		label: "",
-		// 		width: "50px",
-		// 		format: "timeGroup"
-		// 	}]
 		
-		for (const [, column] of timeCols) {
-			const col = colGroup.createEl("col")
-			if (column.width) {
-				col.style.width = column.width;
-			}
-			if (column.minWidth) {
-				col.style.minWidth = column.minWidth;
-			}
-			if (column.maxWidth) {
-				col.style.maxWidth = column.maxWidth;
-			}
-		}
+		// const colGroup = tableMainEl.createEl('colgroup');
+		const timeCols = this.getVisibleCols()
+		createTableColGroup(tableMainEl, timeCols)
+		// for (const [, column] of timeCols) {
+		// 	const col = colGroup.createEl("col")
+		// 	if (column.width) {
+		// 		col.style.width = column.width;
+		// 	}
+		// 	if (column.minWidth) {
+		// 		col.style.minWidth = column.minWidth;
+		// 	}
+		// 	if (column.maxWidth) {
+		// 		col.style.maxWidth = column.maxWidth;
+		// 	}
+		// }
 
 		// Create headers
 

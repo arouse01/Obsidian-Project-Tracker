@@ -1,36 +1,36 @@
 import {
-	App,
+	// App,
 	ButtonComponent,
 	ItemView,
-	TFile,
-	MarkdownView,
-	MarkdownFileInfo,
+	// TFile,
+	// MarkdownView,
+	// MarkdownFileInfo,
 	WorkspaceLeaf,
 	ViewStateResult
 } from 'obsidian';
 import ProjectTrackerPlugin from './main'
 import {
-	IssueTrackerSettings,
+	// IssueTrackerSettings,
 } from './settings';
 import {
-	IssueContext,
-	CreateIssueRequest,
-	ProjectInfo,
-	IssueModalOptions
+	// IssueContext,
+	// CreateIssueRequest,
+	// ProjectInfo,
+	// IssueModalOptions
 } from "./types";
 import {
-	PRIORITIES,
+	// PRIORITIES,
 	VIEW_TYPE_TRACKER,
 } from "./constants";
 import {
-	formatIssueID,
-	formatDate,
-	normalizeWikiLink
+	// formatIssueID,
+	// formatDate,
+	// normalizeWikiLink
 } from './utils';
-import { IssueModal } from './issueModal'
-import { MyProjectManager } from './projectManager'
+// import { IssueModal } from './issueModal'
+// import { MyProjectManager } from './projectManager'
 import {
-	TimeDashboardView
+	// TimeDashboardView
 } from './timeDashboard';
 import {
 	ProjectDashboardView
