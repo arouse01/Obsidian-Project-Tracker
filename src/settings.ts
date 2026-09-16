@@ -5,12 +5,14 @@ export interface IssueTrackerSettings {
 	nextIssueID: number;
 	timeLogPath: string;
 	todoLogPath: string;
+	peoplePath: string;
 }
 
 export const DEFAULT_SETTINGS: IssueTrackerSettings = {
 	nextIssueID: 1,
 	timeLogPath: 'Project Management/timeLog.json',
-	todoLogPath: 'Project Management/todoList.json'
+	todoLogPath: 'Project Management/todoList.json',
+	peoplePath: 'Organizations/'
 };
 
 export class IssueTrackerSettingTab extends PluginSettingTab {
@@ -29,6 +31,7 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 		this.buildSerialField(containerEl);
 		this.buildTimeLogField(containerEl);
 		this.buildTodoLogField(containerEl);
+		this.buildPeoplePathField(containerEl);
 
 	}
 
@@ -74,6 +77,20 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 				text.setValue(this.plugin.settings.todoLogPath)
 					.onChange(async (value) => {
 						this.plugin.settings.todoLogPath = value;
+						await this.plugin.saveSettings();
+					})
+					.inputEl.addClass('wide-setting-input')
+			);
+	}
+
+	buildPeoplePathField(parent: HTMLElement): void {
+		new Setting(parent)
+			.setName('Primary/collaborator path')
+			.setDesc('Path to the folder that contains notes for primaries and collaborators')
+			.addText(text =>
+				text.setValue(this.plugin.settings.peoplePath)
+					.onChange(async (value) => {
+						this.plugin.settings.peoplePath = value;
 						await this.plugin.saveSettings();
 					})
 					.inputEl.addClass('wide-setting-input')

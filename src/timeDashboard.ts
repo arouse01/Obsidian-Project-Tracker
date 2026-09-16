@@ -113,13 +113,14 @@ export class TimeDashboardView extends ItemView {
 		controlSection.addClass('dashboard');
 		controlSection.addClass('font-size-12');
 
-		const title = controlSection.createEl("h3", {
-			text: "Time tracker"
+		const title = controlSection.createEl("h1", {
+			text: "Time tracker",
 		});
 		title.addClass("text-centered");
 
 		const tableMainEl = controlSection.createEl('table');
 		tableMainEl.addClass('dashboard-table')
+		tableMainEl.addClass('time-table')
 		// create colgroup so we can specify column sizes
 		
 		// const colGroup = tableMainEl.createEl('colgroup');

@@ -199,16 +199,19 @@ export class TodoManager extends Events {
 		}).open();
 	}
 
-	async startProjectTodoItem(
-		project: ProjectInfo,
+	async startTodoItem(
+		project: ProjectInfo | null,
 	): Promise<void> {
 		const tempTitle = "";
 		const lines = -1;
 		// const sourceFile = view.file!;
-		const projectNames = [project.name];
-		const projectPaths = [project.file.path];
 		// get the project of the current document and its actual file location, if any
-
+		let projectNames: string[] | null = null
+		let projectPaths: string[] | null = null
+		if (project) {
+			projectNames = [project.name];
+			projectPaths = [project.file.path];
+		} 
 
 		const context: TodoContext = {
 			tempTitle: tempTitle,

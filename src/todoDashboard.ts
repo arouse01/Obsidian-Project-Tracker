@@ -7,7 +7,7 @@ import { MyProjectManager } from './projectManager';
 import { TodoManager } from './todoTracker';
 import {
 	TodoItem,
-	ProjectInfo
+	// ProjectInfo
 } from './types'
 import {
 	formatDate
@@ -176,7 +176,7 @@ export class TodoDashboardView extends Component {
 			.setButtonText("Create new todo")
 			// .setClass("todo-dashboard-button-add")
 			.onClick(async () => {
-				await this.todoManager.startProjectTodoItem(projInfo!);
+				await this.todoManager.startTodoItem(projInfo);
 			})
 
 

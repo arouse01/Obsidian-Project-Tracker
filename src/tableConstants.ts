@@ -14,7 +14,7 @@ export const PROJ_COLS = {
 		sortable: false,
 		groupable: false,
 		width: "25px",
-		tableGroup: "",
+		tableGroup: "Project",
 		centered: true
 	},
 	"sessionStatus": {
@@ -223,39 +223,52 @@ export const TIME_COLS = {
 		label: "Project",
 		sortable: true,
 		centered: true,
-		minWidth: "170px"
+		minWidth: "170px",
+		tableGroup: "project"
 	},
 	"hoursToday": {
 		label: "Today",
 		sortable: false,
 		width: "50px",
-		centered: true
+		centered: true,
+		tableGroup: "hours"
 	},
 	"hoursWeek": {
 		label: "Week",
 		sortable: false,
 		width: "50px",
-		centered: true
+		centered: true,
+		tableGroup: "hours"
 	},
 	"hoursMonth": {
 		label: "Month",
 		sortable: false,
 		width: "50px",
-		centered: true
+		centered: true,
+		tableGroup: "hours"
 	},
 	"sessionStart": {
 		label: "",
 		sortable: false,
 		width: "40px",
-		centered: true
+		centered: true,
+		tableGroup: "session"
 	},
 	"sessionAt": {
 		label: "",
 		sortable: false,
 		width: "50px",
-		centered: true
-
+		centered: true,
+		tableGroup: "session"
+	},
+	"sessionAdd": {
+		label: "",
+		sortable: false,
+		width: "50px",
+		centered: true,
+		tableGroup: "session"
 	}
+
 } satisfies Record<string, TableColumn>;
 
 export type TimeColumnField = keyof typeof TIME_COLS;

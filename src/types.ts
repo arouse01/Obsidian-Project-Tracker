@@ -7,6 +7,31 @@ import {
 	TimeSummaryGroup
 } from './constants'
 
+export interface ProjectContext {
+	clients: string[] | null;
+	collaborators: string[] | null;
+}
+
+export interface ProjectInfo {
+	file: TFile;
+	name: string;
+	status: string;
+	id?: string;
+	client: string;
+}
+
+export interface CreateProjectRequest {
+	name: string;
+	client: string;
+	collaborators: string[];
+}
+
+
+export interface ProjectModalOptions {
+	context: ProjectContext;
+	onSubmit: (request: CreateProjectRequest) => Promise<void>;
+}
+
 export interface IssueContext {
 	tempTitle: string;
 	selectedText: string;
@@ -25,12 +50,15 @@ export interface IssueData {
 	sourceFile: TFile;
 }
 
-export interface ProjectInfo {
-	file: TFile;
-	name: string;
-	status: string;
-	id?: string;
-	client: string;
+
+export interface IssueContext {
+	tempTitle: string;
+	selectedText: string;
+	projectPaths: string[] | null;
+	projectNames: string[] | null;
+	sourceFile: TFile;
+	line: number | null;
+	editor?: Editor
 }
 
 export interface CreateIssueRequest {

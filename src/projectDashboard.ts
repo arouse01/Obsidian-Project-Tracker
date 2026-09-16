@@ -246,7 +246,7 @@ export class ProjectDashboardView extends Component{
 
 		// Summary table below the main one
 		const summarySection = dashboardContainer.createDiv({ cls: "project-section" });
-		summarySection.createEl("h3", {
+		summarySection.createEl("h1", {
 			text: "Statistics"
 		});
 
@@ -272,7 +272,7 @@ export class ProjectDashboardView extends Component{
 		const newTable = createEl('table')
 		newTable.addClass("dashboard-table")
 		const columns = this.getVisibleCols();
-		this.createProjectTableColGroup(newTable, columns);
+		createTableColGroup(newTable, columns);
 		this.createProjectTableHeaders(newTable, columns);
 		const newBody = newTable.createEl('tbody')
 		await this.buildProjectTableBody(newBody);
@@ -282,25 +282,7 @@ export class ProjectDashboardView extends Component{
 		this.projectTableBodyEl = newBody;
 	}
 
-	private createProjectTableColGroup(
-		table: HTMLTableElement,
-		columns: Array<[ProjectColumnField, TableColumn]>
-	): void {
-		const colGroup = table.createEl('colgroup');
-
-		for (const [, column] of columns) {
-			const col = colGroup.createEl("col")
-			if (column.width) {
-				col.style.width = column.width;
-			}
-			if (column.minWidth) {
-				col.style.minWidth = column.minWidth;
-			}
-			if (column.maxWidth) {
-				col.style.maxWidth = column.maxWidth;
-			}
-		}
-	}
+	
 
 	private createProjectTableHeaders(
 		table: HTMLTableElement,
@@ -418,20 +400,22 @@ export class ProjectDashboardView extends Component{
 				);
 			}
 		}
-		this.createNewProjectRow(tbody)
+		
 
 		const activeSessions = await this.timeTracker.getActiveSessions();
 		if (activeSessions.length > 0) {
 			this.createStopRow(tbody)
 		}
+		this.createNewProjectRow(tbody)
 	}
 
 	private createNewProjectRow(target: HTMLTableSectionElement) {
 		const row = target.createEl('tr');
-
+		row.addClass('summary-row')
 		for (const [field,] of this.getVisibleCols()) {
 			const cell = row.createEl("td");
 			cell.addClass('group-row')
+			cell.addClass('summary-row')
 			this.renderAddProjectRowCell(cell, field);
 		}
 		
@@ -610,10 +594,11 @@ export class ProjectDashboardView extends Component{
 
 	private createStopRow(target: HTMLTableSectionElement) {
 		const row = target.createEl('tr');
-
+		row.addClass('summary-row')
 		for (const [field, ] of this.getVisibleCols()) {
 			const cell = row.createEl("td");
-			cell.addClass('summary-row')
+			cell.addClass('group-row')
+			// cell.addClass('summary-row')
 			this.renderProjectSummaryCell(cell, field);
 		}
 		
@@ -824,7 +809,7 @@ tags:
 	}
 
 	async addProject(): Promise<void> {
-
+		await this.projectManager.addNewProject()
 
 	}
 
@@ -1063,7 +1048,7 @@ tags:
 							menu.addItem((item) => {
 								item.setTitle("New todo")
 									.onClick(async () => {
-										await this.todoManager.startProjectTodoItem(project);
+										await this.todoManager.startTodoItem(project);
 									});
 							});
 							menu.showAtMouseEvent(event);

@@ -185,6 +185,8 @@ export function createTableColGroup(
 	);
 
 	const colGroup = table.createEl('colgroup');
+	let lastGroup: string | undefined = undefined;
+	let currGroup: string | undefined = '';
 
 	for(const column of columnDefs) {
 		const col = colGroup.createEl("col")
@@ -197,7 +199,13 @@ export function createTableColGroup(
 		if (column.maxWidth) {
 			col.style.maxWidth = column.maxWidth;
 		}
+		currGroup = column.tableGroup
+		if (currGroup !== lastGroup  && lastGroup !== undefined) {
+			col.addClass("border-left")
+		}
+		lastGroup = currGroup;
 	}
+
 }
 
 export interface TimeSummaryState {

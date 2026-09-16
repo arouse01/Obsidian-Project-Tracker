@@ -44,7 +44,10 @@ export default class ProjectTrackerPlugin extends Plugin {
 
 	async onload() {
 
-		this.projectManager = new MyProjectManager(this.app);
+		this.projectManager = new MyProjectManager(
+			this.app,
+			() => this.settings.peoplePath
+		);
 
 		await this.loadSettings();
 
@@ -148,7 +151,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 			id: "add-todo",
 			name: "Add new todo",
 			editorCallback: async () => {
-				await this.todoManager.startBlankTodoItem()
+				await this.todoManager.startTodoItem(null)
 			}
 		});
 
