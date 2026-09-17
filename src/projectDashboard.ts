@@ -15,11 +15,12 @@ import {
 import {
 	formatMinutesToDuration,
 	formatDate,
-	normalizeWikiLink
+	normalizeWikiLink,
+	getFrontmatterString
 } from './utils';
 import { TimeTracker } from './timeTracker';
 import { TimeModal } from './timeModal';
-import IssueTracker from './issueTracker';
+import { IssueTracker } from './issueTracker';
 import { TodoManager } from './todoTracker';
 import {
 	GroupPosition,
@@ -936,7 +937,7 @@ tags:
 						const file = this.app.vault.getAbstractFileByPath(project.file.path);
 						let client: string = '';
 						if (file instanceof TFile) {
-							client = this.projectManager.getFrontmatterString(file, "Primary").replace(/^\[\[|\]\]$/g, "")
+							client = getFrontmatterString(this.app.metadataCache, file, "Primary").replace(/^\[\[|\]\]$/g, "")
 						 }
 						cell.setText(client);
 					}
@@ -1041,7 +1042,7 @@ tags:
 							menu.addItem((item) => {
 								item.setTitle("New issue")
 									.onClick(async () => {
-										await this.issueTracker.createProjectIssue(project);
+										await this.issueTracker.createNewIssue(project);
 									});
 							});
 

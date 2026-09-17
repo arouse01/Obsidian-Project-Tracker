@@ -11,15 +11,14 @@ import {
 	ProjectInfo,
 	TodoItem,
 	TodoContext,
-	CreateTodoRequest
-} from "./types";
-import {
+	CreateTodoRequest,
 	PRIORITIES
-} from "./constants";
+} from "./types";
 import { TodoModal } from './todoModal'
 import {
 	formatDate,
-	normalizeWikiLink
+	normalizeWikiLink,
+	getFrontmatterStringArray
 } from './utils'
 
 
@@ -108,10 +107,10 @@ export class TodoManager extends Events {
 
 		// get the project of the current document and its actual file location, if any
 		const projectNames =
-			this.projectManager.getFrontmatterStringArray(sourceFile, "project");
+			getFrontmatterStringArray(this.app.metadataCache, sourceFile, "project");
 		// console.log('projects: ', projectNames);
 		const projectPaths =
-			this.projectManager.getFrontmatterStringArray(sourceFile, "project")
+			getFrontmatterStringArray(this.app.metadataCache, sourceFile, "project")
 				.map(link => normalizeWikiLink(link))
 				.map(link =>
 					this.app.metadataCache.getFirstLinkpathDest(
@@ -126,7 +125,7 @@ export class TodoManager extends Events {
 			sourceFile: sourceFile,
 			line: startLine,
 			projectPaths: projectPaths,
-			projectNames: projectNames,
+			// projectNames: projectNames,
 			editor: editor
 
 		}
@@ -144,8 +143,8 @@ export class TodoManager extends Events {
 			return a.name.localeCompare(b.name);
 		})
 
-
 		new TodoModal(this.app, {
+			mode: "create",
 			context: context,
 			projects: sortedProjects,
 			priorities: PRIORITIES,
@@ -154,14 +153,9 @@ export class TodoManager extends Events {
 			}
 		}).open();
 
-
-
-
 	}
 
-
-
-	async startBlankTodoItem(): Promise<void> {
+	/*async startBlankTodoItem(): Promise<void> {
 		const tempTitle = "";
 		const lines = -1;
 		// No selected project
@@ -197,7 +191,7 @@ export class TodoManager extends Events {
 				await this.addNewTodoItem(request);
 			}
 		}).open();
-	}
+	}*/
 
 	async startTodoItem(
 		project: ProjectInfo | null,
@@ -217,9 +211,7 @@ export class TodoManager extends Events {
 			tempTitle: tempTitle,
 			line: lines,
 			projectPaths: projectPaths,
-			projectNames: projectNames
-
-
+			// projectNames: projectNames
 		}
 
 		// const selectedText = editor.getLine(editor.getCursor().line);
@@ -237,6 +229,7 @@ export class TodoManager extends Events {
 
 
 		new TodoModal(this.app, {
+			mode: "create",
 			context: context,
 			projects: sortedProjects,
 			priorities: PRIORITIES,
@@ -246,7 +239,7 @@ export class TodoManager extends Events {
 		}).open();
 	}
 
-	async addNewTodoItem(
+	private async addNewTodoItem(
 		request: CreateTodoRequest
 	): Promise<number> {
 		/*
@@ -278,10 +271,61 @@ export class TodoManager extends Events {
 
 		return newID;
 
+	}
+
+	async editTodoItem(
+		todo: TodoItem
+	): Promise<void> {
+		
+		
+		// const sourceFile = view.file!;
+		// get the project of the current document and its actual file location, if any
+		let projectNames: string[] | null = null
+
+		const allProjects = this.projectManager.getActiveProjects();
+		const currProjectSet = new Set(projectNames);
+		const sortedProjects = [...allProjects].sort((a, b) => {
+			const aSource = currProjectSet.has(a.file.path);
+			const bSource = currProjectSet.has(b.file.path);
+			if (aSource !== bSource) {
+				return aSource ? -1 : 1;
+			}
+
+			return a.name.localeCompare(b.name);
+		})
+
+
+		new TodoModal(this.app, {
+			mode: "edit",
+			todo: todo,
+			projects: sortedProjects,
+			priorities: PRIORITIES,
+			onSubmit: async (updatedTodo) => {
+				await this.editExistingTodoItem(updatedTodo);
+			}
+		}).open();
+	}
+
+	async editExistingTodoItem(
+		updatedTodo: TodoItem
+	): Promise<void> {
+		/*
+		Actually add a new todo item to the todo file
+		*/
+		let todos = await this.loadTodos();
+
+		const index = todos.findIndex(todo => todo.id === updatedTodo.id)
+
+		if (index === -1) {
+			throw new Error(`Todo with ID ${updatedTodo.id} not found`)
+		}
+		todos[index] = updatedTodo;
+
+		await this.saveTodos(todos);
 
 	}
 
-	async completeTodoItem(
+	async checkTodoItem(
 		id: number
 	): Promise<void> {
 		/*

@@ -5,14 +5,19 @@ import {
 	Menu
 } from 'obsidian';
 import { MyProjectManager } from './projectManager';
-import { TodoManager } from './todoTracker';
+import { IssueTracker } from './issueTracker';
 import {
-	TodoItem,
-	PRIORITIES
+	IssueItem,
+	PRIORITIES,
+	// ProjectInfo
 } from './types'
 import {
 	formatDate
 } from './utils'
+import {
+	
+	// PriorityOrder
+} from "./constants";
 import {
 	sortItems,
 	// SummaryColumn,
@@ -23,51 +28,44 @@ import {
 	createTableColGroup
 } from './tableFunctions';
 import {
-	TODO_COLS,
-	TodoColumnField,
-	TodoSort,
-	TodoGroupField,
-	TodoGroup
+	ISSUE_COLS,
+	IssueColumnField,
+	IssueSort,
+	IssueGroupField,
+	IssueGroup
 } from "./tableConstants"
 import {
-	TODO_DASHBOARD_VIEW_TYPE
+	ISSUE_DASHBOARD_VIEW_TYPE
 } from "./constants"
 
-
-
-
-
-
-
-export class TodoDashboardView extends Component {
+export class IssueDashboardView extends Component {
 	
-	private todoTableEl!: HTMLTableElement;
+	private issueTableEl!: HTMLTableElement;
 
-	private todoTableBodyEl!: HTMLTableSectionElement;
+	private issueTableBodyEl!: HTMLTableSectionElement;
 
 	// currently the todo list can only be modified by itself, but at some point it might get modified by another process, so we want to keep it up to date
 	private refreshInterval: number | null = null;  
 
-	private groupBy: TodoGroupField = "none";
-	private sortBy: TodoSort[] = [
+	private groupBy: IssueGroupField = "none";
+	private sortBy: IssueSort[] = [
 		{ field: "priority", dir: "desc" },
-		{ field: "dueDate", dir: "desc" }
+		{ field: "name", dir: "desc" }
 	];
 
-	private colOrder: TodoColumnField[] = [
-		"status",
+	private colOrder: IssueColumnField[] = [
 		"priority",
 		"name",
-		"notes",
 		"project",
+		"origin",
+		"status",
 		"startDate",
-		"dueDate",
 		"action"
 	]
 
-	private sortButtons = new Map<TodoColumnField, ButtonComponent>();
+	private sortButtons = new Map<IssueColumnField, ButtonComponent>();
 
-	private groupButtons = new Map<TodoGroupField, ButtonComponent>();
+	private groupButtons = new Map<IssueGroupField, ButtonComponent>();
 
 	private projectMap = new Map<string, string>();
 
@@ -77,7 +75,7 @@ export class TodoDashboardView extends Component {
 	constructor(
 		private container: HTMLElement,
 		private app: App,
-		private todoManager: TodoManager,
+		private issueTracker: IssueTracker,
 		private projectManager: MyProjectManager,
 		private selectedProject: string | null = null
 	) {
@@ -86,11 +84,11 @@ export class TodoDashboardView extends Component {
 	}
 
 	getViewType(): string {
-		return TODO_DASHBOARD_VIEW_TYPE;
+		return ISSUE_DASHBOARD_VIEW_TYPE;
 	}
 
 	getDisplayText(): string {
-		return "Todo dashboard";
+		return "Issue dashboard";
 	}
 
 	getIcon(): string {
@@ -99,16 +97,16 @@ export class TodoDashboardView extends Component {
 
 	onload(): void {
 		this.registerEvent(
-			this.todoManager.on("todo-list-updated", () => {
-				void this.updateTodoRows()
+			this.issueTracker.on("issue-list-updated", () => {
+				void this.updateIssueRows()
 			})
 		);
 
 		this.buildDashboard();
-		void this.updateTodoRows();
+		void this.updateIssueRows();
 
 		this.refreshInterval = window.setInterval(() => {
-			void this.updateTodoRows();
+			void this.updateIssueRows();
 		}, 60000);
 	}
 
@@ -123,7 +121,7 @@ export class TodoDashboardView extends Component {
 		this.container.empty()
 		this.selectedProject = project;
 		this.buildDashboard()
-		void this.updateTodoRows();
+		void this.updateIssueRows();
 	}
 
 	private buildDashboard() {
@@ -153,27 +151,27 @@ export class TodoDashboardView extends Component {
 	
 		
 
-		const todoSection = mainSection.createEl("section");
+		const issueSection = mainSection.createEl("section");
 		// todoSection.addClass("todo-dashboard")
-		this.todoTableEl = todoSection.createEl('table');
-		this.todoTableEl.addClass('dashboard-table')
+		this.issueTableEl = issueSection.createEl('table');
+		this.issueTableEl.addClass('dashboard-table')
 
 		// create colgroup so we can specify column sizes
 		
 		const columns = this.getVisibleCols();
-		createTableColGroup(this.todoTableEl, columns);
-		this.createTodoTableHeaders(this.todoTableEl, columns);
+		createTableColGroup(this.issueTableEl, columns);
+		this.createIssueTableHeaders(this.issueTableEl, columns);
 
-		this.todoTableBodyEl = this.todoTableEl.createEl('tbody')
+		this.issueTableBodyEl = this.issueTableEl.createEl('tbody')
 
 
 		const bottomSection = mainSection.createEl("section");
-		const projInfo = this.projectManager.getProjectInfoByPath(this.selectedProject)
+		const projInfo = this.projectManager.getProjectInfoByPath(this.selectedProject) ?? undefined
 		new ButtonComponent(bottomSection)
-			.setButtonText("Create new todo")
+			.setButtonText("Create new issue")
 			// .setClass("todo-dashboard-button-add")
 			.onClick(async () => {
-				await this.todoManager.startTodoItem(projInfo);
+				await this.issueTracker.createNewIssue(projInfo);
 			})
 
 
@@ -186,22 +184,22 @@ export class TodoDashboardView extends Component {
 
 		// Create grouping buttons 
 		// To add a new value, update Todo_Group_Fields in types.ts and then 
-		for (const group of getGroupOptions(TODO_COLS)) {
+		for (const group of getGroupOptions(ISSUE_COLS)) {
 			const button = new ButtonComponent(section)
 				.setButtonText(group.label)
 				.onClick(async () => {
 					this.groupBy = group.value;
 					this.collapsedGroups.clear();
-					await this.rebuildTodoTable();
+					await this.rebuildIssueTable();
 				});
 
 			this.groupButtons.set(group.value, button);
 		}
 	}
 
-	private createTodoTableHeaders(
+	private createIssueTableHeaders(
 		table: HTMLTableElement,
-		columns: Array<[TodoColumnField, TableColumn]>
+		columns: Array<[IssueColumnField, TableColumn]>
 	): void {
 		const thead = table.createEl('thead');
 		const row = thead.createEl('tr');
@@ -220,40 +218,40 @@ export class TodoDashboardView extends Component {
 					.onClick(async () => {
 						// group is collapsed, uncollapse it
 						this.updateSort(field);
-						await this.updateTodoRows();
+						await this.updateIssueRows();
 					});
 				this.sortButtons.set(field, button);
 			} else {
 				header.setText(column.label)
 			}
 		}
-		updateSortButtons(this.sortButtons, this.sortBy, TODO_COLS);
+		updateSortButtons(this.sortButtons, this.sortBy, ISSUE_COLS);
 	}
 
-	async updateTodoRows(): Promise<void> {
+	async updateIssueRows(): Promise<void> {
 		// specifically for updating the rows without touching the headers
 		const newBody = createEl('tbody');
-		await this.buildTodoTableBody(newBody);
-		this.todoTableBodyEl?.replaceWith(newBody);
-		this.todoTableBodyEl = newBody;
+		await this.buildIssueTableBody(newBody);
+		this.issueTableBodyEl?.replaceWith(newBody);
+		this.issueTableBodyEl = newBody;
 		// await this.updateSummary();
 	}
 
-	async rebuildTodoTable(): Promise<void> {
+	async rebuildIssueTable(): Promise<void> {
 		const newTable = createEl('table')
 		newTable.addClass('dashboard-table')
 		const columns = this.getVisibleCols();
 		createTableColGroup(newTable, columns);
-		this.createTodoTableHeaders(newTable, columns);
+		this.createIssueTableHeaders(newTable, columns);
 		const newBody = newTable.createEl('tbody')
-		await this.buildTodoTableBody(newBody);
+		await this.buildIssueTableBody(newBody);
 
-		this.todoTableEl.replaceWith(newTable);
-		this.todoTableEl = newTable;
-		this.todoTableBodyEl = newBody;
+		this.issueTableEl.replaceWith(newTable);
+		this.issueTableEl = newTable;
+		this.issueTableBodyEl = newBody;
 	}
 
-	async buildTodoTableBody(tbody: HTMLTableSectionElement): Promise<void> {
+	async buildIssueTableBody(tbody: HTMLTableSectionElement): Promise<void> {
 		// update the body of the table only and return the updated table for actual loading into the ui
 		this.updateGroupByButtons();
 		
@@ -262,15 +260,15 @@ export class TodoDashboardView extends Component {
 		this.projectMap = new Map(
 			projects.map(project => [project.file.path, project.name])
 		);
-		let todos = await this.todoManager.getTodos("active", this.selectedProject);
+		let issues = await this.issueTracker.getIssues("active", this.selectedProject);
 
-		todos = sortItems(
-			todos,
+		issues = sortItems(
+			issues,
 			this.sortBy,
-			(a, b, field) => this.compareTodos(a, b, field)
+			(a, b, field) => this.compareIssues(a, b, field)
 		)
 
-		const groups = this.groupTodos(todos)
+		const groups = this.groupIssues(issues)
 		
 		for (const group of groups) {
 
@@ -283,18 +281,19 @@ export class TodoDashboardView extends Component {
 				}
 			}
 
-			for (const [index, todo] of group.todos.entries()) {
+			for (const [index, issue] of group.issues.entries()) {
 				let groupPos: GroupPosition = null;
 				if (this.groupBy !== 'none') {
 					if (index === 0) {
 						groupPos = "first";
-					} else if (index === group.todos.length - 1) {
+					} else if (index === group.issues.length - 1) {
 						groupPos = "last"
 					} else {
 						groupPos = "middle"
 					}
 				}
-				this.createTodoRow(tbody, todo, groupPos)			
+				
+				this.createIssueRow(tbody, issue, groupPos)			
 			}
 		}
 
@@ -310,7 +309,7 @@ export class TodoDashboardView extends Component {
 		}
 	}
 
-	private renderCollapsedGroupRow(target: HTMLTableSectionElement, group: TodoGroup) {
+	private renderCollapsedGroupRow(target: HTMLTableSectionElement, group: IssueGroup) {
 		const groupRow = target.createEl('tr');
 		groupRow.addClass("first")
 		groupRow.addClass("group-row")
@@ -323,32 +322,11 @@ export class TodoDashboardView extends Component {
 		}
 
 		
-		/*const groupCell = groupRow.createEl('td');
-		groupCell.colSpan = this.colOrder.length;
-		if (this.collapsedGroups.has(group.key)) {
-			new ButtonComponent(groupCell)
-				.setButtonText(`${group.label} ▶`)
-				// .setClass("todo-dashboard-button")
-				.onClick(async () => {
-					// group is collapsed, uncollapse it
-					this.collapsedGroups.delete(group.key);
-					await this.updateTodoRows();
-				});
-		} else {
-			new ButtonComponent(groupCell)
-				.setButtonText(`${group.label} ▼`)
-				.onClick(async () => {
-					// group isn't collapsed, collapse it
-					this.collapsedGroups.add(group.key);
-					await this.updateTodoRows();
-				});
-		}
-		*/
 	}
 
-	private createTodoRow(
+	private createIssueRow(
 		target: HTMLTableSectionElement,
-		todo: TodoItem,
+		issue: IssueItem,
 		groupPos: GroupPosition = null
 	) {
 		const row = target.createEl('tr');
@@ -361,22 +339,21 @@ export class TodoDashboardView extends Component {
 			if (!column.centered) {
 				cell.addClass("left-align")
 			}
-			this.renderCell(cell, field, todo, groupPos);
+			this.renderCell(cell, field, issue, groupPos);
 		}
 		
 	}
 
 	private getVisibleCols(): Array<
-		[TodoColumnField, TableColumn]
+		[IssueColumnField, TableColumn]
 	> {
 		if (this.selectedProject) {
 			this.colOrder = [
-				"status",
-				"priority",
 				"name",
-				"notes",
+				"priority",
+				"status",
+				"origin",
 				"startDate",
-				"dueDate",
 				"action"
 			]
 		} else {
@@ -385,12 +362,11 @@ export class TodoDashboardView extends Component {
 					this.colOrder = [
 						"collapse",
 						"project",
-						"status",
 						"priority",
 						"name",
-						"notes",
+						"origin",
+						"status",
 						"startDate",
-						"dueDate",
 						"action"
 					]
 					break;
@@ -398,24 +374,22 @@ export class TodoDashboardView extends Component {
 					this.colOrder = [
 						"collapse",
 						"priority",
-						"status",
 						"name",
-						"notes",
+						"origin",
 						"project",
+						"status",
 						"startDate",
-						"dueDate",
 						"action"
 					]
 					break;
 				case 'none':
 					this.colOrder = [
 						"priority",
-						"status",
 						"name",
-						"notes",
+						"origin",
 						"project",
+						"status",
 						"startDate",
-						"dueDate",
 						"action"
 					]
 					break;
@@ -423,14 +397,14 @@ export class TodoDashboardView extends Component {
 		}
 		return this.colOrder.map(field => [
 			field,
-			TODO_COLS[field]
+			ISSUE_COLS[field]
 		])
 	}
 
 	private renderCollapsedGroupCell(
 		cell: HTMLTableCellElement,
-		field: TodoColumnField,
-		group: TodoGroup
+		field: IssueColumnField,
+		group: IssueGroup
 	): void {
 
 		switch (field) {
@@ -445,7 +419,7 @@ export class TodoDashboardView extends Component {
 						.onClick(async () => {
 							// group is collapsed, uncollapse it
 							this.collapsedGroups.delete(group.key);
-							await this.updateTodoRows();
+							await this.updateIssueRows();
 						});
 					break;
 
@@ -470,7 +444,7 @@ export class TodoDashboardView extends Component {
 							.onClick(async () => {
 								// group is collapsed, uncollapse it
 								this.collapsedGroups.delete(group.key);
-								await this.updateTodoRows();
+								await this.updateIssueRows();
 							});
 					}
 					break
@@ -491,8 +465,8 @@ export class TodoDashboardView extends Component {
 
 	private renderCell(
 		cell: HTMLTableCellElement,
-		field: TodoColumnField,
-		todo: TodoItem,
+		field: IssueColumnField,
+		issue: IssueItem,
 		groupPos: GroupPosition
 	): void {
 		switch (field) {
@@ -507,9 +481,9 @@ export class TodoDashboardView extends Component {
 									.setButtonText("⊟")
 									.onClick(async () => {
 										// group isn't collapsed, collapse it
-										const groupKey = this.getGroupKey(todo)
+										const groupKey = this.getGroupKey(issue)
 										this.collapsedGroups.add(groupKey);
-										await this.updateTodoRows();
+										await this.updateIssueRows();
 									});
 								break;
 							}
@@ -535,60 +509,82 @@ export class TodoDashboardView extends Component {
 			}
 
 			case "name":
-				cell.setText(todo.name);
+				cell.setText(issue.title);
 				break;
 
 			case "project":
 				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
-					const projectName = todo.projectPath ? this.projectMap.get(todo.projectPath) ?? "Unknown" : "None";
-					cell.setText(projectName);
-					// cell.addClass('text-centered');
+					const projectFile = this.projectManager.getProjectInfoByPath(issue.projectPath)
+					const projectName = projectFile ? this.projectMap.get(issue.projectPath) ?? "Unknown" : "None";
+					new ButtonComponent(cell)
+						.setButtonText(projectName)
+						.setClass("left-align")
+						.onClick(async (event) => {
+							event.preventDefault();
+							const existingLeaf = this.app.workspace.getLeavesOfType(
+								"markdown"
+							).find(leaf => {
+								const view = leaf.view;
+								return view.getState().file === issue.projectPath;
+							});
+
+							if (existingLeaf) {
+								void this.app.workspace.revealLeaf(existingLeaf);
+							} else {
+								void this.app.workspace.getLeaf(false).openFile(projectFile!.file);
+							}
+						});
 					break;
 				}
 
 			case "priority":
-				cell.setText(PRIORITIES.find(p => p.value === todo.priority)?.label ?? "Unknown");
+				cell.setText(PRIORITIES.find(p => p.value === issue.priority)?.label ?? "Unknown");
 				break;
 
 			case "status":
 				{
-					// cell.addClass("text-centered");
-					const check = cell.createEl('input')
-					check.type = 'checkbox';
-					check.checked = todo.status;
-					check.addEventListener('change', (event: Event) => {
-						void this.todoCheckboxChange(event, todo.id)
-					})
+					cell.setText(issue.status)
+					// const check = cell.createEl('input')
+					// check.type = 'checkbox';
+					// check.checked = issue.status;
+					// check.addEventListener('change', (event: Event) => {
+					// 	void this.todoCheckboxChange(event, issue.id)
+					// })
 					break;
 				}
 				
-			case 'notes':
-				cell.setText(todo.notes ?? "")
+			case 'origin':
+				{
+					// cell.setText(issue.sourceFile?.path ?? "")
+					const originFile = issue.sourceFile
+					if (originFile) {
+						const projectName = originFile.basename;
+						new ButtonComponent(cell)
+							.setButtonText(projectName)
+							.setClass("left-align")
+							.onClick(async (event) => {
+								event.preventDefault();
+								const existingLeaf = this.app.workspace.getLeavesOfType(
+									"markdown"
+								).find(leaf => {
+									const view = leaf.view;
+									return view.getState().file === issue.projectPath;
+								});
+
+								if (existingLeaf) {
+									void this.app.workspace.revealLeaf(existingLeaf);
+								} else {
+									void this.app.workspace.getLeaf(false).openFile(originFile);
+								}
+							});
+					}
+				}
 				break;
 
 			case 'startDate':
-				cell.setText(todo.dateAdded)
+				cell.setText(issue.startDate)
 				break;
 
-			case 'dueDate': {
-				let dueDateFormat: string | undefined;
-				const dueDateRaw = todo.dueDate;
-				if (dueDateRaw !== undefined) {
-					const dueDate = new Date(dueDateRaw);
-					if (dueDate.getHours() === 0 &&
-						dueDate.getMinutes() === 0
-						) {
-						dueDateFormat = formatDate(dueDate, "date");
-					} else {
-						dueDateFormat = dueDateRaw;
-					}
-				} else {
-					dueDateFormat = ""
-				}
-				
-				cell.setText(dueDateFormat)
-				break;
-			}
 
 			case 'action':
 				{
@@ -600,19 +596,19 @@ export class TodoDashboardView extends Component {
 
 							const menu = new Menu();
 
-							menu.addItem((item) => {
-								item.setTitle("Edit")
-									.onClick(async () => {
-										await this.todoManager.editTodoItem(todo)
-									});
-							});
+							// menu.addItem((item) => {
+							// 	item.setTitle("Edit")
+							// 		.onClick(async () => {
+							// 			await this.issueTracker.editIssueData(issue)
+							// 		});
+							// });
 
-							menu.addItem((item) => {
-								item.setTitle("Delete")
-									.onClick(async () => {
-										await this.todoManager.deleteTodoItem(todo.id);
-									});
-							});
+							// menu.addItem((item) => {
+							// 	item.setTitle("Delete")
+							// 		.onClick(async () => {
+							// 			await this.issueTracker.deleteIssueData(issue.id);
+							// 		});
+							// });
 
 							
 							menu.showAtMouseEvent(event);
@@ -627,10 +623,10 @@ export class TodoDashboardView extends Component {
 		}
 	}
 
-	private compareTodos(
-		a: TodoItem,
-		b: TodoItem,
-		field: TodoColumnField
+	private compareIssues(
+		a: IssueItem,
+		b: IssueItem,
+		field: IssueColumnField
 	): number {
 		switch (field) {
 			case "project": {
@@ -647,21 +643,11 @@ export class TodoDashboardView extends Component {
 				return a.priority - b.priority;
 			}
 
-			case "dueDate": {
-				const dateA = a.dueDate
-					? new Date(a.dueDate).getTime()
-					: Infinity;
 
-				const dateB = b.dueDate
-					? new Date(b.dueDate).getTime()
-					: Infinity;
-
-				return dateA - dateB;
-			}
 
 			case "name": {
-				const nameA = a.name;
-				const nameB = b.name;
+				const nameA = a.title;
+				const nameB = b.title;
 				return nameA.localeCompare(nameB);
 			}
 
@@ -670,49 +656,49 @@ export class TodoDashboardView extends Component {
 		}
 	}
 
-	private groupTodos(
-		todos: TodoItem[],
+	private groupIssues(
+		issues: IssueItem[],
 		
-	): TodoGroup[] {
+	): IssueGroup[] {
 		if (this.groupBy === "none") {
 			return [{
 				key: "all",
 				label: "",
-				todos
+				issues: issues
 			}];
 		}
-		const groups = new Map<string, TodoItem[]>();
+		const groups = new Map<string, IssueItem[]>();
 
-		for (const todo of todos) {
-			const key = this.getGroupKey(todo);
+		for (const issue of issues) {
+			const key = this.getGroupKey(issue);
 
 			if (!groups.has(key)) {
 				groups.set(key, []);
 			}
 
-			groups.get(key)!.push(todo);
+			groups.get(key)!.push(issue);
 		}
 
 		// Get the group labels after the groups are assembled so you only have to get each group label once instead of per item
 		return Array.from(groups.entries()).map(
-			([key, todos]) => ({
+			([key, issues]) => ({
 				key,
 				label: this.getGroupLabel(key),
-				todos
+				issues: issues
 			})
 		);
 	}
 
 	private getGroupKey(
-		todo: TodoItem,
+		issue: IssueItem,
 	): string {
 		// Needs a case statement for each item in types.Todo_Group_Fields to handle returning the group's key, based on the selected grouping
 		switch (this.groupBy) {
 			case "priority": 
-				return String(todo.priority)
+				return String(issue.priority)
 
 			case "project": 
-				return String(todo.projectPath)
+				return String(issue.projectPath)
 
 			default:
 				return "";
@@ -735,21 +721,21 @@ export class TodoDashboardView extends Component {
 		}
 	}
 
-	private async todoCheckboxChange(
+	/*private async todoCheckboxChange(
 		event: Event,
 		todoID: number
 	): Promise<void> {
 		const target = event.currentTarget as HTMLInputElement;
 
 		if (target.checked) {
-			await this.todoManager.checkTodoItem(todoID)
-			await this.todoManager.markTodoCompleteEverywhere(todoID)
+			await this.issueTracker.checkIssueData(todoID)
+			await this.issueTracker.markTodoCompleteEverywhere(todoID)
 		} else {
 			// console.log('Checkbox unchecked.');
 		}
-	}
+	}*/
 
-	private updateSort(field: TodoColumnField) {
+	private updateSort(field: IssueColumnField) {
 		const index = this.sortBy.findIndex(sort => sort.field === field);
 
 		if (index === -1) {
@@ -774,7 +760,7 @@ export class TodoDashboardView extends Component {
 		}
 
 
-		updateSortButtons(this.sortButtons, this.sortBy, TODO_COLS);
+		updateSortButtons(this.sortButtons, this.sortBy, ISSUE_COLS);
 		
 	}
 

@@ -19,7 +19,7 @@ export class IssueModal extends Modal {
 	private description: string;
 	private selectedProject: ProjectInfo | null = null;
 	private priority: number;
-	private source: TFile;
+	private source: TFile | null;
 
 
 	// onSubmit: (data: IssueData) => void;

@@ -21,7 +21,7 @@ import {
 } from './utils';
 import { TimeTracker } from './timeTracker';
 // import { TimeModal } from './timeModal';
-import IssueTracker from './issueTracker';
+import { IssueTracker }from './issueTracker';
 import { TodoManager } from './todoTracker';
 import {
 	// SummaryPeriod,
@@ -38,6 +38,9 @@ import {
 import {
 	TodoDashboardView
 } from './todoDashboard'
+import {
+	IssueDashboardView
+} from './issueDashboard'
 
 // type SingleViewSection = "Issues" | "Todos" | "Meetings" | "Notes"
 
@@ -46,6 +49,8 @@ export class ProjectSingleView extends Component {
 
 	selectedProject: string | null;
 	private todoTable!: TodoDashboardView;
+	private detailsSection!: ProjectInfo;
+	private issueTable!: IssueDashboardView;
 
 	constructor(
 		private container: HTMLElement,
@@ -145,13 +150,11 @@ export class ProjectSingleView extends Component {
 		*/
 		const dashboardContainer = this.container.createDiv({ cls: "project-section" })
 		dashboardContainer.addClass('project-dashboard')
-		const detailsSection = dashboardContainer.createDiv({ cls: "project-section" });
-
-		detailsSection.createEl("h3", {
-			text: "Projects"
-		});
-		const select = detailsSection.createEl("select");
+		const projectSection = dashboardContainer.createDiv()
+		const select = projectSection.createEl("select");
 		select.addClass("dropdown-new")
+		select.addClass("center-align")
+		select.addClass("project-selector")
 		for (const project of this.getProjectOptions()) {
 			select.createEl("option", {
 				value: project.path,
@@ -162,9 +165,16 @@ export class ProjectSingleView extends Component {
 			const path = select.value;
 			this.selectedProject = path;
 			void this.todoTable.selectProject(path)
-
-
+			void this.issueTable.selectProject(path)
 		});
+
+		const detailsSection = dashboardContainer.createDiv({ cls: "project-section" });
+
+		// detailsSection.createEl("h1", {
+		// 	text: "Project details"
+		// });
+		
+		await this.buildDetailsSection(detailsSection)
 
 		dashboardContainer.createEl("hr")
 		// build the time tracker section
@@ -175,14 +185,14 @@ export class ProjectSingleView extends Component {
 		// build issue table section
 		const issueSection = dashboardContainer.createDiv({ cls: "project-section" });
 		issueSection.createEl("h4", { text: "Project issues" });
-		await this.buildSection(issueSection)
+		await this.buildIssueSectionContents(issueSection)
 		dashboardContainer.createEl("hr")
 
 		// build todo section
 		const todoSection = dashboardContainer.createDiv({ cls: "project-section" });
 		todoSection.createEl("h4", { text: "Project todos" });
 		const todoTableSection = todoSection.createDiv({ cls: "project-section" });
-		await this.buildTodoSection(todoTableSection)
+		await this.buildTodoSectionContents(todoTableSection)
 		dashboardContainer.createEl("hr")
 
 		// build meeting section
@@ -227,7 +237,19 @@ export class ProjectSingleView extends Component {
 		});*/
 	}
 
-	private async buildTodoSection(section: HTMLDivElement) {
+	private async buildDetailsSection(section: HTMLDivElement) {
+		section.createEl("label", { text: 'Primary' })
+		section.createEl("label", { text: 'Collaborators' })
+		// this.todoTable = new TodoDashboardView(
+		// 	section,
+		// 	this.app,
+		// 	this.projectManager,
+
+		// )
+		// this.addChild(this.todoTable)
+	}
+
+	private async buildTodoSectionContents(section: HTMLDivElement) {
 		this.todoTable = new TodoDashboardView(
 			section,
 			this.app,
@@ -236,6 +258,17 @@ export class ProjectSingleView extends Component {
 
 		)
 		this.addChild(this.todoTable)
+	}
+
+	private async buildIssueSectionContents(section: HTMLDivElement) {
+		this.issueTable = new IssueDashboardView(
+			section,
+			this.app,
+			this.issueTracker,
+			this.projectManager,
+
+		)
+		this.addChild(this.issueTable)
 	}
 
 	private updateProjectView() {

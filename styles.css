@@ -174,7 +174,11 @@ hr {
 .right-align {
 	margin-left: auto;
 }
-
+.center-align {
+	margin-left: auto;
+	margin-right: auto;
+	text-align: center;
+}
 .text-centered {
 	text-align: center;
 }
@@ -207,6 +211,20 @@ hr {
 	overflow-x: auto;
 }
 
+.project-selector {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding-top: 6px;
+	padding-bottom: 6px;
+	font-size: 24px;
+	height: fit-content;
+}
+
+/*.project-selector option {
+	padding-left: 40px;
+	padding-right: 40px;
+}*/
 
 .project-dashboard .group-row .small-icon {
 	font-size: 8px;

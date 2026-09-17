@@ -9,7 +9,8 @@ import {
 import {
 	ProjectInfo,
 	TodoModalOptions,
-	CreateTodoRequest
+	CreateTodoRequest,
+	TodoItem
 } from "./types";
 import {
 	formatDate
@@ -22,6 +23,10 @@ export class TodoModal extends Modal {
 	private selectedProject: ProjectInfo | null = null;
 	private priority: number;
 	private dueDate: Date | undefined;
+	// only for editing
+	private status: boolean = false;
+	private dateAdded!: string;
+	private completedTS: string | undefined;
 
 
 	constructor(
@@ -32,9 +37,27 @@ export class TodoModal extends Modal {
 		super(app);
 
 		// set the initial values for the items returned at the end
-		this.name = options.context.tempTitle;
-		this.priority = 0;
+		
+		if (options.mode === "edit") {
+			this.name = options.todo.name;
+			this.notes = options.todo.notes ?? "";
+			this.dateAdded = options.todo.dateAdded;
+			this.priority = options.todo.priority;
+			if (options.todo.dueDate) { this.dueDate = new Date(options.todo.dueDate) }
 
+			// this.selectedProject = options.todo.projectPath ?? null;
+			/* We never explicitly set `this.selectedProject` because as part of the project dropdown creation,
+			the TodoItem's projectPath is set as the lone related project path, which sets it at the top of the dropdown,
+			and then this.selectedProject is set to item 0 of the field. Indirect, so probably not the most ideal, but it works */
+			
+			this.status = options.todo.status;
+			
+			this.completedTS = options.todo.completedTS
+
+		} else {
+			this.name = options.context.tempTitle;
+			this.priority = 0;
+		}
 
 	}
 
@@ -54,11 +77,15 @@ export class TodoModal extends Modal {
 		Due Date
 		buttons
 		*/
+		if (this.options.mode === "edit") {
+			this.buildIDField(form)
+		}
 		this.buildTitleField(form);
 		this.buildNotesField(form);
 		this.buildProjectDropdown(form);
 		this.buildPriorityDropdown(form);
 		this.buildDateFields(form);
+		this.buildStatusField(form);
 		this.buildButtons(form);
 
 
@@ -67,6 +94,10 @@ export class TodoModal extends Modal {
 	onClose() {
 		// const { contentEl } = this;
 		this.contentEl.empty();
+	}
+
+	buildIDField(parent: HTMLElement): void {
+
 	}
 
 	buildTitleField(parent: HTMLElement): void {
@@ -106,8 +137,32 @@ export class TodoModal extends Modal {
 		parent.createEl("label", {
 			text: "Project"
 		});
+		const select = parent.createEl("select");
+
+		// Create the dropdown options
+
+		// add a 'none' option in case the todo doesn't have a specific project
+		const option = select.createEl("option");
+		option.value = "None";
+		option.text = "None";
+
+		// fill the rest of the options
+		let relatedPaths: Set<string>
+		if (this.options.mode === "create") {
+			relatedPaths = new Set(this.options.context.projectPaths);
+		} else {
+			relatedPaths = new Set(
+				this.options.todo.projectPath !== undefined
+					? [this.options.todo.projectPath]
+					: []
+			);
+		}
+		// relatedPaths only has a value 
+		// if (this.options.mode === "edit") {
+
+		// }
 		
-		const relatedPaths = new Set(this.options.context.projectPaths);
+		
 		const relatedProjects = this.options.projects.filter(project =>
 			relatedPaths.has(project.file.path)
 		);
@@ -115,14 +170,13 @@ export class TodoModal extends Modal {
 			!relatedPaths.has(project.file.path)
 		);
 
-		const select = parent.createEl("select");
+		
 
 		if (relatedProjects.length > 0) {
+			// either there are related projects in create mode, or a project for the todo in edit mode
+			const relatedLabel = (this.options.mode === "create") ? "Related projects" : "Selected project"
 			const relatedGroup = select.createEl("optgroup", {
-				attr: { label: "Related Projects" }
-			});
-			const otherGroup = select.createEl("optgroup", {
-				attr: { label: "Other Active Projects" }
+				attr: { label: relatedLabel }
 			});
 
 			for (const project of relatedProjects) {
@@ -130,47 +184,32 @@ export class TodoModal extends Modal {
 				option.value = project.file.path;
 				option.text = project.name;
 			}
-
-			for (const project of otherProjects) {
-				const option = otherGroup.createEl("option");
-				option.value = project.file.path;
-				option.text = project.name;
-			}
-
+			// either way, set the variable to the provided project
 			this.selectedProject = relatedProjects[0]!;
-
-		} else {
-			const generalGroup = select.createEl("optgroup", {
-				attr: { label: "Projects" }
-			});
-			// add a 'none' option in case the todo doesn't have a specific project
-			const option = generalGroup.createEl("option");
-			option.value = "None";
-			option.text = "None";
-
-			for (const project of otherProjects) {
-				const option = generalGroup.createEl("option");
-				option.value = project.file.path;
-				option.text = project.name;
-			}
-
-			this.selectedProject = null;
-
 		}
 
+		// add the rest of the projects as options
+		const generalGroup = select.createEl("optgroup", {
+			attr: { label: "Active Projects" }
+		});
+
+		for (const project of otherProjects) {
+			const option = generalGroup.createEl("option");
+			option.value = project.file.path;
+			option.text = project.name;
+		}
 
 		if (this.selectedProject) {
+			/* this.selectedProject was defined while creating the groups, so update the select field to reflect the current value */
 			select.value = this.selectedProject.file.path;
 		} else {
 			select.value = "None"
 		}
 		select.addEventListener("change", () => {
-
 			this.selectedProject =
 				this.options.projects.find(
 					p => p.file.path === select.value
 				) ?? null;
-
 		});
 		
 	}
@@ -235,6 +274,45 @@ export class TodoModal extends Modal {
 		dueDateInput.addEventListener("change", updateDueDate);
 		dueTimeInput.addEventListener("change", updateDueDate);
 
+		/*if (this.options.mode === "edit") {
+			const completedDateRow = parent.createDiv({ cls: "timestamp-row" });
+			completedDateRow.createEl("label", {
+				text: "Due date (optional)"
+			});
+
+			const dueDateInput = dueDateRow.createEl("input", {
+				type: "date"
+			});
+			const dueTimeInput = dueDateRow.createEl("input", {
+				type: "time",
+				placeholder: "(Time)"
+			});
+			const updateDueDate = () => {
+				if (!dueDateInput.value) {
+					this.dueDate = undefined;
+					return;
+				}
+
+				if (dueTimeInput.value) {
+					// time has been entered, build timestamp with time
+					this.dueDate = new Date(
+						`${dueDateInput.value}T${dueTimeInput.value}`
+					);
+				} else {
+					this.dueDate = new Date(
+						`${dueDateInput.value}T00:00`
+					);
+				}
+			}
+
+			dueDateInput.addEventListener("change", updateDueDate);
+			dueTimeInput.addEventListener("change", updateDueDate);
+		}*/
+
+	}
+
+	buildStatusField(parent: HTMLElement): void {
+
 	}
 
 	buildButtons(parent: HTMLElement) {
@@ -242,30 +320,47 @@ export class TodoModal extends Modal {
 			.addButton(button => {
 
 				button
-					.setButtonText("Create")
+					.setButtonText(this.options.mode === "create" ? "Create" : "Save")
 					.setCta()
 					.onClick(async () => {
-
+						
 						// check that project has been selected
 						// if (!this.selectedProject) {
 						// 	this.selectedProject = undefined
 						// }
 						const dueDate = (this.dueDate !== undefined) ? formatDate(this.dueDate) : undefined;
-						// build the TodoData var to pass out
-						const request: CreateTodoRequest = {
-							todoInfo: {
+						if (this.options.mode === "create") {
+							// build the TodoData var to pass out
+							const request: CreateTodoRequest = {
+								todoInfo: {
+									name: this.name,
+									notes: this.notes,
+									dueDate: dueDate,
+									project: this.selectedProject,
+									priority: this.priority
+								},
+								context: this.options.context
+
+							};
+
+							await this.options.onSubmit(request);
+
+							
+						} else {
+							const updatedTodo: TodoItem = {
+								id: this.options.todo.id,
 								name: this.name,
 								notes: this.notes,
-								dueDate: dueDate,
-								project: this.selectedProject,
-								priority: this.priority
-							},
-							context: this.options.context
+								dateAdded: this.dateAdded,
+								priority: this.priority,
+								projectPath: this.selectedProject?.file.path,
+								status: this.status,
+								completedTS: this.completedTS
+								
 
-						};
-
-						await this.options.onSubmit(request);
-
+							}
+							await this.options.onSubmit(updatedTodo);
+						}
 						this.close();
 
 					});

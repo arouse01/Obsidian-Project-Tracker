@@ -1,7 +1,7 @@
-// import {
-// 	Editor,
-// 	TFile
-// } from 'obsidian';
+import {
+	TFile,
+	MetadataCache
+} from 'obsidian';
 export function formatIssueID(id: number): string {
 	return id.toString().padStart(4, "0");
 }
@@ -82,4 +82,50 @@ export function normalizeWikiLink(link: string): string {
 		.split("|")             // Keep only the link path, remove any link alias
 
 	return path.trim();
+}
+
+function getFrontmatterValue(
+	// So we can access without worrying about spaces
+	metadataCache: MetadataCache,
+	file: TFile,
+	property: string
+): unknown {
+	const cache = metadataCache.getFileCache(file);
+
+	return cache?.frontmatter?.[property];
+}
+
+export function getFrontmatterString(
+	metadataCache: MetadataCache,
+	file: TFile,
+	property: string
+): string {
+	const value =
+		getFrontmatterValue(metadataCache, file, property);
+
+	return typeof value === "string"
+		? value
+		: "";
+}
+
+export function getFrontmatterStringArray(
+	metadataCache: MetadataCache,
+	file: TFile,
+	property: string
+): string[] {
+
+	const cache = metadataCache.getFileCache(file);
+	const value: unknown = cache?.frontmatter?.[property];
+
+	if (typeof value === "string") {
+		return [value.replace(/^\[\[\]\]$/g, "")];
+	}
+
+	if (Array.isArray(value)) {
+		return value
+			.filter((v): v is string => typeof v === "string")
+			.map(v => v.replace(/^\[\[|\]\]$/g, ""));
+	}
+
+	return [];
 }

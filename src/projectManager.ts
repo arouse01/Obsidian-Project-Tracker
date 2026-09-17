@@ -1,10 +1,13 @@
 import {
 	App,
+	MetadataCache,
 	TFile
 } from 'obsidian';
 import {
 	formatDate,
-	normalizeWikiLink
+	normalizeWikiLink,
+	getFrontmatterString,
+	getFrontmatterStringArray
 } from './utils';
 import {
 	ProjectInfo,
@@ -36,8 +39,8 @@ export class MyProjectManager {
 			return {
 				file: file,
 				name: file.basename,
-				status: this.getFrontmatterString(file, "Project Status"),
-				client: this.getFrontmatterString(file, "Primary")
+				status: getFrontmatterString(this.app.metadataCache, file, "Project Status"),
+				client: getFrontmatterString(this.app.metadataCache, file, "Primary")
 			};
 
 		})
@@ -57,6 +60,16 @@ export class MyProjectManager {
 			project.status === "Archived" ||
 			project.status === "Inactive"
 		);
+	}
+
+	getProjectInfoByLink(linkText: string | null): ProjectInfo | null {
+		if (linkText === null) {
+			return null;
+		}
+
+		return this.getActiveProjects().find(
+			p => p.file.path === linkText
+		) ?? null;
 	}
 
 	getProjectInfoByPath(path: string | null): ProjectInfo | null {
@@ -90,7 +103,7 @@ export class MyProjectManager {
 		const files = this.app.vault.getMarkdownFiles();
 		const clients = files
 			.filter(file => file.path.startsWith("Projects/"))  // Get all md files in the Projects folder
-			.map(file => this.getFrontmatterString(file, "Primary"))
+			.map(file => getFrontmatterString(this.app.metadataCache, file, "Primary"))
 			.filter(client => client.length > 0)
 			.map(client => normalizeWikiLink(client))
 
@@ -105,7 +118,7 @@ export class MyProjectManager {
 		const files = this.app.vault.getMarkdownFiles();
 		const collaborators = files
 			.filter(file => file.path.startsWith("Projects/"))  // Get all md files in the Projects folder
-			.flatMap(file => this.getFrontmatterStringArray(file, "Collaborators"))
+			.flatMap(file => getFrontmatterStringArray(this.app.metadataCache, file, "Collaborators"))
 			.filter(collaborator => collaborator.length > 0)
 			.map(collaborator => normalizeWikiLink(collaborator));
 
@@ -222,50 +235,7 @@ tags:
 	}
 
 
-	private getFrontmatterValue(
-		// So we can access without worrying about spaces
-		file: TFile,
-		property: string
-	): unknown {
-		const cache = this.app.metadataCache.getFileCache(file);
-
-		return cache?.frontmatter?.[property];
-
-	}
-
-	public getFrontmatterString(
-		file: TFile,
-		property: string
-	): string {
-
-		const value =
-			this.getFrontmatterValue(file, property);
-
-		return typeof value === "string"
-			? value
-			: "";
-	}
-
-	public getFrontmatterStringArray(
-		file: TFile,
-		property: string
-	): string[] {
-
-		const cache = this.app.metadataCache.getFileCache(file);
-		const value: unknown = cache?.frontmatter?.[property];
-
-		if (typeof value === "string") {
-			return [value.replace(/^\[\[\]\]$/g, "")];
-		}
-
-		if (Array.isArray(value)) {
-			return value
-				.filter((v): v is string => typeof v === "string")
-				.map(v => v.replace(/^\[\[|\]\]$/g, ""));
-		}
-
-		return [];
-	}
+	
 	
 }
 

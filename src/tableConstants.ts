@@ -4,7 +4,8 @@ import {
 } from './tableFunctions'
 import {
 	ProjectInfo,
-	TodoItem
+	TodoItem,
+	IssueItem
 } from "./types"
 
 // PROJECTS
@@ -22,7 +23,8 @@ export const PROJ_COLS = {
 		sortable: true,
 		groupable: false,
 		width: "55px",
-		tableGroup: "Project"
+		tableGroup: "Project",
+		centered: true
 	},
 	"project": {
 		label: "Project",
@@ -273,3 +275,86 @@ export const TIME_COLS = {
 
 export type TimeColumnField = keyof typeof TIME_COLS;
 export type TimeSort = ColSort<TimeColumnField>
+
+
+// ISSUES
+// TODOS
+export const ISSUE_COLS = {
+	"collapse": {
+		label: "",
+		sortable: false,
+		groupable: false,
+		width: "25px",
+		tableGroup: "",
+		centered: true
+	},
+	"priority": {
+		label: "Priority",
+		sortable: true,
+		groupable: true,
+		width: "75px"
+	},
+	"name": {
+		label: "Name",
+		sortable: true,
+		groupable: false,
+		width: "30%",
+		minWidth: "250px",
+		centered: false
+	},
+	"status": {
+		label: "Status",
+		sortable: false,
+		groupable: false,
+		centered: true,
+		width: "60px"
+	},
+	"project": {
+		label: "Project",
+		sortable: true,
+		groupable: true,
+		centered: false,
+		width: "20%"
+	},
+	"origin": {
+		label: "Origin",
+		sortable: false,
+		groupable: false,
+		width: "20%",
+		centered: false
+	},
+	"startDate": {
+		label: "Added",
+		sortable: false,
+		groupable: false,
+		centered: true,
+		width: "75px"
+	},
+	"action": {
+		label: "Action",
+		sortable: false,
+		groupable: false,
+		centered: true,
+		width: "55px"
+	}
+} satisfies Record<string, TableColumn>;
+
+export type IssueColumnField = keyof typeof ISSUE_COLS;
+
+// type of ProjectColumnField here instead of SortField because it can now let any field be sorted, and that is defined by the master column list above
+export type IssueSort = ColSort<IssueColumnField>
+
+export type IssueGroupField =
+	| "none"
+	| {
+		[K in keyof typeof ISSUE_COLS]:
+		typeof ISSUE_COLS[K]["groupable"] extends true
+		? K
+		: never
+	}[keyof typeof ISSUE_COLS];
+
+export interface IssueGroup {
+	key: string;
+	label: string;
+	issues: IssueItem[];
+}

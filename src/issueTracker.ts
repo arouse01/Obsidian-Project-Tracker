@@ -1,6 +1,7 @@
 import {
 	App,
 	Editor,
+	Events,
 	TFile,
 	MarkdownView,
 	MarkdownFileInfo
@@ -12,28 +13,32 @@ import {
 	IssueContext,
 	CreateIssueRequest,
 	ProjectInfo,
-	IssueModalOptions
+	IssueModalOptions,
+	PRIORITIES,
+	IssueData,
+	IssueItem
 } from "./types";
-import {
-	PRIORITIES
-} from "./constants";
 import {
 	formatIssueID,
 	formatDate,
-	normalizeWikiLink
+	normalizeWikiLink,
+	getFrontmatterString,
+	getFrontmatterStringArray
 } from './utils';
 import { IssueModal } from './issueModal'
 import { MyProjectManager } from './projectManager'
 
 
 
-export default class IssueTracker {
+export class IssueTracker extends Events {
 	constructor(
 		private app: App,
 		private settings: IssueTrackerSettings,
 		private projectManager: MyProjectManager,
 		private saveSettings: () => Promise<void>
-	) { }
+	) {
+		super()
+	}
 
 	async onload() {
 
@@ -42,10 +47,133 @@ export default class IssueTracker {
 		
 	}
 
+	
+	getAllIssues(): IssueItem[] {
+
+		const files = this.app.vault.getMarkdownFiles();
+		const issueFiles = files.filter(file =>
+			file.path.startsWith("Issues/")  // Get all md files in the Projects folder
+		);
+		return issueFiles.map(file => {
+			/*
+			projectPath: string;
+			priority: number;
+			title: string;
+			sourceFile: TFile | null;
+			id: number;
+			file: TFile;
+			*/
+			return {
+				file: file,
+				title: file.basename,
+				status: getFrontmatterString(this.app.metadataCache, file, "Issue Status"),
+				client: getFrontmatterString(this.app.metadataCache, file, "Primary"),
+				priority: +getFrontmatterString(this.app.metadataCache, file, "Priority"),
+				projectPath: this.app.metadataCache.getFirstLinkpathDest(
+					normalizeWikiLink(getFrontmatterString(this.app.metadataCache, file, "Project")),
+					file.path
+				)!.path,
+				sourceFile: this.app.metadataCache.getFirstLinkpathDest(
+					normalizeWikiLink(getFrontmatterString(this.app.metadataCache, file, "Origin")),
+					file.path
+				),
+				id: +getFrontmatterString(this.app.metadataCache, file, "ID"),
+				startDate: getFrontmatterString(this.app.metadataCache, file, "Creation Date")
+				/*
+					getFrontmatterString(this.app.metadataCache, file, "Project")
+					.map(link => normalizeWikiLink(link))
+					.map(link =>
+						this.app.metadataCache.getFirstLinkpathDest(
+							link,
+							file.path
+						)?.path
+					)
+					.filter((path): path is string => path !== undefined);
+					*/
+			};
+
+		})
+			.sort((a, b) =>
+				a.title.localeCompare(b.title)
+			);
+
+	}
+
+	filterActiveIssues(issues: IssueItem[]): IssueItem[] {
+		return this.getAllIssues().filter(issue =>
+			issue.status === "Open"
+		);
+	}
+
+	async getIssues(status: string = "active", project: string | null = null): Promise<IssueItem[]> {
+		const issues = this.getAllIssues();
+		let fetchedIssues: IssueItem[]
+		if (status === "active") {
+			fetchedIssues = this.filterActiveIssues(issues)
+		} else {
+			fetchedIssues = issues;
+		}
+		let filteredIssues: IssueItem[]
+		if (project) {
+			filteredIssues = fetchedIssues.filter((path): path is IssueItem => path.projectPath === project);
+		} else {
+			filteredIssues = fetchedIssues
+		}
+		return filteredIssues;
+	}
+
 	private sanitizeFilename(name: string): string {
 		// remove any disallowed characters from intended filename
 		return name.replace(/[\\/:*?"<>|]/g, "-");
 	}
+
+	/*async createNewIssue(): Promise<void> {
+		const tempTitle = "";
+		const lines = "";
+
+
+		// get the project of the current document and its actual file location, if any
+		const projectNames = null;
+		const projectPaths = null;
+
+		const context: IssueContext = {
+			tempTitle: tempTitle,
+			selectedText: lines,
+			sourceFile: null,
+			line: null,
+			projectPaths: projectPaths,
+			projectNames: projectNames
+
+		}
+
+		// const selectedText = editor.getLine(editor.getCursor().line);
+		const allProjects = this.projectManager.getActiveProjects();
+		const currProjectSet = new Set(projectNames);
+		const sortedProjects = [...allProjects].sort((a, b) => {
+			const aSource = currProjectSet.has(a.file.path);
+			const bSource = currProjectSet.has(b.file.path);
+			if (aSource !== bSource) {
+				return aSource ? -1 : 1;
+			}
+
+			return a.name.localeCompare(b.name);
+		})
+
+		const options: IssueModalOptions = {
+			context: context,
+			projects: sortedProjects,
+			priorities: PRIORITIES,
+			onSubmit: async (request) => {
+				const newFile = await this.createIssueNote(request);
+				await this.app.workspace.getLeaf(false).openFile(newFile);
+			}
+
+		}
+		new IssueModal(
+			this.app,
+			options
+		).open();
+	}*/
 
 	async createIssueFromSelection(editor: Editor, view: MarkdownView | MarkdownFileInfo): Promise<void> {
 		{
@@ -82,10 +210,10 @@ export default class IssueTracker {
 
 			// get the project of the current document and its actual file location, if any
 			const projectNames =
-				this.projectManager.getFrontmatterStringArray(sourceFile, "project");
+				getFrontmatterStringArray(this.app.metadataCache, sourceFile, "project");
 			// console.log('projects: ', projectNames);
 			const projectPaths =
-				this.projectManager.getFrontmatterStringArray(sourceFile, "project")
+				getFrontmatterStringArray(this.app.metadataCache, sourceFile, "project")
 					.map(link => normalizeWikiLink(link))
 					.map(link =>
 						this.app.metadataCache.getFirstLinkpathDest(
@@ -138,35 +266,26 @@ export default class IssueTracker {
 		}
 	};
 
-	async createProjectIssue(project: ProjectInfo): Promise<void> {
+	async createNewIssue(
+		project: ProjectInfo | undefined
+	): Promise<void> {
 		const tempTitle = "";
-		const lines = "";
-		const sourceFile = project.file;
+		const lines = -1;
+		const sourceFile = project?.file ?? null;
 
 		// get the project of the current document and its actual file location, if any
-		const projectNames = [project.name];
-		const projectPaths = [project.file.path];
-
-		/*
-		let projectPath: string | null = null;
-
-		if (projectName !== "") {
-
-			const file =
-				this.app.metadataCache.getFirstLinkpathDest(
-					projectName,
-					sourceFile.path
-				);
-
-			projectPath = file?.path ?? null;
-		}
-		*/
+		let projectNames: string[] | null = null
+		let projectPaths: string[] | null = null
+		if (project) {
+			projectNames = [project.name];
+			projectPaths = [project.file.path];
+		} 
 
 		const context: IssueContext = {
 			tempTitle: tempTitle,
-			selectedText: lines,
+			selectedText: "",
 			sourceFile: sourceFile,
-			line: null,
+			line: lines,
 			projectPaths: projectPaths,
 			projectNames: projectNames
 
@@ -201,7 +320,7 @@ export default class IssueTracker {
 		).open();
 	}
 
-	async createIssueNote(
+	private async createIssueNote(
 		request: CreateIssueRequest
 	): Promise<TFile> {
 		/*
@@ -225,13 +344,16 @@ export default class IssueTracker {
 		const filename = `${formatIssueID(issueID)} ${this.sanitizeFilename(request.issue.title)}`
 		const path = `Issues/${filename}.md`
 		const creationTS = formatDate(undefined, "datetime_long");
+		const sourceFile = request.issue.sourceFile
+			? `"[[${request.issue.sourceFile.path}|${request.issue.sourceFile.basename}]]"`
+			: ""
 		const content =
 			`---
 ID: ${issueID}
 Project: "[[${request.issue.project.name}]]"
 Priority: ${request.issue.priority}
 Issue Status: Open
-Origin: "[[${request.issue.sourceFile.path}|${request.issue.sourceFile.basename}]]"
+Origin: ${sourceFile}
 Creation Date: "${creationTS}"
 tags:
 - issue

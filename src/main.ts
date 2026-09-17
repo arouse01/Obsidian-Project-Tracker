@@ -12,7 +12,7 @@ import {
 import { MyProjectManager } from './projectManager';
 import { TimeTracker } from "./timeTracker";
 // import { IssueModal } from "./issueModal"
-import IssueTracker from "./issueTracker"
+import { IssueTracker } from "./issueTracker"
 import { TodoManager } from "./todoTracker"
 import {
 	TIME_DASHBOARD_VIEW_TYPE,
@@ -362,7 +362,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 	}
 
 	async createNewTodo() {
-		await this.todoManager.startBlankTodoItem()
+		await this.todoManager.startTodoItem(null)
 	}
 
 	/*
