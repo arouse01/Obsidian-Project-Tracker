@@ -72,7 +72,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 
 		this.registerView(
 			VIEW_TYPE_TRACKER,
-			leaf => new TrackerView(leaf, this)
+			leaf => new TrackerView(leaf, this, () => this.settings.devNotePath)
 		);
 
 		// this.registerView(

@@ -6,13 +6,15 @@ export interface IssueTrackerSettings {
 	timeLogPath: string;
 	todoLogPath: string;
 	peoplePath: string;
+	devNotePath: string;
 }
 
 export const DEFAULT_SETTINGS: IssueTrackerSettings = {
 	nextIssueID: 1,
 	timeLogPath: 'Project Management/timeLog.json',
 	todoLogPath: 'Project Management/todoList.json',
-	peoplePath: 'Organizations/'
+	peoplePath: 'Organizations/',
+	devNotePath: 'Notes/Obsidian Notes'
 };
 
 export class IssueTrackerSettingTab extends PluginSettingTab {
@@ -28,6 +30,7 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 		// const form = contentEl.createDiv({ cls: "issue-form" });
+		this.buildDevNotePathField(containerEl);
 		this.buildSerialField(containerEl);
 		this.buildTimeLogField(containerEl);
 		this.buildTodoLogField(containerEl);
@@ -96,4 +99,20 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 					.inputEl.addClass('wide-setting-input')
 			);
 	}
+
+	buildDevNotePathField(parent: HTMLElement): void {
+		new Setting(parent)
+			.setName('Plugin dev notes path')
+			.setDesc('Path to the note with plugin notes')
+			.addText(text =>
+				text.setValue(this.plugin.settings.devNotePath)
+					.onChange(async (value) => {
+						this.plugin.settings.devNotePath = value;
+						await this.plugin.saveSettings();
+					})
+					.inputEl.addClass('wide-setting-input')
+			);
+	}
+
+
 }

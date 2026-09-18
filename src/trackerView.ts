@@ -5,6 +5,7 @@ import {
 	// TFile,
 	// MarkdownView,
 	// MarkdownFileInfo,
+	Notice,
 	WorkspaceLeaf,
 	ViewStateResult
 } from 'obsidian';
@@ -65,6 +66,7 @@ export class TrackerView extends ItemView {
 	constructor(
 		leaf: WorkspaceLeaf,
 		private plugin: ProjectTrackerPlugin,
+		private getDevNotePath: () => string | undefined,
 		activeTab: DashboardTab = "Projects"
 
 	) {
@@ -141,24 +143,26 @@ export class TrackerView extends ItemView {
 		this.singleProjectEl = singleProjectEl;
 
 		void this.showTab(this.activeTab);
+
 	}
 
 	private async buildLayout(): Promise<void> {
 		this.contentEl.empty();
-		this.header =  this.contentEl.createDiv({
-			cls: "dashboard-tabs"
-		})
-
-		
+		this.header = this.contentEl.createDiv()
 
 		this.container = this.contentEl.createDiv()
-		
-
-		
 	}
 
 	private async buildTabs(header: HTMLElement): Promise<void> {
-		const tabArea = header.createDiv()
+		
+
+		const tabArea = header.createDiv({
+			cls: "dashboard-tabs"
+		})
+		// tabArea.setCssStyles("display: flex")
+		// const tabs = header.createDiv({
+		// 	cls: "dashboard-tabs"
+		// })
 		// const newTable = tabArea.createEl('table')
 		// newTable.addClass("dashboard-tab-table")
 		// const row = newTable.createEl('tr');
@@ -166,7 +170,7 @@ export class TrackerView extends ItemView {
 			// const cell = row.createEl("td");
 			const button = new ButtonComponent(tabArea)
 				.setButtonText(tab)
-				.setClass("dashboard-tab")
+				// .setClass("dashboard-tab")
 				.onClick(async () => {
 					const value = tab;
 					this.activeTab = value;
@@ -175,23 +179,39 @@ export class TrackerView extends ItemView {
 
 			this.tabButtons.set(tab, button);
 		}
-		/*const tabSelect = tabArea.createEl('select', {
-			cls: 'dropdown-new'
-		});
-		for (const tab of DASHBOARD_TABS) {
-			tabSelect.createEl('option', {
-				value: tab, //'project',
-				text: tab
-			});
+
+		// const devButtonArea = tabArea.createDiv({
+		//  	cls: "right-align"
+		// })
+		const devNotePath = this.getDevNotePath()
+		if (devNotePath) {
+			const files = this.app.vault.getMarkdownFiles();
+			const devNoteFile = files.find(file => file.path === devNotePath);
+			if (devNoteFile) {
+				new ButtonComponent(tabArea)
+					.setButtonText("Developer notes")
+					.setClass("dev-button")
+					.onClick(async () => {
+						// event.preventDefault();
+						const existingLeaf = this.app.workspace.getLeavesOfType(
+							"markdown"
+						).find(leaf => {
+							const view = leaf.view;
+							return view.getState().file === devNoteFile.path;
+						});
+
+						if (existingLeaf) {
+							void this.app.workspace.revealLeaf(existingLeaf);
+						} else {
+							void this.app.workspace.getLeaf(false).openFile(devNoteFile);
+						}
+					});
+				// devButton.buttonEl.classList.remove("dashboard-tabs")
+			} else {
+				new Notice(`Developer notes file not found (${devNotePath}).`);
+			}
 		}
-		tabSelect.value = this.activeTab;
-		tabSelect.addEventListener("change", () => {
-			const value = tabSelect.value;
-			this.activeTab = value as DashboardTab;
-			void this.showTab(this.activeTab);
 
-
-		});*/
 	}
 
 	showTab(tab: DashboardTab): void {
