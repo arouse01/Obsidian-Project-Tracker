@@ -127,31 +127,52 @@ export type SortDirection = "asc" | "desc";
 
 
 
-// Time session 
-export type TimePeriod = "day" | "week" | "month";
-export type TimeSummaryGroup = "project" | "client"
-
+// Time session
+export type DateKey = string;
+// for modal window
 export type SessionContext = {
 	mode: "start";
 	projectPath: string;
 	onSubmit: (timestamp: Date) => Promise<void>;
+} | {
+	mode: "stop";
+	session: ActiveSessionDisplay;
+	onSubmit: (timestamp: Date) => Promise<void>;
+} | {
+	mode: "stopAll";
+	sessions: ActiveSessionDisplay[];
+	onSubmit: (timestamp: Date) => Promise<void>;
+} | {
+	mode: "add";
+	projectPath: string;
+	onSubmit: (
+		timestampStart: Date,
+		timestampStop: Date
+	) => Promise<void>;
 }
-	| {
-		mode: "stop";
-		sessions: ActiveSessionDisplay[];
-		onSubmit: (timestamp: Date) => Promise<void>;
-	}
 
-export interface TimeSession {
+export type SessionAction = SessionContext["mode"];
+
+// For reading from the json file
+export interface RawTimeSession {
 	id: string;
 	projectPath: string;
 	start: string;
 	end: string | null;  // null while session is active
 }
 
+// more usable format for data read from json file
+export interface SessionData {
+	id: string;
+	projectPath: string;
+	start: Date;
+	end: Date | null;  // null while session is active
+	active: boolean
+}
+
 export interface ActiveSessionDisplay {
 	projectName: string,
-	startTime: string
+	startTime: Date
 }
 
 export interface TimeSummary {
@@ -159,50 +180,33 @@ export interface TimeSummary {
 	totalMinutes: number;
 }
 
-export interface ClientTimeSummary {
-	client: string;
-	totalMinutes: number;
+// specific interface for filtered sessions
+export interface SummarySession {
+	session: SessionData;
+	startTime: Date;
+	endTime: Date;
 }
 
 export interface PeriodicTimeSummary {
-	days: Date[];
-	entries: Map<string, Map<string, number>>;
+	days: DateKey[];
+	projects: Map<string, Map<DateKey, number>>;
+	clients: Map<string, Map<DateKey, number>>;
 }
+
+// structure for holding current summarized values (totals for current day, week, and month): 
+type TimePeriod = "day" | "week" | "month";
+export type TimeSummaryGroup = "project" | "client"
 
 type TimeSummaryMaps = Record<
 	TimeSummaryGroup,
 	Map<string, number>
->;
+	>;
 
 export type TimeSummaryStore = Record<
 	TimePeriod,
 	TimeSummaryMaps
 >;
 
-
-export type SessionAction = "start" | "stop";
-
-export interface TimeSession {
-	id: string;
-	projectPath: string;
-	start: string;
-	end: string | null;  // null while session is active
-}
-
-export interface ActiveSessionDisplay {
-	projectName: string,
-	startTime: string
-}
-
-export interface TimeSummary {
-	key: string;
-	totalMinutes: number;
-}
-
-export interface ClientTimeSummary {
-	client: string;
-	totalMinutes: number;
-}
 
 // Todo
 export interface TodoItem {

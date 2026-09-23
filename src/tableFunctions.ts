@@ -10,19 +10,20 @@ import {
 export type GroupPosition = "first" | "last" | "middle" | null;
 
 // Time summary functions
-export type SummaryPeriod = "week" | "month";  // to drive the summary period selection
+export type SummaryPeriod = "week" | "month" | "year";  // to drive the summary period selection
 
 export function getSummaryPeriod(periodOffset: number, summaryPeriod: SummaryPeriod): { start: Date; end: Date } {
+
 	const start = window.moment()
-		.add(periodOffset, summaryPeriod)
-		.startOf(summaryPeriod)
-		.toDate();
+			.add(periodOffset, summaryPeriod)
+			.startOf(summaryPeriod)
+			.toDate();
 
 	const end = window.moment()
-		.add(periodOffset, summaryPeriod)
-		.endOf(summaryPeriod)
-		.toDate();
-
+			.add(periodOffset, summaryPeriod)
+			.endOf(summaryPeriod)
+			.toDate();
+	
 	return { start, end };
 }
 

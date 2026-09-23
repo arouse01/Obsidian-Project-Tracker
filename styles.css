@@ -146,6 +146,7 @@ button.collaborator-button {
 	cursor: pointer;
 	font: inherit;
 	height: 24px;
+	text-wrap-mode: inherit;
 }
 
 .dashboard button:hover {
@@ -185,6 +186,10 @@ hr {
 
 .left-align {
 	text-align: left !important;
+}
+
+.left-indent {
+	padding-left: 20px !important;
 }
 
 .fixed-width-date-range {
@@ -301,7 +306,7 @@ hr {
 }
 
 .dashboard-table button {
-	height: 20px;
+	height: fit-content;
 }
 
 .dashboard-table th,

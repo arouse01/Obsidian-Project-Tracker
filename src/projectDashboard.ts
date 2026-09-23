@@ -9,7 +9,8 @@ import { MyProjectManager } from './projectManager';
 import {
 	ProjectInfo,
 	// ProjectStatus,
-	TimeSession,
+	// RawTimeSession,
+	SessionData,
 	TimeSummaryStore
 } from "./types";
 import {
@@ -70,7 +71,7 @@ export class ProjectDashboardView extends Component{
 		"hoursWeek",
 		"hoursMonth",
 		"sessionStart",
-		"sessionAt",
+		// "sessionAt",
 		"action"
 	]
 
@@ -80,7 +81,7 @@ export class ProjectDashboardView extends Component{
 
 	// private filterOptions = new Map<ProjectStatusFilter, ButtonComponent>();
 
-	private activeSessionMap = new Map<string, TimeSession>();
+	private activeSessionMap = new Map<string, SessionData>();
 
 	private refreshInterval: number | null = null;
 
@@ -632,7 +633,8 @@ export class ProjectDashboardView extends Component{
 					"hoursWeek",
 					"hoursMonth",
 					"sessionStart",
-					"sessionAt",
+					// "sessionAt",
+					// "sessionAdd",
 					"action",
 					// "newMeeting",
 					// "newIssue",
@@ -649,7 +651,8 @@ export class ProjectDashboardView extends Component{
 					"hoursWeek",
 					"hoursMonth",
 					"sessionStart",
-					"sessionAt",
+					// "sessionAt",
+					// "sessionAdd",
 					// "newMeeting",
 					// "newIssue",
 					// "newTodo"
@@ -670,14 +673,14 @@ export class ProjectDashboardView extends Component{
 			activeSessions.map(session => [session.projectPath, session])
 		);
 
-		const weekStart = window.moment()
-			.startOf("week")
-			.toDate();
-		const weekEnd = window.moment()
-			.endOf("week")
-			.toDate();
-		const weekSummaryTotals = await this.timeTracker.getTimeSummary(weekStart, weekEnd);
-		// this.weekTimeByPath = new Map(
+		// const start = window.moment()
+		// 	.startOf("month")
+		// 	.toDate();
+		// const end = window.moment()
+		// 	.endOf("month")
+		// 	.toDate();
+		this.timeSummaries = await this.timeTracker.getCurrentTimeSummaries();
+		/*// this.weekTimeByPath = new Map(
 		// 	weekSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
 		// )
 		const weekClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(weekStart, weekEnd);
@@ -717,43 +720,43 @@ export class ProjectDashboardView extends Component{
 		// this.monthTimeByClient = new Map(
 		// 	monthClientSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
 		// )
-
-		this.timeSummaries.day.project = new Map(
-			daySummaryTotals.map(summary => [
-				summary.key,
-				summary.totalMinutes
-			])
-		);
-		this.timeSummaries.day.client = new Map(
-			dayClientSummaryTotals.map(summary => [
-				summary.key,
-				summary.totalMinutes
-			])
-		);
-		this.timeSummaries.week.project = new Map(
-			weekSummaryTotals.map(summary => [
-				summary.key,
-				summary.totalMinutes
-			])
-		);
-		this.timeSummaries.week.client = new Map(
-			weekClientSummaryTotals.map(summary => [
-				summary.key,
-				summary.totalMinutes
-			])
-		);
-		this.timeSummaries.month.project = new Map(
-			monthSummaryTotals.map(summary => [
-				summary.key,
-				summary.totalMinutes
-			])
-		);
-		this.timeSummaries.month.client = new Map(
-			monthClientSummaryTotals.map(summary => [
-				summary.key,
-				summary.totalMinutes
-			])
-		);
+*/
+		// this.timeSummaries.day.project = new Map(
+		// 	summaryTotals.map(summary => [
+		// 		summary.key,
+		// 		summary.totalMinutes
+		// 	])
+		// );
+		// this.timeSummaries.day.client = new Map(
+		// 	dayClientSummaryTotals.map(summary => [
+		// 		summary.key,
+		// 		summary.totalMinutes
+		// 	])
+		// );
+		// this.timeSummaries.week.project = new Map(
+		// 	weekSummaryTotals.map(summary => [
+		// 		summary.key,
+		// 		summary.totalMinutes
+		// 	])
+		// );
+		// this.timeSummaries.week.client = new Map(
+		// 	weekClientSummaryTotals.map(summary => [
+		// 		summary.key,
+		// 		summary.totalMinutes
+		// 	])
+		// );
+		// this.timeSummaries.month.project = new Map(
+		// 	monthSummaryTotals.map(summary => [
+		// 		summary.key,
+		// 		summary.totalMinutes
+		// 	])
+		// );
+		// this.timeSummaries.month.client = new Map(
+		// 	monthClientSummaryTotals.map(summary => [
+		// 		summary.key,
+		// 		summary.totalMinutes
+		// 	])
+		// );
 
 	}
 	
@@ -968,20 +971,80 @@ tags:
 					break;
 				}
 
-			case 'sessionStart':
-				new ButtonComponent(cell)
-						.setButtonText(activeSession ? "Stop" : "Start")
-						.setClass("dashboard")
-						.onClick(async () => {
-							if (activeSession) {
-								await this.timeTracker.stopProjectSession(project)
-							} else {
-								await this.timeTracker.startProjectSession(project)
-							}
-							void this.updateProjectTableRows()
-						})
+			case 'sessionStart': {
+				const button = new ButtonComponent(cell)
+					.setButtonText(activeSession ? "Stop" : "Start")
+					.setClass("dashboard")
+					.onClick(async () => {
+						if (activeSession) {
+							await this.timeTracker.stopSessions(undefined, project )
+						} else {
+							await this.timeTracker.startProjectSession(project)
+						}
+						void this.updateProjectTableRows()
+					})
+				button.buttonEl.addEventListener("contextmenu", (event) => {
+					event.preventDefault();
 
+					// right-click menu
+					const menu = new Menu();
+
+					menu.addItem((item) => {
+						item.setTitle(activeSession ? "Stop at" : "Start at")
+							.onClick(async () => {
+								if (activeSession) {
+									new TimeModal(this.app, {
+										mode: 'stop',
+										session: {
+											projectName: project.name,
+											startTime: activeSession.start
+										},
+										onSubmit: async (timestamp: Date) => {
+											await this.timeTracker.stopSessions(
+												timestamp,
+												project
+											);
+											void this.updateProjectTableRows()
+										}
+									}).open();
+								} else {
+									new TimeModal(this.app, {
+										mode: 'start',
+										projectPath: project.file.path,
+										onSubmit: async (timestamp: Date) => {
+											await this.timeTracker.startProjectSession(
+												project,
+												timestamp
+											);
+											void this.updateProjectTableRows()
+										}
+									}).open();
+								}
+							});
+					});
+
+					menu.addItem((item) => {
+						item.setTitle("Add session")
+							.onClick(async () => {
+								new TimeModal(this.app, {
+									mode: 'add',
+									projectPath: project.file.path,
+									onSubmit: async (startTimestamp: Date, stopTimestamp: Date) => {
+										await this.timeTracker.addCompleteSession(
+											project,
+											startTimestamp,
+											stopTimestamp
+										);
+										void this.updateProjectTableRows()
+									}
+								}).open();
+							});
+					});
+
+					menu.showAtMouseEvent(event);
+				})
 				break;
+			}
 
 			case 'sessionAt':
 				new ButtonComponent(cell)
@@ -991,14 +1054,14 @@ tags:
 						if (activeSession) {
 							new TimeModal(this.app, {
 								mode: 'stop',
-								sessions: [{
+								session: {
 									projectName: project.name,
 									startTime: activeSession.start
-								}],
+								},
 								onSubmit: async (timestamp: Date) => {
-									await this.timeTracker.stopProjectSession(
-										project,
-										timestamp
+									await this.timeTracker.stopSessions(
+										timestamp,
+										project
 									);
 									void this.updateProjectTableRows()
 								}
@@ -1022,6 +1085,30 @@ tags:
 
 				break;
 
+			case 'sessionAdd':
+				new ButtonComponent(cell)
+					.setButtonText("Add session")
+					.setClass("button")
+					.onClick(async () => {
+
+						new TimeModal(this.app, {
+							mode: 'add',
+							projectPath: project.file.path,
+							onSubmit: async (startTimestamp: Date, stopTimestamp: Date) => {
+								await this.timeTracker.addCompleteSession(
+									project,
+									startTimestamp,
+									stopTimestamp
+								);
+								void this.updateProjectTableRows()
+							}
+						}).open();
+					}
+
+
+					)
+
+				break;
 			case "action":
 				{
 					new ButtonComponent(cell)
@@ -1297,16 +1384,47 @@ tags:
 			// 		break;
 			// 	}
 
-			case 'sessionStart':
-				new ButtonComponent(cell)
+			case 'sessionStart': {
+				const button = new ButtonComponent(cell)
 					.setButtonText("Stop")
 					// .setClass("")
 					.onClick(async () => {
-						await this.timeTracker.stopAllSessions()
+						await this.timeTracker.stopSessions()
 					})
 
-				
+				button.buttonEl.addEventListener("contextmenu", (event) => {
+					event.preventDefault();
+
+					// right-click menu
+					const menu = new Menu();
+
+					menu.addItem((item) => {
+						item.setTitle("Stop at")
+							.onClick(async () => {
+								const activeSessions = await this.timeTracker.getActiveSessions()
+								const sessionDisplayInfo = activeSessions.map(session => {
+									const project = this.projectManager.getProjectInfoByPath(session.projectPath);
+									return {
+										projectName: project?.name ?? "missing",
+										startTime: session.start
+									}
+								})
+								new TimeModal(this.app, {
+									mode: 'stopAll',
+									sessions: sessionDisplayInfo,
+									onSubmit: async (timestamp: Date) => {
+
+										await this.timeTracker.stopSessions(timestamp);
+									}
+								}).open();
+
+							});
+						menu.showAtMouseEvent(event);
+					});
+				})
+
 				break;
+			}
 
 			case 'sessionAt':
 				new ButtonComponent(cell)
@@ -1322,12 +1440,10 @@ tags:
 						})
 						new TimeModal(this.app, {
 							mode: 'stop',
-							sessions: sessionDisplayInfo,
+							session: sessionDisplayInfo[0]!,
 							onSubmit: async (timestamp: Date) => {
 
-								await this.timeTracker.stopAllSessions(
-									timestamp
-								);
+								await this.timeTracker.stopSessions(timestamp);
 							}
 						}).open();
 

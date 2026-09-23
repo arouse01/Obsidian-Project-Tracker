@@ -128,27 +128,13 @@ export class IssueDashboardView extends Component {
 		const mainSection = this.container.createEl("section");
 		mainSection.addClass("dashboard")
 		mainSection.addClass("font-size-12")
-		// mainSection.createEl("h3", {
-		// 	text: "Todo list"
-		// });
+
 		if (!this.selectedProject) {
 			const controlSection = mainSection.createEl("section");
 			controlSection.addClass('summary-controls');
 		
 			this.createGroupingControls(controlSection)
 		}
-		// for (const group of Todo_Group_Fields) {
-		// 	const button = new ButtonComponent(controlSection)
-		// 		.setButtonText(group.label)
-		// 		.onClick(async () => {
-		// 			this.groupBy = group.value;
-		// 			this.collapsedGroups.clear();
-		// 			await this.rebuildTodoTable();
-		// 		});
-
-		// 	this.groupButtons.set(group.value, button);
-		// }
-	
 		
 
 		const issueSection = mainSection.createEl("section");
@@ -157,7 +143,6 @@ export class IssueDashboardView extends Component {
 		this.issueTableEl.addClass('dashboard-table')
 
 		// create colgroup so we can specify column sizes
-		
 		const columns = this.getVisibleCols();
 		createTableColGroup(this.issueTableEl, columns);
 		this.createIssueTableHeaders(this.issueTableEl, columns);
@@ -169,7 +154,6 @@ export class IssueDashboardView extends Component {
 		const projInfo = this.projectManager.getProjectInfoByPath(this.selectedProject) ?? undefined
 		new ButtonComponent(bottomSection)
 			.setButtonText("Create new issue")
-			// .setClass("todo-dashboard-button-add")
 			.onClick(async () => {
 				await this.issueTracker.createNewIssue(projInfo);
 			})
@@ -183,7 +167,6 @@ export class IssueDashboardView extends Component {
 		section.createDiv()
 
 		// Create grouping buttons 
-		// To add a new value, update Todo_Group_Fields in types.ts and then 
 		for (const group of getGroupOptions(ISSUE_COLS)) {
 			const button = new ButtonComponent(section)
 				.setButtonText(group.label)
@@ -472,7 +455,7 @@ export class IssueDashboardView extends Component {
 		switch (field) {
 			case "collapse":
 				{
-				cell.addClass("group-member")
+					cell.addClass("group-member")
 					switch (groupPos) {
 						case "first":
 							{
@@ -509,8 +492,28 @@ export class IssueDashboardView extends Component {
 			}
 
 			case "name":
-				cell.setText(issue.title);
-				break;
+				{
+					new ButtonComponent(cell)
+						.setButtonText(issue.title)
+						.setClass("left-align")
+						.onClick(async (event) => {
+							event.preventDefault();
+							const existingLeaf = this.app.workspace.getLeavesOfType(
+								"markdown"
+							).find(leaf => {
+								const view = leaf.view;
+								return view.getState().file === issue.file.path;
+							});
+
+							if (existingLeaf) {
+								void this.app.workspace.revealLeaf(existingLeaf);
+							} else {
+								void this.app.workspace.getLeaf(false).openFile(issue.file);
+							}
+						});
+					break;
+
+				}
 
 			case "project":
 				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const

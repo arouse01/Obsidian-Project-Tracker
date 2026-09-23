@@ -5,7 +5,8 @@ import {
 import {
 	ProjectInfo,
 	TodoItem,
-	IssueItem
+	IssueItem,
+	RawTimeSession
 } from "./types"
 
 // PROJECTS
@@ -81,6 +82,14 @@ export const PROJ_COLS = {
 		width: "55px",
 		tableGroup: "Session",
 		centered: true
+	},
+	"sessionAdd": {
+		label: "",
+		sortable: false,
+		groupable: false,
+		width: "50px",
+		centered: true,
+		tableGroup: "Session"
 	},
 	"action": {
 		label: "",
@@ -215,22 +224,33 @@ export interface TodoGroup {
 
 // Time 
 export const TIME_COLS = {
-	"status": {
+	"sessionStatus": {
 		label: "Status",
 		sortable: true,
+		groupable: true,
 		width: "45px",
 		centered: true
+	},
+	"primary": {
+		label: "",
+		sortable: true,
+		centered: false,
+		groupable: true,
+		width: "170px",
+		tableGroup: "project"
 	},
 	"project": {
 		label: "Project",
 		sortable: true,
 		centered: true,
-		minWidth: "170px",
+		groupable: false,
+		minWidth: "220px",
 		tableGroup: "project"
 	},
 	"hoursToday": {
 		label: "Today",
 		sortable: false,
+		groupable: false,
 		width: "50px",
 		centered: true,
 		tableGroup: "hours"
@@ -238,6 +258,7 @@ export const TIME_COLS = {
 	"hoursWeek": {
 		label: "Week",
 		sortable: false,
+		groupable: false,
 		width: "50px",
 		centered: true,
 		tableGroup: "hours"
@@ -245,6 +266,7 @@ export const TIME_COLS = {
 	"hoursMonth": {
 		label: "Month",
 		sortable: false,
+		groupable: false,
 		width: "50px",
 		centered: true,
 		tableGroup: "hours"
@@ -252,6 +274,7 @@ export const TIME_COLS = {
 	"sessionStart": {
 		label: "",
 		sortable: false,
+		groupable: false,
 		width: "40px",
 		centered: true,
 		tableGroup: "session"
@@ -259,6 +282,7 @@ export const TIME_COLS = {
 	"sessionAt": {
 		label: "",
 		sortable: false,
+		groupable: false,
 		width: "50px",
 		centered: true,
 		tableGroup: "session"
@@ -266,6 +290,7 @@ export const TIME_COLS = {
 	"sessionAdd": {
 		label: "",
 		sortable: false,
+		groupable: false,
 		width: "50px",
 		centered: true,
 		tableGroup: "session"
@@ -276,9 +301,21 @@ export const TIME_COLS = {
 export type TimeColumnField = keyof typeof TIME_COLS;
 export type TimeSort = ColSort<TimeColumnField>
 
+export type TimeGroupField =
+	| "none"
+	| {
+		[K in keyof typeof TIME_COLS]:
+		typeof TIME_COLS[K]["groupable"] extends true
+		? K
+		: never
+	}[keyof typeof TIME_COLS];
+export interface TimeGroup {
+	key: string;
+	label: string;
+	sessions: RawTimeSession[];
+}
 
 // ISSUES
-// TODOS
 export const ISSUE_COLS = {
 	"collapse": {
 		label: "",
