@@ -212,6 +212,15 @@ export class TimeTracker extends Events {
 
 	}
 
+	async getActiveProjectSession(projectPath: string): Promise<SessionData | undefined> {
+		// returns true if project has session that is active
+		const sessions = await this._loadSessions();
+		const activeSessions = this._findActiveSessions(sessions)
+
+		return activeSessions.find(session => session.projectPath === projectPath)
+
+	}
+
 	async startProjectSession(
 		project: ProjectInfo,
 		timestamp: Date = new Date(),

@@ -151,7 +151,17 @@ export class TimeDashboardView extends ItemView {
 
 		summarySection.addClass('font-size-12')
 
-		this.summaryTable = new TimeSummaryTable(this.timeTracker, this.projectManager, summarySection, "week", 0, "sidebar")
+		this.summaryTable = new TimeSummaryTable(
+			this.timeTracker,
+			this.projectManager,
+			summarySection,
+			{
+				period: "week",
+				offset: 0,
+				summaryFormat: "sidebar"
+			}
+		)
+
 		
 	}
 

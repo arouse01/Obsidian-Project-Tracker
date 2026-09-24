@@ -64,6 +64,10 @@ button.collaborator-button {
 }
 
 /* Section for basic animation of icons */
+.no-scroll::-webkit-scrollbar {
+		display: none !important;
+	}
+
 .active-indicator {
 	position: relative;
 	display: inline-flex;
@@ -92,6 +96,42 @@ button.collaborator-button {
 	z-index: 1;
 }
 
+.active-indicator-large {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	width: 2em;
+	height: 2em;
+}
+
+.active-indicator-large span {
+	position: relative;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	line-height: 1;
+	font-size: 18px;
+}
+
+.blinky-circle-green-large {
+	position: absolute;
+	width: 28px;
+	height: 28px;
+	background: #00FF55;
+	border-radius: 50%;
+	animation: blinky 2s infinite;
+	pointer-events: none;
+	z-index: 1;
+}
+
+.blinky-circle-null-large {
+	position: absolute;
+	border-radius: 50%;
+/*	animation: blinky 2s infinite;*/
+	pointer-events: none;
+	z-index: 1;
+}
+
 @keyframes blinky {
 	0% {
 		transform: scale(0);
@@ -110,9 +150,21 @@ button.collaborator-button {
 .font-size-12 {
 	font-size: 12px;
 }
-
+.font-size-16 {
+	font-size: 16px;
+}
 .project-dashboard {
 	font-size: 14px;
+}
+
+.project-stats {
+	font-size: 14px;
+	text-align: center;
+	margin-top: 1rem;
+
+}
+.bold {
+	font-weight: 600 !important
 }
 
 .project-dashboard .dashboard-table thead tr:first-child th {
@@ -137,6 +189,12 @@ button.collaborator-button {
 	height: 28px;
 }
 
+.dashboard button.button-larger {
+	font-size: larger;
+	height: fit-content;
+	margin-bottom: 16px
+}
+
 .dashboard button {
 	background: none;
 	border: none;
@@ -155,9 +213,14 @@ button.collaborator-button {
 }
 
 hr {
-	margin: 1rem 0;
+	margin: 0.5rem 0;
 }
 
+.section-header {
+	font-size: 16px;
+	text-align: center;
+	margin-bottom: 1rem;
+}
 /* modifiers */
 .control-col {
 	flex-direction: column;
@@ -214,6 +277,8 @@ hr {
 	max-width: 100%;
 	margin: 0 auto;
 	overflow-x: auto;
+	max-height: 400px;
+	overflow-y: auto;
 }
 
 .project-selector {
@@ -457,6 +522,9 @@ hr {
 	height: 30px;
 }
 
+.dashboard .header {
+	display: flex;
+}
 /*.dashboard .summary-controls .arrow-button {
 	width: 30px;
 }*/
@@ -464,6 +532,28 @@ hr {
 .dashboard .summary-section {
 	/*	margin-top: 20px;*/
 	font-size: 12px;
+}
+.project-time-section {
+/*	display: flex;
+	flex-direction: column;*/
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 12px;
+	justify-content: center;
+	width: 420px
+}
+
+.project-time-label {
+	font-size: large;
+	
+	text-align: center;
+}
+
+.project-time-value {
+	font-size: large;
+	text-align: center;
+	padding-bottom: 16px;
+	font-weight: 600;
 }
 
 checkbox {

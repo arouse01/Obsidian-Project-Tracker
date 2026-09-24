@@ -205,7 +205,8 @@ type TimeSummaryMaps = Record<
 export type TimeSummaryStore = Record<
 	TimePeriod,
 	TimeSummaryMaps
->;
+	>;
+
 
 
 // Todo

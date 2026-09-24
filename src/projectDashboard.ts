@@ -48,7 +48,7 @@ import { TimeSummaryTable } from './timeSummaryTable'
 const PROJECT_STATUS_FILTERS = ["Active", "All", "Archived"] as const;
 type ProjectStatusFilter = typeof PROJECT_STATUS_FILTERS[number];
 
-export class ProjectDashboardView extends Component{
+export class ProjectDashboardView extends Component {
 	// private container: HTMLElement;
 
 	private summaryTable!: TimeSummaryTable;
@@ -253,8 +253,17 @@ export class ProjectDashboardView extends Component{
 		});
 
 		summarySection.addClass('project-dashboard')
-
-		this.summaryTable = new TimeSummaryTable(this.timeTracker, this.projectManager, summarySection, "week", 0)
+		this.summaryTable = new TimeSummaryTable(
+			this.timeTracker,
+			this.projectManager,
+			summarySection,
+			{
+				period: "week",
+				offset: 0,
+				summaryFormat: "full"
+			}
+		)
+		// this.summaryTable = new TimeSummaryTable(this.timeTracker, this.projectManager, summarySection, "week", 0)
 	}
 
 	async updateProjectTableRows(): Promise<void> {
@@ -1103,10 +1112,7 @@ tags:
 								void this.updateProjectTableRows()
 							}
 						}).open();
-					}
-
-
-					)
+					})
 
 				break;
 			case "action":

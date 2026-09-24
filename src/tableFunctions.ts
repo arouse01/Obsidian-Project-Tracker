@@ -12,6 +12,16 @@ export type GroupPosition = "first" | "last" | "middle" | null;
 // Time summary functions
 export type SummaryPeriod = "week" | "month" | "year";  // to drive the summary period selection
 
+export type SummaryFormat = "sidebar" | "single" | "full"
+
+export interface TimeSummaryTableOptions {
+	period?: SummaryPeriod,
+	offset?: number,
+	summaryFormat?: SummaryFormat,
+	selectedProject?: string
+}
+
+
 export function getSummaryPeriod(periodOffset: number, summaryPeriod: SummaryPeriod): { start: Date; end: Date } {
 
 	const start = window.moment()
