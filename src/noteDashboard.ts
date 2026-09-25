@@ -12,28 +12,25 @@ import {
 } from './utils';
 import { MyProjectManager } from './projectManager'
 
-
-export class ProjectInfoSingle extends Component {
+type NoteType = "meeting" | "other"
+export class NoteDashboard extends Component {
 
 	private container: HTMLDivElement;
 
 	private selectedProject: ProjectInfo | undefined
 
 	constructor(
-		private projectPath: string,
 		target: HTMLDivElement,
+		filter: NoteType = "other",
 		private app: App,
 		private projectManager: MyProjectManager,
+		private projectPath?: string,
+
 	) {
 		super();
 
 		this.container = target;
-
-		const project = this.projectManager.getProjectInfoByPath(projectPath)
-		if (project === undefined) {
-			throw new Error(`Project not found: ${projectPath}`);
-		}
-		this.selectedProject = project
+		this.selectedProject = this.projectManager.getProjectInfoByPath(projectPath)!
 		// this.tableContainer = target.createDiv();
 
 		void this.buildDashboard();
@@ -47,7 +44,7 @@ export class ProjectInfoSingle extends Component {
 			throw new Error(`Project not found: ${projectPath}`);
 		}
 		this.selectedProject = project
-		
+
 		this.container.empty()
 		await this.buildDashboard()
 		await this.updateValues()

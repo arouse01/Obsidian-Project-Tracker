@@ -1481,7 +1481,6 @@ tags:
 						.setButtonText("New project...")
 						.setClass("right-align")
 						.onClick(async () => {
-							// TODO
 							await this.addProject();
 							await this.updateProjectTableRows();
 						});

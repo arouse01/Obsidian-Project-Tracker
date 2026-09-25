@@ -17,7 +17,7 @@ import {
 import {
 	// formatMinutesToDuration,
 	// formatDate,
-	getFrontmatterStringArray
+	// getFrontmatterStringArray
 	// normalizeWikiLink
 } from './utils';
 import { TimeTracker } from './timeTracker';
@@ -44,21 +44,32 @@ import {
 } from './issueDashboard'
 import {
 	TimeSummarySingle
-} from './timeSummaryTable'
+} from './timeSummarySingle'
 import {
 	ProjectInfoSingle
 } from './projectInfoDashboard';
+import {
+	NoteDashboard
+} from './noteDashboard';
 
-// type SingleViewSection = "Issues" | "Todos" | "Meetings" | "Notes"
 
 export class ProjectSingleView extends Component {
 	private refreshInterval: number | null = null;
 
-	selectedProject: string | null;
-	private timeTable!: TimeSummarySingle;
-	private todoTable!: TodoDashboardView;
-	private detailsSection!: ProjectInfoSingle;
-	private issueTable!: IssueDashboardView;
+	private timeEl!: HTMLDivElement;
+	private todoEl!: HTMLDivElement;
+	private detailsEl!: HTMLDivElement;
+	private issueEl!: HTMLDivElement;
+	private meetingEl!: HTMLDivElement;
+	private otherNoteEl!: HTMLDivElement;
+
+	selectedProject: string | undefined;
+	private timeTable: TimeSummarySingle | undefined;
+	private todoTable: TodoDashboardView | undefined;
+	private detailsSection: ProjectInfoSingle | undefined;
+	private issueTable: IssueDashboardView | undefined;
+	private meetingTable: NoteDashboard | undefined;
+	private otherNoteTable: NoteDashboard | undefined;
 
 	private indicatorSection!: HTMLDivElement;
 
@@ -69,7 +80,7 @@ export class ProjectSingleView extends Component {
 		private projectManager: MyProjectManager,
 		private issueTracker: IssueTracker,
 		private todoManager: TodoManager,
-		private project: string | null = null
+		private project?: string | undefined
 	) {
 		super();
 		this.selectedProject = project
@@ -91,7 +102,7 @@ export class ProjectSingleView extends Component {
 		this.registerEvent(
 			this.timeTracker.on("time-tracker-updated", () => {
 				// void this.setActiveIndicator()
-				void this.timeTable.updateSummaries()
+				void this.timeTable?.refreshDashboard()
 			})
 		);
 
@@ -183,144 +194,126 @@ export class ProjectSingleView extends Component {
 		// this.indicatorSection = projectSection.createDiv({cls: "right-align"})
 		
 		
-		const detailsSection = dashboardContainer.createDiv({ cls: "project-section" });
+		const detailsSection = dashboardContainer.createDiv({ cls: "single-project-section" });
 		detailsSection.createDiv({ text: "Project details", cls: "section-header" })
-		const detailsTableSection = detailsSection.createDiv()
-		await this.buildDetailsSection(detailsTableSection)
+		this.detailsEl = detailsSection.createDiv()
 		
 
 		dashboardContainer.createEl("hr")
 
 		// build the time tracker section
-		const timeSection = dashboardContainer.createDiv({ cls: "project-section" });
-		timeSection.createDiv({ text: "Hours worked", cls: "section-header" }) 
-		const timeTableSection = timeSection.createDiv()
-		await this.buildTimeSectionContents(timeTableSection)
+		const timeSection = dashboardContainer.createDiv({ cls: "single-project-section" });
+		timeSection.createDiv({ text: "Hours worked", cls: "section-header" })
+		this.timeEl = timeSection.createDiv()
 		// this.timeTable = new TimeSummarySingle(this.selectedProject, timeSection, this.app, this.timeTracker, this.projectManager, "week", 0)
 
 		dashboardContainer.createEl("hr")
 
 		// build issue table section
-		const issueSection = dashboardContainer.createDiv({ cls: "project-section" });
+		const issueSection = dashboardContainer.createDiv({ cls: "single-project-section" });
 		issueSection.createDiv({ text: "Project issues", cls: "section-header" });
-		const issueTableSection = issueSection.createDiv()
-		await this.buildIssueSectionContents(issueTableSection)
-
+		this.issueEl = issueSection.createDiv()
+		
 		dashboardContainer.createEl("hr")
 
 		// build todo section
-		const todoSection = dashboardContainer.createDiv({ cls: "project-section" });
+		const todoSection = dashboardContainer.createDiv({ cls: "single-project-section" });
 		todoSection.createDiv({ text: "Project todos", cls: "section-header" })
-		const todoTableSection = todoSection.createDiv({ cls: "project-section" });
-		await this.buildTodoSectionContents(todoTableSection)
-
+		this.todoEl = todoSection.createDiv({ cls: "project-section" });
+		
 		dashboardContainer.createEl("hr")
 
 		// build meeting section
-		const meetingSection = dashboardContainer.createDiv({ cls: "project-section" });
-		meetingSection.createDiv({ text: "Meeting notes", cls: "section-header" }) 
-		const meetingTableSection = meetingSection.createDiv()
-		await this.buildSection(meetingTableSection)
+		const meetingSection = dashboardContainer.createDiv({ cls: "single-project-section" });
+		meetingSection.createDiv({ text: "Meeting notes", cls: "section-header" })
+		this.meetingEl = meetingSection.createDiv()
+		
 
 		dashboardContainer.createEl("hr")
 
 		// build other notes section
-		const noteSection = dashboardContainer.createDiv({ cls: "project-section" });
+		const noteSection = dashboardContainer.createDiv({ cls: "single-project-section" });
 		noteSection.createDiv({ text: "Other project notes", cls: "section-header" }) 
-		const noteTableSection = noteSection.createDiv()
-		await this.buildSection(noteTableSection)
+		this.otherNoteEl = noteSection.createDiv()
+
 		
 	}
 	
 	private async handleProjectChange(path: string): Promise < void> {
-	this.selectedProject = path;
-
-	try {
-		await Promise.all([
-			this.detailsSection.selectProject(path),
-			this.timeTable.selectProject(path),
-			this.issueTable.selectProject(path),
-			this.todoTable.selectProject(path)
-		]);
-	} catch(error) {
-		console.error("Failed to update project view", error);
-	}
-}
-	private async buildSection(section: HTMLDivElement) {
-
-		const controlSection = section.createDiv({ cls: 'project-controls' });
-		controlSection.addClass("control-col")
-
-		const controlRow1 = controlSection.createDiv({ cls: 'project-controls' });
-		controlRow1.addClass("control-row")
-		// filter buttons
-		const filterSection = controlRow1.createDiv({ cls: 'project-controls' });
-		// filterSection.addClass("control-row")
-		filterSection.createEl("label", { text: 'Show only:' })
-		// const filterSelect = filterSection.createEl('select', {
-		// 	cls: 'dropdown-new'
-		// });
-		/*for (const filter of PROJECT_STATUS_FILTERS) {
-			filterSelect.createEl('option', {
-				value: filter, //'project',
-				text: filter
-			});
+		this.selectedProject = path;
+		if (this.detailsSection === undefined) {
+			await this.initializeComponents()
 		}
-		filterSelect.value = this.filterBy;
-		filterSelect.addEventListener("change", () => {
-			const value = filterSelect.value;
-			// if ((PROJECT_STATUS_FILTERS as readonly string[]).includes(value)) {
-			this.filterBy = value as ProjectStatusFilter;
-			void this.rebuildProjectTable();
-	// }
-
-		});*/
+		try {
+			await Promise.all([
+				this.detailsSection?.selectProject(path),
+				this.timeTable?.selectProject(path),
+				this.issueTable?.selectProject(path),
+				this.todoTable?.selectProject(path),
+				this.meetingTable?.selectProject(path),
+				this.otherNoteTable?.selectProject(path)
+			]);
+		} catch(error) {
+			console.error("Failed to update project view", error);
+		}
 	}
 
-	private async buildDetailsSection(section: HTMLDivElement) {
-		const temp = section.createDiv()
-		this.detailsSection = new ProjectInfoSingle(
-			this.selectedProject,
-			temp,
-			this.app,
-			this.projectManager
-		)
-		this.addChild(this.detailsSection)
-	}
-	private async buildTimeSectionContents(section: HTMLDivElement) {
-		this.timeTable = new TimeSummarySingle(
-			this.selectedProject,
-			section,
-			this.app,
-			this.timeTracker,
-			this.projectManager,
-			"week",
-			0
-		)
-		this.addChild(this.timeTable)
-	}
-	private async buildTodoSectionContents(section: HTMLDivElement) {
-		this.todoTable = new TodoDashboardView(
-			section,
-			this.app,
-			this.todoManager,
-			this.projectManager,
+	private async initializeComponents(): Promise<void> {
+		if (this.selectedProject) {
+			this.timeTable = new TimeSummarySingle(
+				this.selectedProject,
+				this.timeEl,
+				this.app,
+				this.timeTracker,
+				this.projectManager,
+				"week",
+				0
+			)
+			this.detailsSection = new ProjectInfoSingle(
+				this.selectedProject,
+				this.detailsEl,
+				this.app,
+				this.projectManager
+			)
+			this.todoTable = new TodoDashboardView(
+				this.todoEl,
+				this.app,
+				this.todoManager,
+				this.projectManager,
+				this.selectedProject
+			)
+			this.issueTable = new IssueDashboardView(
+				this.issueEl,
+				this.app,
+				this.issueTracker,
+				this.projectManager,
+				this.selectedProject
+			)
+			this.meetingTable = new NoteDashboard(
+				this.meetingEl,
+				"meeting",
+				this.app,
+				this.projectManager,
+				this.selectedProject
+			)
+			this.otherNoteTable = new NoteDashboard(
+				this.otherNoteEl,
+				"other",
+				this.app,
+				this.projectManager,
+				this.selectedProject
+			)
 
-		)
-		this.addChild(this.todoTable)
+			this.addChild(this.timeTable)
+			this.addChild(this.detailsSection)
+			this.addChild(this.todoTable)
+			this.addChild(this.issueTable)
+			this.addChild(this.meetingTable)
+			this.addChild(this.otherNoteTable)
+		}
 	}
 
-	private async buildIssueSectionContents(section: HTMLDivElement) {
-		this.issueTable = new IssueDashboardView(
-			section,
-			this.app,
-			this.issueTracker,
-			this.projectManager,
-
-		)
-		this.addChild(this.issueTable)
-	}
-
+	
 	private updateProjectView() {
 
 	}

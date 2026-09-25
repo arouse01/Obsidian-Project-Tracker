@@ -7,7 +7,6 @@ import { MyProjectManager } from './projectManager';
 import {
 	ProjectInfo,
 	RawTimeSession,
-	TimeSummary,
 	TimeSummaryStore,
 	PeriodicTimeSummary,
 	SessionData,
@@ -15,11 +14,10 @@ import {
 	SummarySession
 } from "./types";
 import {
-	formatDate,
 	getDateKey,
 	dateKeyToDate
 } from './utils'
-import { SummaryGroup } from './tableFunctions';
+// import { SummaryGroup } from './tableFunctions';
 
 
 export class TimeTracker extends Events {

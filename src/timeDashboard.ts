@@ -2,7 +2,6 @@ import {
 	ItemView,
 	WorkspaceLeaf,
 	ButtonComponent,
-	TFile,
 	Menu
 } from 'obsidian';
 import { MyProjectManager } from './projectManager';
@@ -12,7 +11,6 @@ import {
 } from './utils';
 import {
 	ProjectInfo,
-	TimeSummary,
 	SessionData,
 	TimeSummaryStore
 } from './types'

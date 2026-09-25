@@ -194,7 +194,7 @@ export class TodoManager extends Events {
 	}*/
 
 	async startTodoItem(
-		project: ProjectInfo | null,
+		project?: ProjectInfo
 	): Promise<void> {
 		const tempTitle = "";
 		const lines = -1;

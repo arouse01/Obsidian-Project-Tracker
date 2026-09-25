@@ -15,7 +15,6 @@ import {
 	ProjectInfo,
 	IssueModalOptions,
 	PRIORITIES,
-	IssueData,
 	IssueItem
 } from "./types";
 import {
@@ -100,7 +99,7 @@ export class IssueTracker extends Events {
 	}
 
 	filterActiveIssues(issues: IssueItem[]): IssueItem[] {
-		return this.getAllIssues().filter(issue =>
+		return issues.filter(issue =>
 			issue.status === "Open"
 		);
 	}

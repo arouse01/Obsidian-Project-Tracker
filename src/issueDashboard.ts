@@ -9,18 +9,14 @@ import { IssueTracker } from './issueTracker';
 import {
 	IssueItem,
 	PRIORITIES,
-	// ProjectInfo
+	ProjectInfo
 } from './types'
-import {
-	formatDate
-} from './utils'
 import {
 	
 	// PriorityOrder
 } from "./constants";
 import {
 	sortItems,
-	// SummaryColumn,
 	GroupPosition,
 	TableColumn,
 	updateSortButtons,
@@ -71,15 +67,17 @@ export class IssueDashboardView extends Component {
 
 	private collapsedGroups = new Set<string>();  // which groups are collapsed in the table
 
+	private selectedProject: ProjectInfo | undefined
 
 	constructor(
 		private container: HTMLElement,
 		private app: App,
 		private issueTracker: IssueTracker,
 		private projectManager: MyProjectManager,
-		private selectedProject: string | null = null
+		private projectPath?: string
 	) {
 		super();
+		this.selectedProject = this.projectManager.getProjectInfoByPath(this.projectPath)
 		this.container = container;
 	}
 
@@ -117,9 +115,14 @@ export class IssueDashboardView extends Component {
 		}
 	}
 
-	async selectProject(project: string) {
+	async selectProject(projectPath: string) {
 		this.container.empty()
-		this.selectedProject = project;
+		const project = this.projectManager.getProjectInfoByPath(projectPath)
+		if (project === undefined) {
+			throw new Error(`Project not found: ${projectPath}`);
+		}
+		this.selectedProject = project
+	
 		this.buildDashboard()
 		void this.updateIssueRows();
 	}
@@ -150,13 +153,7 @@ export class IssueDashboardView extends Component {
 		this.issueTableBodyEl = this.issueTableEl.createEl('tbody')
 
 
-		const bottomSection = mainSection.createEl("section");
-		const projInfo = this.projectManager.getProjectInfoByPath(this.selectedProject) ?? undefined
-		new ButtonComponent(bottomSection)
-			.setButtonText("Create new issue")
-			.onClick(async () => {
-				await this.issueTracker.createNewIssue(projInfo);
-			})
+		
 
 
 	}
@@ -243,7 +240,7 @@ export class IssueDashboardView extends Component {
 		this.projectMap = new Map(
 			projects.map(project => [project.file.path, project.name])
 		);
-		let issues = await this.issueTracker.getIssues("active", this.selectedProject);
+		let issues = await this.issueTracker.getIssues("active", this.selectedProject?.file.path);
 
 		issues = sortItems(
 			issues,
@@ -280,6 +277,7 @@ export class IssueDashboardView extends Component {
 			}
 		}
 
+		this.createAddIssueRow(tbody)
 
 	}
 
@@ -326,6 +324,19 @@ export class IssueDashboardView extends Component {
 		}
 		
 	}
+
+	private createAddIssueRow(
+		target: HTMLTableSectionElement
+	) {
+		const row = target.createEl('tr');
+		for (const [field,] of this.getVisibleCols()) {
+			const cell = row.createEl("td");
+			
+			this.renderAddIssueCell(cell, field);
+		}
+
+	}
+
 
 	private getVisibleCols(): Array<
 		[IssueColumnField, TableColumn]
@@ -382,6 +393,41 @@ export class IssueDashboardView extends Component {
 			field,
 			ISSUE_COLS[field]
 		])
+	}
+
+	private renderAddIssueCell(
+		cell: HTMLTableCellElement,
+		field: IssueColumnField
+	): void {
+		cell.addClass("summary-row")
+		switch (field) {
+			case "name":
+				{
+					cell.addClass("left-align")
+					new ButtonComponent(cell)
+						.setButtonText("Create new issue")
+
+						.onClick(async () => {
+							await this.issueTracker.createNewIssue(this.selectedProject);
+						})
+					
+					break;
+
+					/*new ButtonComponent(cell)
+						// .setIcon(`list-chevrons-up-down`)
+						
+						.onClick(async () => {
+							
+						});
+					break*/
+				}
+
+			
+			default:
+				break;
+
+
+		}
 	}
 
 	private renderCollapsedGroupCell(

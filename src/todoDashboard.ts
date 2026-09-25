@@ -8,7 +8,8 @@ import { MyProjectManager } from './projectManager';
 import { TodoManager } from './todoTracker';
 import {
 	TodoItem,
-	PRIORITIES
+	PRIORITIES,
+	ProjectInfo
 } from './types'
 import {
 	formatDate
@@ -73,16 +74,18 @@ export class TodoDashboardView extends Component {
 
 	private collapsedGroups = new Set<string>();  // which groups are collapsed in the table
 
+	private selectedProject: ProjectInfo | undefined
 
 	constructor(
 		private container: HTMLElement,
 		private app: App,
 		private todoManager: TodoManager,
 		private projectManager: MyProjectManager,
-		private selectedProject: string | null = null
+		private projectPath?: string | undefined
 	) {
 		super();
 		this.container = container;
+		this.selectedProject = this.projectManager.getProjectInfoByPath(this.projectPath)
 	}
 
 	getViewType(): string {
@@ -119,9 +122,13 @@ export class TodoDashboardView extends Component {
 		}
 	}
 
-	async selectProject(project: string) {
+	async selectProject(projectPath: string) {
 		this.container.empty()
-		this.selectedProject = project;
+		const project = this.projectManager.getProjectInfoByPath(projectPath)
+		if (project === undefined) {
+			throw new Error(`Project not found: ${projectPath}`);
+		}
+		this.selectedProject = project
 		this.buildDashboard()
 		void this.updateTodoRows();
 	}
@@ -133,7 +140,7 @@ export class TodoDashboardView extends Component {
 		// mainSection.createEl("h3", {
 		// 	text: "Todo list"
 		// });
-		if (!this.selectedProject) {
+		if (!this.projectPath) {
 			const controlSection = mainSection.createEl("section");
 			controlSection.addClass('summary-controls');
 		
@@ -167,14 +174,15 @@ export class TodoDashboardView extends Component {
 		this.todoTableBodyEl = this.todoTableEl.createEl('tbody')
 
 
-		const bottomSection = mainSection.createEl("section");
-		const projInfo = this.projectManager.getProjectInfoByPath(this.selectedProject)
+		/*const bottomSection = mainSection.createEl("section");
+
 		new ButtonComponent(bottomSection)
 			.setButtonText("Create new todo")
+			.setClass("center-align")
 			// .setClass("todo-dashboard-button-add")
 			.onClick(async () => {
-				await this.todoManager.startTodoItem(projInfo);
-			})
+				await this.todoManager.startTodoItem(this.selectedProject);
+			})*/
 
 
 	}
@@ -262,7 +270,7 @@ export class TodoDashboardView extends Component {
 		this.projectMap = new Map(
 			projects.map(project => [project.file.path, project.name])
 		);
-		let todos = await this.todoManager.getTodos("active", this.selectedProject);
+		let todos = await this.todoManager.getTodos("active", this.projectPath);
 
 		todos = sortItems(
 			todos,
@@ -298,6 +306,21 @@ export class TodoDashboardView extends Component {
 			}
 		}
 
+		this.createAddTodoRow(tbody)
+
+	}
+
+	createAddTodoRow(target: HTMLTableSectionElement) {
+		const row = target.createEl('tr');
+		
+
+		for (const [field, column] of this.getVisibleCols()) {
+			const cell = row.createEl("td");
+			if (!column.centered) {
+				cell.addClass("left-align")
+			}
+			this.renderAddTodoCell(cell, field);
+		}
 
 	}
 
@@ -369,7 +392,7 @@ export class TodoDashboardView extends Component {
 	private getVisibleCols(): Array<
 		[TodoColumnField, TableColumn]
 	> {
-		if (this.selectedProject) {
+		if (this.projectPath) {
 			this.colOrder = [
 				"status",
 				"priority",
@@ -620,6 +643,33 @@ export class TodoDashboardView extends Component {
 
 					break;
 				}
+				break;
+
+
+
+		}
+	}
+
+	private renderAddTodoCell(
+		cell: HTMLTableCellElement,
+		field: TodoColumnField,
+	): void {
+		cell.addClass("summary-row")
+		switch (field) {
+			case "name":
+
+				new ButtonComponent(cell)
+					.setButtonText("Create new todo")
+					.setClass("center-align")
+					// .setClass("todo-dashboard-button-add")
+					.onClick(async () => {
+						await this.todoManager.startTodoItem(this.selectedProject);
+					})
+
+				break;
+
+			default:
+				
 				break;
 
 

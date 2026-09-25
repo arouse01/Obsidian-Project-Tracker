@@ -72,14 +72,14 @@ export class MyProjectManager {
 		) ?? null;
 	}
 
-	getProjectInfoByPath(path: string | null): ProjectInfo | null {
-		if (path === null) {
-			return null;
+	getProjectInfoByPath(path: string | undefined): ProjectInfo | undefined {
+		if (path === undefined) {
+			return undefined;
 		}
 
 		return this.getActiveProjects().find(
 			p => p.file.path === path
-		) ?? null;
+		) ?? undefined;
 	}
 
 	getProjectNameByPath(path: string | null): string | null {

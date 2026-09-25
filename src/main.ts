@@ -151,7 +151,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 			id: "add-todo",
 			name: "Add new todo",
 			editorCallback: async () => {
-				await this.todoManager.startTodoItem(null)
+				await this.todoManager.startTodoItem()
 			}
 		});
 
@@ -362,7 +362,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 	}
 
 	async createNewTodo() {
-		await this.todoManager.startTodoItem(null)
+		await this.todoManager.startTodoItem()
 	}
 
 	/*

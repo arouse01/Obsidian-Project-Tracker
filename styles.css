@@ -96,32 +96,21 @@ button.collaborator-button {
 	z-index: 1;
 }
 
-.active-indicator-large {
-	position: relative;
-	display: inline-flex;
-	align-items: center;
-	width: 2em;
-	height: 2em;
-}
-
-.active-indicator-large span {
-	position: relative;
-	z-index: 2;
-	display: flex;
-	align-items: center;
-	line-height: 1;
+.active-indicator.large span {
 	font-size: 18px;
 }
 
-.blinky-circle-green-large {
-	position: absolute;
+.active-indicator.large .blinky-circle-green {
 	width: 28px;
 	height: 28px;
-	background: #00FF55;
-	border-radius: 50%;
-	animation: blinky 2s infinite;
-	pointer-events: none;
-	z-index: 1;
+}
+
+.active-indicator.active .blinky-circle-green {
+	display: block
+}
+
+.active-indicator:not(.active) .blinky-circle-green {
+	display: none
 }
 
 .blinky-circle-null-large {
@@ -150,9 +139,15 @@ button.collaborator-button {
 .font-size-12 {
 	font-size: 12px;
 }
+
+.font-size-14 {
+	font-size: 14px;
+}
+
 .font-size-16 {
 	font-size: 16px;
 }
+
 .project-dashboard {
 	font-size: 14px;
 }
@@ -192,7 +187,9 @@ button.collaborator-button {
 .dashboard button.button-larger {
 	font-size: larger;
 	height: fit-content;
-	margin-bottom: 16px
+	margin-bottom: 16px;
+	margin-left: 10px;
+	margin-right: 10px;
 }
 
 .dashboard button {
@@ -220,6 +217,7 @@ hr {
 	font-size: 16px;
 	text-align: center;
 	margin-bottom: 1rem;
+	font-weight: 600;
 }
 /* modifiers */
 .control-col {
@@ -277,10 +275,12 @@ hr {
 	max-width: 100%;
 	margin: 0 auto;
 	overflow-x: auto;
+	
+}
+.single-project-section {
 	max-height: 400px;
 	overflow-y: auto;
 }
-
 .project-selector {
 	display: flex;
 	align-items: center;
@@ -305,15 +305,6 @@ hr {
 	align-items: center;
 	gap: 8px;
 	padding: 2px 0;
-}
-
-.control-col {
-	flex-direction: column;
-	gap: 4px;
-}
-
-.control-row {
-	flex-direction: row;
 }
 
 .timestamp-row {
