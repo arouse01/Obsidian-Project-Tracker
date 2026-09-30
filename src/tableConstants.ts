@@ -6,7 +6,8 @@ import {
 	ProjectInfo,
 	TodoItem,
 	IssueItem,
-	RawTimeSession
+	RawTimeSession,
+	NoteItem
 } from "./types"
 
 // PROJECTS
@@ -394,4 +395,100 @@ export interface IssueGroup {
 	key: string;
 	label: string;
 	issues: IssueItem[];
+}
+
+// NOTES
+export const NOTE_COLS = {
+	"collapse": {
+		label: "",
+		sortable: false,
+		groupable: false,
+		width: "25px",
+		tableGroup: "",
+		centered: true
+	},
+	"title": {
+		label: "Title",
+		sortable: true,
+		groupable: false,
+		width: "30%",
+		minWidth: "250px",
+		centered: false
+	},
+	"filename": {
+		label: "Filename",
+		sortable: true,
+		groupable: false,
+		width: "30%",
+		minWidth: "250px",
+		centered: false
+	},
+	"date": {
+		label: "Date",
+		sortable: true,
+		groupable: false,
+		centered: true,
+		width: "75px"
+	},
+	"dateModified": {
+		label: "Last Modified",
+		sortable: true,
+		groupable: false,
+		centered: true,
+		width: "75px"
+	},
+	"project": {
+		label: "Project",
+		sortable: true,
+		groupable: true,
+		centered: false,
+		width: "20%"
+	},
+	"people": {
+		label: "People",
+		sortable: true,
+		groupable: false,
+		width: "75px"
+	},
+	"topic": {
+		label: "Topic",
+		sortable: false,
+		groupable: false,
+		centered: true,
+		width: "75px"
+	},
+	"tags": {
+		label: "Tags",
+		sortable: false,
+		groupable: false,
+		centered: true,
+		width: "85px"
+	},
+	"action": {
+		label: "Action",
+		sortable: false,
+		groupable: false,
+		centered: true,
+		width: "55px"
+	}
+} satisfies Record<string, TableColumn>;
+
+export type NoteColumnField = keyof typeof NOTE_COLS;
+
+// type of ProjectColumnField here instead of SortField because it can now let any field be sorted, and that is defined by the master column list above
+export type NoteSort = ColSort<NoteColumnField>
+
+export type NoteGroupField =
+	| "none"
+	| {
+		[K in keyof typeof NOTE_COLS]:
+		typeof NOTE_COLS[K]["groupable"] extends true
+		? K
+		: never
+	}[keyof typeof NOTE_COLS];
+
+export interface NoteGroup {
+	key: string;
+	label: string;
+	notes: NoteItem[];
 }

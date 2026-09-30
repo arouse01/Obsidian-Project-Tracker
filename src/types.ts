@@ -318,3 +318,16 @@ export interface TodoGroup {
 	label: string;
 	todos: TodoItem[];
 }
+
+export type NoteType = "meeting" | "issue" | "project" | "other"
+
+export interface NoteItem {
+	file: TFile,
+	title: string,
+	project?: ProjectInfo  // not all notes have a project
+	type: NoteType,
+	dateModified?: Date,
+	date?: Date
+	tags?: string[]
+	people?: string[]
+}

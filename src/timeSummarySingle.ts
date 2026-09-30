@@ -10,8 +10,7 @@ import {
 	SessionData,
 	PeriodicTimeSummary,
 	ProjectInfo,
-	TimeSummaryStore,
-	
+	TimeSummaryStore
 } from './types'
 import {
 	// GroupPosition,
@@ -19,7 +18,8 @@ import {
 	getSummaryPeriod
 } from './tableFunctions';
 import {
-	formatMinutesToDuration
+	formatMinutesToDuration,
+	createStatusIcon
 } from "./utils";
 import {
 	TimeModal
@@ -78,7 +78,7 @@ export class TimeSummarySingle extends Component {
 
 	) {
 		super();
-		this.selectedProject = this.projectManager.getProjectInfoByPath(this.selectedProjectPath)!
+		this.selectedProject = this.projectManager.getProjectInfoByPath(selectedProjectPath)!
 
 		this.container = target;
 		this.summaryPeriod = period;
@@ -150,7 +150,7 @@ export class TimeSummarySingle extends Component {
 				period: "week",
 				offset: 0,
 				summaryFormat: "single",
-				selectedProject: this.selectedProjectPath ?? undefined
+				selectedProject: this.selectedProject?.file.path ?? undefined
 			}
 		)
 
@@ -158,9 +158,13 @@ export class TimeSummarySingle extends Component {
 
 	private async updateActiveSessionIcon() {
 		// this.sessionActive = await this.timeTracker.getActiveProjectSession(this.selectedProjectPath!);
-		
+
 		// const activeSession = await this.timeTracker.getActiveProjectSession(this.selectedProject!);
-		this.activeIcon?.setText(this.sessionActive ? "🟢" : "⚪️")
+		// Use svg for icon instead of emoji - renders cleaner across systems
+
+		// this.activeIcon?.setText(this.sessionActive ? "🟢" : "⚪️")
+		this.activeIcon?.empty();
+		this.activeIcon?.appendChild(createStatusIcon(!!this.sessionActive))
 		
 		this.activeDiv?.toggleClass("active", !!this.sessionActive);
 	}
@@ -174,15 +178,15 @@ export class TimeSummarySingle extends Component {
 		sessionControls.addClass("project-controls")
 		sessionControls.addClass("no-scroll")
 		sessionControls.addClass("control-col")
-		const activeSession = await this.timeTracker.getActiveProjectSession(this.selectedProjectPath);
+		const activeSession = await this.timeTracker.getActiveProjectSession(this.selectedProject?.file.path);
 
 		if (this.selectedProject !== null) {
 			// const project = this.selectedProjectInfo
 			const activeIndicator = sessionControls.createDiv({
-				text: "Status: ",
 				cls: "font-size-16"
 			})
 			activeIndicator.addClass("center-align")
+			activeIndicator.createSpan({text: "Status: ", cls: "vertical-top"})
 			/*
 			activeIndicator.addEventListener("click", (event) => {
 				event.preventDefault();
@@ -350,7 +354,7 @@ export class TimeSummarySingle extends Component {
 			text: "Today",
 			cls: "project-time-label"
 		})
-		const todayHours = this.timeSummaries.day.project.get(this.selectedProjectPath)
+		const todayHours = this.timeSummaries.day.project.get(this.selectedProject?.file.path)
 		todayDiv.createDiv({
 			text: formatMinutesToDuration(todayHours ?? 0),
 			cls: "project-time-value"
@@ -362,7 +366,7 @@ export class TimeSummarySingle extends Component {
 			text: "This week",
 			cls: "project-time-label"
 		})
-		const weekHours = this.timeSummaries.week.project.get(this.selectedProjectPath)
+		const weekHours = this.timeSummaries.week.project.get(this.selectedProject?.file.path)
 		weekDiv.createDiv({
 			text: formatMinutesToDuration(weekHours ?? 0),
 			cls: "project-time-value"
@@ -374,7 +378,7 @@ export class TimeSummarySingle extends Component {
 			text: "This month",
 			cls: "project-time-label"
 		})
-		const monthHours = this.timeSummaries.month.project.get(this.selectedProjectPath)
+		const monthHours = this.timeSummaries.month.project.get(this.selectedProject?.file.path)
 		monthDiv.createDiv({
 			text: formatMinutesToDuration(monthHours ?? 0),
 			cls: "project-time-value"
@@ -387,7 +391,7 @@ export class TimeSummarySingle extends Component {
 	async initialDataRefresh(): Promise<void> {
 
 		this.timeSummaries = await this.timeTracker.getCurrentTimeSummaries();
-		this.sessionActive = await this.timeTracker.getActiveProjectSession(this.selectedProjectPath);
+		this.sessionActive = await this.timeTracker.getActiveProjectSession(this.selectedProject?.file.path);
 		// await this.summaryTable.updateSummaryRows()
 		await this.updateActiveSessionIcon()
 		await this.updateSessionControlButtons()
@@ -396,7 +400,7 @@ export class TimeSummarySingle extends Component {
 	async updateSummaryData(): Promise<void> {
 
 		this.timeSummaries = await this.timeTracker.getCurrentTimeSummaries();
-		this.sessionActive = await this.timeTracker.getActiveProjectSession(this.selectedProjectPath);
+		this.sessionActive = await this.timeTracker.getActiveProjectSession(this.selectedProject?.file.path);
 		await this.summaryTable?.updateSummaryRows()
 		await this.updateActiveSessionIcon()
 		await this.updateSessionControlButtons()

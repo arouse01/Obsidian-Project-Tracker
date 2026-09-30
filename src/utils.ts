@@ -117,8 +117,21 @@ function getFrontmatterValue(
 	property: string
 ): unknown {
 	const cache = metadataCache.getFileCache(file);
+	const frontmatter = cache?.frontmatter
+	if (frontmatter === undefined) {
+		return undefined;
+	}
+	// robust against case inconsistency
+	const propertyLower = property.toLowerCase();
 
-	return cache?.frontmatter?.[property];
+	const key = Object.keys(frontmatter).find(
+		key => key.toLowerCase() === propertyLower
+	);
+
+	
+	return key === undefined
+		? undefined
+		: frontmatter[key]
 }
 
 export function getFrontmatterString(
@@ -155,3 +168,65 @@ export function getFrontmatterStringArray(
 
 	return [];
 }
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+export function createStatusIcon(active: boolean): SVGSVGElement {
+	// technically documentation suggests using `document.createSvg` and the like instead but it doesn't work for some reason
+	const svg = document.createElementNS(SVG_NS, "svg");
+	svg.setAttribute("viewBox", "0 0 20 20");
+
+	const defs = document.createElementNS(SVG_NS, "defs")
+
+	const gradient = document.createElementNS(SVG_NS, "radialGradient")
+	const gradientId = `project-status-${crypto.randomUUID()}`;
+	gradient.setAttribute("id", gradientId)
+	gradient.setAttribute("cx", "70%")
+	gradient.setAttribute("cy", "30%")
+	gradient.setAttribute("r", "80%")
+
+	const stop1 = document.createElementNS(SVG_NS, "stop")
+	stop1.setAttribute("offset", "0%");
+	stop1.setAttribute("stop-color", "#A8EEA8");
+
+	const stop2 = document.createElementNS(SVG_NS, "stop");
+	stop2.setAttribute("offset", "15%");
+	stop2.setAttribute("stop-color", "#68D969");
+
+	const stop3 = document.createElementNS(SVG_NS, "stop");
+	stop3.setAttribute("offset", "40%");
+	stop3.setAttribute("stop-color", "#35C835");
+
+	const stop4 = document.createElementNS(SVG_NS, "stop");
+	stop4.setAttribute("offset", "65%");
+	stop4.setAttribute("stop-color", "#1CAD1C");
+
+	const stop5 = document.createElementNS(SVG_NS, "stop");
+	stop5.setAttribute("offset", "85%");
+	stop5.setAttribute("stop-color", "#108510");
+
+	const stop6 = document.createElementNS(SVG_NS, "stop");
+	stop6.setAttribute("offset", "100%");
+	stop6.setAttribute("stop-color", "#106010");
+
+	gradient.appendChild(stop1);
+	gradient.appendChild(stop2);
+	gradient.appendChild(stop3);
+	gradient.appendChild(stop4);
+	gradient.appendChild(stop5);
+	gradient.appendChild(stop6);
+
+	defs.appendChild(gradient)
+	if (active) {
+		svg.appendChild(defs)
+	}
+	const circle = document.createElementNS(SVG_NS, "circle");
+	circle.setAttribute("cx", "10");
+	circle.setAttribute("cy", "10");
+	circle.setAttribute("r", "8");
+	circle.setAttribute("fill", active ? `url(#${gradientId})` : "#d9d9d9");
+
+	svg.appendChild(circle);
+
+	return svg;
+}
+

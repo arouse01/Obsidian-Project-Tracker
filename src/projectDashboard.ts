@@ -17,7 +17,8 @@ import {
 	formatMinutesToDuration,
 	formatDate,
 	normalizeWikiLink,
-	getFrontmatterString
+	getFrontmatterString,
+	createStatusIcon
 } from './utils';
 import { TimeTracker } from './timeTracker';
 import { TimeModal } from './timeModal';
@@ -682,90 +683,8 @@ export class ProjectDashboardView extends Component {
 			activeSessions.map(session => [session.projectPath, session])
 		);
 
-		// const start = window.moment()
-		// 	.startOf("month")
-		// 	.toDate();
-		// const end = window.moment()
-		// 	.endOf("month")
-		// 	.toDate();
 		this.timeSummaries = await this.timeTracker.getCurrentTimeSummaries();
-		/*// this.weekTimeByPath = new Map(
-		// 	weekSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
-		// )
-		const weekClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(weekStart, weekEnd);
-		// this.weekTimeByClient = new Map(
-		// 	weekClientSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
-		// )
-
-		const dayStart = window.moment()
-			.startOf("day")
-			.toDate();
-		const dayEnd = window.moment()
-			.endOf("day")
-			.toDate();
-		const daySummaryTotals = await this.timeTracker.getTimeSummary(dayStart, dayEnd);
-		// this.dayTimeByPath = new Map(
-		// 	daySummaryTotals.map(summary => [summary.key, summary.totalMinutes])
-		// )
-
-		const dayClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(dayStart, dayEnd);
-		// this.dayTimeByClient = new Map(
-		// 	dayClientSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
-		// )
-
-		const monthStart = window.moment()
-			.startOf("month")
-			.toDate();
-		const monthEnd = window.moment()
-			.endOf("month")
-			.toDate();
-		const monthSummaryTotals = await this.timeTracker.getTimeSummary(monthStart, monthEnd);
-
-		// this.monthTimeByPath = new Map(
-		// 	monthSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
-		// )
-
-		const monthClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(monthStart, monthEnd);
-		// this.monthTimeByClient = new Map(
-		// 	monthClientSummaryTotals.map(summary => [summary.key, summary.totalMinutes])
-		// )
-*/
-		// this.timeSummaries.day.project = new Map(
-		// 	summaryTotals.map(summary => [
-		// 		summary.key,
-		// 		summary.totalMinutes
-		// 	])
-		// );
-		// this.timeSummaries.day.client = new Map(
-		// 	dayClientSummaryTotals.map(summary => [
-		// 		summary.key,
-		// 		summary.totalMinutes
-		// 	])
-		// );
-		// this.timeSummaries.week.project = new Map(
-		// 	weekSummaryTotals.map(summary => [
-		// 		summary.key,
-		// 		summary.totalMinutes
-		// 	])
-		// );
-		// this.timeSummaries.week.client = new Map(
-		// 	weekClientSummaryTotals.map(summary => [
-		// 		summary.key,
-		// 		summary.totalMinutes
-		// 	])
-		// );
-		// this.timeSummaries.month.project = new Map(
-		// 	monthSummaryTotals.map(summary => [
-		// 		summary.key,
-		// 		summary.totalMinutes
-		// 	])
-		// );
-		// this.timeSummaries.month.client = new Map(
-		// 	monthClientSummaryTotals.map(summary => [
-		// 		summary.key,
-		// 		summary.totalMinutes
-		// 	])
-		// );
+		
 
 	}
 	
@@ -807,9 +726,10 @@ project: "[[${projectName}]]"
 topic: 
 date: "${creationTS}"
 people:
-- 
+  - 
+type: meeting
 tags:
-- meeting
+  - meeting
 ---
 # ${filename}
 
@@ -894,9 +814,10 @@ tags:
 					// const isActive = activePaths.has(project.file.path);
 					if (activeSession) {
 						const indicator = cell.createDiv({ cls: "active-indicator" });
+						indicator.addClass("active")
 						indicator.createDiv({ cls: "blinky-circle-green" })
 						const span = indicator.createSpan();  //⏲
-						span.setText("🟢")
+						span.appendChild(createStatusIcon(true))
 						
 					} else {
 						cell.setText("");
@@ -1263,7 +1184,7 @@ tags:
 						const indicator = cell.createDiv({ cls: "active-indicator" });
 						indicator.createDiv({ cls: "blinky-circle-green" })
 						const span = indicator.createSpan();  //⏲
-						span.setText("🟢")
+						span.appendChild(createStatusIcon(true))
 					}
 					break;
 				}

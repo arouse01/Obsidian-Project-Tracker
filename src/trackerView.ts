@@ -133,7 +133,8 @@ export class TrackerView extends ItemView {
 			this.plugin.timeTracker,
 			this.plugin.projectManager,
 			this.plugin.issueTracker,
-			this.plugin.todoManager
+			this.plugin.todoManager,
+			this.plugin.noteManager
 		)
 		this.addChild(this.singleProjectDashboard)
 

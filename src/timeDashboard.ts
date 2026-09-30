@@ -7,7 +7,8 @@ import {
 import { MyProjectManager } from './projectManager';
 import {
 	formatMinutesToDuration,
-	normalizeWikiLink
+	normalizeWikiLink,
+	createStatusIcon
 } from './utils';
 import {
 	ProjectInfo,
@@ -252,58 +253,9 @@ export class TimeDashboardView extends ItemView {
 			activeSessions.map(session => [session.projectPath, session])
 		);
 
-		// const weekStart = window.moment().startOf("week").toDate();
-		// const weekEnd = window.moment().endOf("week").toDate();
-		// const weekSummaryTotals = await this.timeTracker.getTimeSummary(weekStart, weekEnd);
-		// const weekClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(weekStart, weekEnd);
-
-		// const dayStart = window.moment().startOf("day").toDate();
-		// const dayEnd = window.moment().endOf("day").toDate();
-		// const daySummaryTotals = await this.timeTracker.getTimeSummary(dayStart, dayEnd);
-		// const dayClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(dayStart, dayEnd);
-
-		// const monthStart = window.moment().startOf("month").toDate();
-		// const monthEnd = window.moment().endOf("month").toDate();
-		// const monthSummaryTotals = await this.timeTracker.getTimeSummary(monthStart, monthEnd);
-		// const monthClientSummaryTotals = await this.timeTracker.getTimeSummaryByClient(monthStart, monthEnd);
 
 		this.timeSummaries = await this.timeTracker.getCurrentTimeSummaries();
-		// this.timeSummaries.day.project = new Map(
-		// 	daySummaryTotals.map(summary => [
-		// 		summary.key,
-		// 		summary.totalMinutes
-		// 	])
-		// );
-		// this.timeSummaries.day.client = new Map(
-		// 	dayClientSummaryTotals.map(summary => [
-		// 		summary.key,
-		// 		summary.totalMinutes
-		// 	])
-		// );
-		// this.timeSummaries.week.project = new Map(
-		// 	weekSummaryTotals.map(summary => [
-		// 		summary.key,
-		// 		summary.totalMinutes
-		// 	])
-		// );
-		// this.timeSummaries.week.client = new Map(
-		// 	weekClientSummaryTotals.map(summary => [
-		// 		summary.key,
-		// 		summary.totalMinutes
-		// 	])
-		// );
-		// this.timeSummaries.month.project = new Map(
-		// 	monthSummaryTotals.map(summary => [
-		// 		summary.key,
-		// 		summary.totalMinutes
-		// 	])
-		// );
-		// this.timeSummaries.month.client = new Map(
-		// 	monthClientSummaryTotals.map(summary => [
-		// 		summary.key,
-		// 		summary.totalMinutes
-		// 	])
-		// );
+		
 		
 	}
 
@@ -424,9 +376,11 @@ export class TimeDashboardView extends ItemView {
 					// const isActive = activePaths.has(project.file.path);
 					if (activeSession) {
 						const indicator = cell.createDiv({ cls: "active-indicator" });
+						indicator.addClass("center-align")
+						indicator.addClass("active")
 						indicator.createDiv({ cls: "blinky-circle-green" })
 						const span = indicator.createSpan();  //⏲
-						span.setText("🟢")
+						span.appendChild(createStatusIcon(true))
 
 					} else {
 						cell.setText("");

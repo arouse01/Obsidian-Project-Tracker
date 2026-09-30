@@ -85,7 +85,7 @@ export class TodoDashboardView extends Component {
 	) {
 		super();
 		this.container = container;
-		this.selectedProject = this.projectManager.getProjectInfoByPath(this.projectPath)
+		this.selectedProject = this.projectManager.getProjectInfoByPath(projectPath)
 	}
 
 	getViewType(): string {
@@ -140,7 +140,7 @@ export class TodoDashboardView extends Component {
 		// mainSection.createEl("h3", {
 		// 	text: "Todo list"
 		// });
-		if (!this.projectPath) {
+		if (!this.selectedProject) {
 			const controlSection = mainSection.createEl("section");
 			controlSection.addClass('summary-controls');
 		
@@ -270,7 +270,7 @@ export class TodoDashboardView extends Component {
 		this.projectMap = new Map(
 			projects.map(project => [project.file.path, project.name])
 		);
-		let todos = await this.todoManager.getTodos("active", this.projectPath);
+		let todos = await this.todoManager.getTodos("active", this.selectedProject?.file.path);
 
 		todos = sortItems(
 			todos,
@@ -392,7 +392,7 @@ export class TodoDashboardView extends Component {
 	private getVisibleCols(): Array<
 		[TodoColumnField, TableColumn]
 	> {
-		if (this.projectPath) {
+		if (this.selectedProject) {
 			this.colOrder = [
 				"status",
 				"priority",

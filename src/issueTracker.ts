@@ -348,14 +348,15 @@ export class IssueTracker extends Events {
 			: ""
 		const content =
 			`---
-ID: ${issueID}
-Project: "[[${request.issue.project.name}]]"
-Priority: ${request.issue.priority}
-Issue Status: Open
-Origin: ${sourceFile}
-Creation Date: "${creationTS}"
+id: ${issueID}
+project: "[[${request.issue.project.name}]]"
+priority: ${request.issue.priority}
+issue status: Open
+origin: ${sourceFile}
+creation date: "${creationTS}"
+type: issue
 tags:
-- issue
+  - 
 ---
 # ${filename}
 

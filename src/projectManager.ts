@@ -62,24 +62,53 @@ export class MyProjectManager {
 		);
 	}
 
-	getProjectInfoByLink(linkText: string | null): ProjectInfo | null {
-		if (linkText === null) {
-			return null;
+	getProjectInfoByLink(linkText: string | undefined): ProjectInfo | undefined {
+		if (linkText === undefined) {
+			return undefined;
 		}
 
 		return this.getActiveProjects().find(
 			p => p.file.path === linkText
-		) ?? null;
+		) ?? undefined;
+	}
+
+	getFileProject(file: TFile): ProjectInfo | undefined {
+		const projectPathRaw = getFrontmatterString(this.app.metadataCache, file, "Project")
+
+		if (
+			projectPathRaw === undefined ||
+			projectPathRaw === ""
+		) {
+			return undefined
+		}
+
+		const projectPath = normalizeWikiLink(projectPathRaw);
+		const projectFile = this.app.metadataCache.getFirstLinkpathDest(
+			projectPath,
+			file.path
+		)
+		if (projectFile === null) {
+			return undefined;
+		}
+
+		return this.getActiveProjects().find(
+			p => p.file.path === projectFile.path
+		)
 	}
 
 	getProjectInfoByPath(path: string | undefined): ProjectInfo | undefined {
 		if (path === undefined) {
 			return undefined;
 		}
+		// handle if input string doesn't have extension
+		const file = this.app.metadataCache.getFirstLinkpathDest(path, "");
+		if (file === null) {
+			return undefined;
+		}
 
 		return this.getActiveProjects().find(
-			p => p.file.path === path
-		) ?? undefined;
+			p => p.file.path === file.path
+		)
 	}
 
 	getProjectNameByPath(path: string | null): string | null {
@@ -172,8 +201,9 @@ ${clientText}
 ${collaborators}
 projectID: ${projectID}
 Creation Date: "${creationTS}"
+type: project
 tags:
-- project
+  - 
 ---
 
 

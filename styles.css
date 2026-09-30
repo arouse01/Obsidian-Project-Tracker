@@ -72,8 +72,9 @@ button.collaborator-button {
 	position: relative;
 	display: inline-flex;
 	align-items: center;
-	width: 1.2em;
-	height: 1.2em;
+	width: 20px;
+	height: 20px;
+	justify-content: center;
 }
 
 .active-indicator span {
@@ -85,8 +86,14 @@ button.collaborator-button {
 	font-size: 14px;
 }
 
+.active-indicator svg{
+	
+	width: 20px;
+	height: 20px;
+}
+
 .blinky-circle-green {
-	position: absolute;
+	position: fixed;
 	width: 20px;
 	height: 20px;
 	background: #00FF55;
@@ -133,7 +140,9 @@ button.collaborator-button {
 	}
 }
 
-
+.vertical-top {
+	vertical-align: top;
+}
 
 /* context-specific settings */
 .font-size-12 {

@@ -31,6 +31,7 @@ import {
 // 	TodoDashboardView
 // } from './todoDashboard'
 import { TrackerView } from './trackerView';
+import { NoteManager } from './noteManager'
 
 
 
@@ -40,7 +41,7 @@ export default class ProjectTrackerPlugin extends Plugin {
 	timeTracker!: TimeTracker;
 	issueTracker!: IssueTracker;
 	todoManager!: TodoManager;
-
+	noteManager!: NoteManager;
 
 	async onload() {
 
@@ -68,6 +69,12 @@ export default class ProjectTrackerPlugin extends Plugin {
 			this.app,
 			this.projectManager,
 			() => this.settings.todoLogPath
+		)
+
+		this.noteManager = new NoteManager(
+			this.app,
+			this.projectManager,
+
 		)
 
 		this.registerView(
