@@ -93,7 +93,7 @@ button.collaborator-button {
 }
 
 .blinky-circle-green {
-	position: fixed;
+	position: absolute;  /*fixed keeps it in one spot on the screen regardless of scrolling, not what we want*/
 	width: 20px;
 	height: 20px;
 	background: #00FF55;
