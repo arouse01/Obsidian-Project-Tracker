@@ -42,8 +42,9 @@ import {
 import {
 	TodoDashboardView
 } from './todoDashboard'
+import { IssueDashboardView } from './issueDashboard';
 
-const DASHBOARD_TABS = ["Projects", "Todos", "Single Project"] as const;
+const DASHBOARD_TABS = ["Projects", "Todos", "Issues", "Single Project"] as const;
 type DashboardTab = typeof DASHBOARD_TABS[number];
 
 export class TrackerView extends ItemView {
@@ -52,11 +53,13 @@ export class TrackerView extends ItemView {
 
 	private projectDashboard!: ProjectDashboardView;
 	private todoDashboard!: TodoDashboardView;
+	private issueDashboard!: IssueDashboardView;
 	private singleProjectDashboard!: ProjectSingleView;
 
 	private projectViewEl!: HTMLElement
 	private todoEl!: HTMLElement
 	private timeEl!: HTMLElement
+	private issueEl!: HTMLElement
 	private singleProjectEl!: HTMLElement
 
 	private header!: HTMLElement;
@@ -80,7 +83,8 @@ export class TrackerView extends ItemView {
 	): Promise<void> {
 		if (
 			state.activeTab === "Projects" ||
-			state.activeTab === "Todos"
+			state.activeTab === "Todos" ||
+			state.activeTab === "Issues"
 		) {
 			this.activeTab = state.activeTab;
 		}
@@ -107,6 +111,7 @@ export class TrackerView extends ItemView {
 		const projectViewEl = this.container.createDiv()
 		const todoEl = this.container.createDiv()
 		const timeEl = this.container.createDiv()
+		const issueEl = this.container.createDiv()
 		const singleProjectEl = this.container.createDiv()
 
 		this.projectDashboard = new ProjectDashboardView(
@@ -127,6 +132,14 @@ export class TrackerView extends ItemView {
 		)
 		this.addChild(this.todoDashboard)
 
+		this.issueDashboard = new IssueDashboardView(
+			issueEl,
+			this.app,
+			this.plugin.issueTracker,
+			this.plugin.projectManager
+		)
+		this.addChild(this.issueDashboard)
+
 		this.singleProjectDashboard = new ProjectSingleView(
 			singleProjectEl,
 			this.app,
@@ -141,6 +154,7 @@ export class TrackerView extends ItemView {
 		this.projectViewEl = projectViewEl;
 		this.todoEl = todoEl;
 		this.timeEl = timeEl;
+		this.issueEl = issueEl;
 		this.singleProjectEl = singleProjectEl;
 
 		void this.showTab(this.activeTab);
@@ -150,8 +164,10 @@ export class TrackerView extends ItemView {
 	private async buildLayout(): Promise<void> {
 		this.contentEl.empty();
 		this.header = this.contentEl.createDiv()
+		this.header.addClass("dashboard-tab-container")
 
 		this.container = this.contentEl.createDiv()
+		this.container.addClass("dashboard-tab-area")
 	}
 
 	private async buildTabs(header: HTMLElement): Promise<void> {
@@ -218,6 +234,7 @@ export class TrackerView extends ItemView {
 	showTab(tab: DashboardTab): void {
 		this.projectViewEl.hidden = tab !== "Projects";
 		this.todoEl.hidden = tab !== "Todos";
+		this.issueEl.hidden = tab !== "Issues";
 		this.singleProjectEl.hidden = tab !== "Single Project";
 
 		for (const [tab, button] of this.tabButtons) {

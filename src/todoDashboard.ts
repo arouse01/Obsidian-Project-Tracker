@@ -9,7 +9,9 @@ import { TodoManager } from './todoTracker';
 import {
 	TodoItem,
 	PRIORITIES,
-	ProjectInfo
+	ProjectInfo,
+	TODO_STATUS_FILTERS,
+	TodoStatusFilter
 } from './types'
 import {
 	formatDate
@@ -35,11 +37,6 @@ import {
 } from "./constants"
 
 
-
-
-
-
-
 export class TodoDashboardView extends Component {
 	
 	private todoTableEl!: HTMLTableElement;
@@ -54,6 +51,7 @@ export class TodoDashboardView extends Component {
 		{ field: "priority", dir: "desc" },
 		{ field: "dueDate", dir: "desc" }
 	];
+	private filterBy: TodoStatusFilter = "Open";  // to drive which todos are visible
 
 	private colOrder: TodoColumnField[] = [
 		"status",
@@ -69,6 +67,7 @@ export class TodoDashboardView extends Component {
 	private sortButtons = new Map<TodoColumnField, ButtonComponent>();
 
 	private groupButtons = new Map<TodoGroupField, ButtonComponent>();
+	private filterButtons = new Map<TodoStatusFilter, ButtonComponent>();
 
 	private projectMap = new Map<string, string>();
 
@@ -137,27 +136,34 @@ export class TodoDashboardView extends Component {
 		const mainSection = this.container.createEl("section");
 		mainSection.addClass("dashboard")
 		mainSection.addClass("font-size-12")
-		// mainSection.createEl("h3", {
-		// 	text: "Todo list"
-		// });
+		
+		const controlSection = mainSection.createEl("section");
+		controlSection.addClass('summary-controls');
+		this.createFilterControls(controlSection)
+		/*const filterSelect = filterSection.createEl('select', {
+			cls: 'dropdown-new'
+		});
+		for (const filter of TODO_STATUS_FILTERS) {
+			filterSelect.createEl('option', {
+				value: filter, //'project',
+				text: filter
+			});
+		}
+		filterSelect.value = this.filterBy;
+		filterSelect.addEventListener("change", () => {
+			const value = filterSelect.value;
+			// if ((PROJECT_STATUS_FILTERS as readonly string[]).includes(value)) {
+			this.filterBy = value as TodoStatusFilter;
+			void this.rebuildTodoTable();
+			// }
+
+		});*/
 		if (!this.selectedProject) {
-			const controlSection = mainSection.createEl("section");
-			controlSection.addClass('summary-controls');
+		
 		
 			this.createGroupingControls(controlSection)
 		}
-		// for (const group of Todo_Group_Fields) {
-		// 	const button = new ButtonComponent(controlSection)
-		// 		.setButtonText(group.label)
-		// 		.onClick(async () => {
-		// 			this.groupBy = group.value;
-		// 			this.collapsedGroups.clear();
-		// 			await this.rebuildTodoTable();
-		// 		});
 
-		// 	this.groupButtons.set(group.value, button);
-		// }
-	
 		
 
 		const todoSection = mainSection.createEl("section");
@@ -187,21 +193,43 @@ export class TodoDashboardView extends Component {
 
 	}
 
+	private createFilterControls(section: HTMLElement) {
+		const filterSection = section.createDiv({ cls: 'project-controls' });
+		filterSection.createEl("label", { text: 'Show only:' })
+		const buttonDiv = filterSection.createDiv({ "cls": "project-controls" })
+		for (const filter of TODO_STATUS_FILTERS) {
+			const button = new ButtonComponent(buttonDiv)
+
+				.setButtonText(filter)
+				.onClick(async () => {
+					// const value = filterSelect.value;
+					this.filterBy = filter;
+					await this.rebuildTodoTable();
+
+				});
+			button.setClass("project-controls")
+
+			this.filterButtons.set(filter, button);
+		}
+	}
+
 	private createGroupingControls(section: HTMLElement) {
-		const groupingLabelDiv = section.createDiv()
-		groupingLabelDiv.createEl("label", { text: 'Group by:' })
-		section.createDiv()
+		const groupingSection = section.createDiv({ cls: 'project-controls' })
+		groupingSection.createEl("label", { text: 'Group by:' })
+		const buttonDiv = groupingSection.createDiv({ "cls": "project-controls" })
 
 		// Create grouping buttons 
 		// To add a new value, update Todo_Group_Fields in types.ts and then 
 		for (const group of getGroupOptions(TODO_COLS)) {
-			const button = new ButtonComponent(section)
+			const button = new ButtonComponent(buttonDiv)
+
 				.setButtonText(group.label)
 				.onClick(async () => {
 					this.groupBy = group.value;
 					this.collapsedGroups.clear();
 					await this.rebuildTodoTable();
 				});
+			button.setClass("project-controls")
 
 			this.groupButtons.set(group.value, button);
 		}
@@ -264,13 +292,14 @@ export class TodoDashboardView extends Component {
 	async buildTodoTableBody(tbody: HTMLTableSectionElement): Promise<void> {
 		// update the body of the table only and return the updated table for actual loading into the ui
 		this.updateGroupByButtons();
+		this.updateFilterByButtons();
 		
 		const projects = this.projectManager.getProjects();
 		
 		this.projectMap = new Map(
 			projects.map(project => [project.file.path, project.name])
 		);
-		let todos = await this.todoManager.getTodos("active", this.selectedProject?.file.path);
+		let todos = await this.todoManager.getTodos(this.filterBy, this.selectedProject?.file.path);
 
 		todos = sortItems(
 			todos,
@@ -322,6 +351,15 @@ export class TodoDashboardView extends Component {
 			this.renderAddTodoCell(cell, field);
 		}
 
+	}
+
+	private updateFilterByButtons(): void {
+		for (const [field, button] of this.filterButtons) {
+			button.buttonEl.toggleClass(
+				"button-selected",
+				this.filterBy === field
+			)
+		}
 	}
 
 	private updateGroupByButtons(): void {

@@ -7,8 +7,9 @@ import {
 } from "./types";
 import {
 	normalizeWikiLink,
-	getFrontmatterString,
-	getFrontmatterStringArray
+	// getFrontmatterString,
+	getFrontmatterStringArray,
+	getFrontmatterNumber
 } from './utils';
 import { MyProjectManager } from './projectManager'
 
@@ -74,6 +75,16 @@ export class ProjectInfoSingle extends Component {
 		const collabDiv = mainSection.createDiv()
 		collabDiv.createEl("label", { text: 'Collaborators: ' })
 		collabDiv.createEl("label", { text: collaborators.join(", "), cls: "bold" })
+
+		const tags = getFrontmatterStringArray(this.app.metadataCache, this.selectedProject!.file, "tags")
+		const tagsDiv = mainSection.createDiv()
+		tagsDiv.createEl("label", { text: 'Tags: ' })
+		tagsDiv.createEl("label", { text: tags.join(", "), cls: "bold" })
+
+		const hours = getFrontmatterNumber(this.app.metadataCache, this.selectedProject!.file, "targetHoursWeek")
+		const hoursDiv = mainSection.createDiv()
+		hoursDiv.createEl("label", { text: 'Hours/week: ' })
+		hoursDiv.createEl("label", { text: hours.toString(), cls: "bold" })
 			
 		}
 

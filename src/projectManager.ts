@@ -1,13 +1,13 @@
 import {
 	App,
-	MetadataCache,
 	TFile
 } from 'obsidian';
 import {
 	formatDate,
 	normalizeWikiLink,
 	getFrontmatterString,
-	getFrontmatterStringArray
+	getFrontmatterStringArray,
+	getFrontmatterNumber
 } from './utils';
 import {
 	ProjectInfo,
@@ -40,7 +40,8 @@ export class MyProjectManager {
 				file: file,
 				name: file.basename,
 				status: getFrontmatterString(this.app.metadataCache, file, "Project Status"),
-				client: getFrontmatterString(this.app.metadataCache, file, "Primary")
+				client: getFrontmatterString(this.app.metadataCache, file, "Primary"),
+				targetHours: getFrontmatterNumber(this.app.metadataCache, file, "Primary")
 			};
 
 		})
@@ -72,28 +73,46 @@ export class MyProjectManager {
 		) ?? undefined;
 	}
 
-	getFileProject(file: TFile): ProjectInfo | undefined {
-		const projectPathRaw = getFrontmatterString(this.app.metadataCache, file, "Project")
+	getFileProject(file: TFile): ProjectInfo[] {
+		const projectPathRaw = getFrontmatterStringArray(this.app.metadataCache, file, "project")
 
 		if (
-			projectPathRaw === undefined ||
-			projectPathRaw === ""
+			projectPathRaw === undefined
 		) {
-			return undefined
+			return [];
 		}
+		const projectPaths = Array.isArray(projectPathRaw)
+			? projectPathRaw
+			: [projectPathRaw];
 
-		const projectPath = normalizeWikiLink(projectPathRaw);
+		const activeProjects = this.getActiveProjects();
+
+		return projectPaths.flatMap(projectPathRaw => {
+			const projectPath = normalizeWikiLink(projectPathRaw);
+			const projectFile = this.app.metadataCache.getFirstLinkpathDest(
+				projectPath,
+				file.path
+			)
+			if (projectFile === null) {
+				return [];
+			}
+
+			const project = activeProjects.find(
+				p => p.file.path === projectFile.path
+			);
+			return project === undefined ? [] : [project]
+
+		})
+		/*const projectPath = normalizeWikiLink(projectPathRaw);
 		const projectFile = this.app.metadataCache.getFirstLinkpathDest(
 			projectPath,
 			file.path
 		)
-		if (projectFile === null) {
-			return undefined;
-		}
+		
 
 		return this.getActiveProjects().find(
 			p => p.file.path === projectFile.path
-		)
+		)*/
 	}
 
 	getProjectInfoByPath(path: string | undefined): ProjectInfo | undefined {

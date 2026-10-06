@@ -130,6 +130,9 @@ export class TimeModal extends Modal {
 	}
 
 	createTimestampField(parent: HTMLElement, mode: "start" | "stop", fillCurrent: boolean = false): HTMLInputElement {
+		// mode is whether to create the Start field or the End field
+		// this.options.mode is whether the modal window being created is for 
+
 		const fieldDiv = parent.createDiv();
 		let labelText: string
 		switch (mode) {
@@ -137,7 +140,7 @@ export class TimeModal extends Modal {
 				labelText = "Start at"
 				break;
 			case "stop":
-				labelText = "Start at"
+				labelText = "Stop at"
 				break;
 		}
 
@@ -150,24 +153,17 @@ export class TimeModal extends Modal {
 		if (this.options.mode === "add" && mode === "start") {
 			// in Add mode, update this.startTime every time the start timestamp field is updated
 			field.addEventListener("change", () => {
+				this.startTime = new Date(field.value)
 				this.updateDurationFromStopTimestamp()
 			})
 		}
 		if (mode === "stop") {
-			// in Add mode, update this.startTime every time the start timestamp field is updated
+			// in Stop mode, update this.startTime every time the start timestamp field is updated
 			field.addEventListener("change", () => {
 				this.updateDurationFromStopTimestamp()
 			})
 		}
 
-		// new Setting(fieldDiv)
-		// 	.addButton(button => {
-
-		// 		button
-		// 			.setButtonText("Cancel")
-		// 			.onClick(() => this.close());
-
-		// 	});
 		 return field
 	}
 
@@ -189,21 +185,28 @@ export class TimeModal extends Modal {
 			this.updateStopTimestampFromDuration()			
 		});
 
-		// new Setting(fieldDiv)
-		// 	.addButton(button => {
-
-		// 		button
-		// 			.setButtonText("Cancel")
-		// 			.onClick(() => this.close());
-
-		// 	});
 		return field
 	}
 
 	private durationStringtoMs(value: string): number | null {
 		const [hoursString, minutesString] = value.split(":")
-		const hours = Number(hoursString)
-		const minutes = Number(minutesString)
+		const rawHours = Number(hoursString)
+		const rawMinutes = Number(minutesString)
+		// if user entered a number without a colon, coerce to just number of minutes
+		// rawMinutes would be NaN because the value would be entirely in rawHours
+		let hours: number;
+		let minutes: number;
+		if (isNaN(rawMinutes)) {
+			hours = 0;
+			minutes = rawHours
+		} else {
+			hours = rawHours
+			minutes = rawMinutes
+		}
+
+		// also coerce to nearest whole minute
+		minutes = Math.round(minutes)
+		
 		if (
 			!Number.isInteger(hours) ||
 			!Number.isInteger(minutes) ||
@@ -229,15 +232,17 @@ export class TimeModal extends Modal {
 	}
 
 	private updateDurationFromStopTimestamp(): void {
-		if (this.startTime) {
-			// this.startTime = new Date(this.durationInput.value)
-			const endTime = new Date(this.timestampStopInput.value)
-
-			const durationMinutes = (endTime.getTime() - this.startTime.getTime()) / (60 * 1000)
+		const endTime = new Date(this.timestampStopInput.value)
+		if (
+			this.startTime &&
+			!isNaN(endTime.getTime())
+		) {
+			const durationMinutes = Math.round((endTime.getTime() - this.startTime.getTime()) / (60 * 1000)) // round to nearest minute so duration doesn't return fractions
 			this.durationInput.value = formatMinutesToDuration(durationMinutes)
 		}
 	}
 
+	
 	buildTimeButtons(parent: HTMLElement, mode: "start" | "stop"): void {
 		
 

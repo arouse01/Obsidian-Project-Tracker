@@ -2,7 +2,7 @@ import {
 	App,
 	ButtonComponent,
 	Component,
-	Menu
+	// Menu
 } from 'obsidian';
 import { TimeTracker } from './timeTracker';
 import { MyProjectManager } from "./projectManager"
@@ -43,6 +43,10 @@ export class TimeSummarySingle extends Component {
 	private activeDiv!: HTMLDivElement;
 	private activeIcon!: HTMLSpanElement;
 	private generalSummary!: HTMLDivElement;
+
+	private todayTime!: HTMLDivElement;
+	private weekTime!: HTMLDivElement;
+	private monthTime!: HTMLDivElement;
 
 	private startButton!: ButtonComponent
 	private startAtButton!: ButtonComponent
@@ -95,12 +99,13 @@ export class TimeSummarySingle extends Component {
 	onload() {
 		this.registerEvent(
 			this.timeTracker.on("time-tracker-updated", () => {
-				void this.updateSummaryData()
+				// when a session is started, stopped, or a whole one is added
+				void this.refreshDashboard()
 			})
 		);
 		
 		this.refreshInterval = window.setInterval(() => {
-			void this.updateSummaryData();
+			void this.refreshDashboard();
 		}, 60000);
 	}
 	
@@ -355,7 +360,7 @@ export class TimeSummarySingle extends Component {
 			cls: "project-time-label"
 		})
 		const todayHours = this.timeSummaries.day.project.get(this.selectedProject?.file.path)
-		todayDiv.createDiv({
+		this.todayTime = todayDiv.createDiv({
 			text: formatMinutesToDuration(todayHours ?? 0),
 			cls: "project-time-value"
 		})
@@ -367,7 +372,7 @@ export class TimeSummarySingle extends Component {
 			cls: "project-time-label"
 		})
 		const weekHours = this.timeSummaries.week.project.get(this.selectedProject?.file.path)
-		weekDiv.createDiv({
+		this.weekTime = weekDiv.createDiv({
 			text: formatMinutesToDuration(weekHours ?? 0),
 			cls: "project-time-value"
 		})
@@ -379,13 +384,27 @@ export class TimeSummarySingle extends Component {
 			cls: "project-time-label"
 		})
 		const monthHours = this.timeSummaries.month.project.get(this.selectedProject?.file.path)
-		monthDiv.createDiv({
+		this.monthTime = monthDiv.createDiv({
 			text: formatMinutesToDuration(monthHours ?? 0),
 			cls: "project-time-value"
 		})
 
 		projectSection?.replaceWith(newDiv);
 		projectSection = newDiv;
+	}
+
+	updateProjectStats() {
+		const todayHours = this.timeSummaries.day.project.get(this.selectedProject?.file.path)
+		this.todayTime.setText(formatMinutesToDuration(todayHours ?? 0))
+
+		// week
+		const weekHours = this.timeSummaries.week.project.get(this.selectedProject?.file.path)
+		this.weekTime.setText(formatMinutesToDuration(weekHours ?? 0))
+
+		// month
+		const monthHours = this.timeSummaries.month.project.get(this.selectedProject?.file.path)
+		this.monthTime.setText(formatMinutesToDuration(monthHours ?? 0))
+
 	}
 
 	async initialDataRefresh(): Promise<void> {
@@ -418,10 +437,10 @@ export class TimeSummarySingle extends Component {
 	}*/
 
 	async refreshDashboard(): Promise<void> {
-		await this.buildProjectStats(this.generalSummary)
+		
 
 		await this.updateSummaryData()
-
+		this.updateProjectStats()
 		// await this.summaryTable.updateSummaryRows()
 		// await this.updateActiveSessionIcon()
 		// await this.updateSessionControlButtons()

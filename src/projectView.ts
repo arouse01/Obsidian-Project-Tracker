@@ -3,13 +3,13 @@ import {
 	Component,
 	// Menu,
 	// ButtonComponent,
-	TFile,
+	// TFile,
 	// setIcon
 } from 'obsidian';
 import { MyProjectManager } from './projectManager';
 import {
 	// PeriodicTimeSummary,
-	ProjectInfo,
+	// ProjectInfo,
 	// TimeSession,
 	// TimeSummary
 	ProjectOption
@@ -17,8 +17,8 @@ import {
 import {
 	// formatMinutesToDuration,
 	// formatDate,
-	getFrontmatterString,
-	getFrontmatterStringArray
+	// getFrontmatterString,
+	// getFrontmatterStringArray
 	// normalizeWikiLink
 } from './utils';
 import { TimeTracker } from './timeTracker';

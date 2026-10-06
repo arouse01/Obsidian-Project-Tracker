@@ -15,7 +15,8 @@ import {
 	ProjectInfo,
 	IssueModalOptions,
 	PRIORITIES,
-	IssueItem
+	IssueItem,
+	IssueStatusFilter
 } from "./types";
 import {
 	formatIssueID,
@@ -98,17 +99,17 @@ export class IssueTracker extends Events {
 
 	}
 
-	filterActiveIssues(issues: IssueItem[]): IssueItem[] {
+	filterIssues(issues: IssueItem[], status: IssueStatusFilter): IssueItem[] {
 		return issues.filter(issue =>
-			issue.status === "Open"
+			issue.status === status
 		);
 	}
 
-	async getIssues(status: string = "active", project: string | null = null): Promise<IssueItem[]> {
+	async getIssues(status: IssueStatusFilter = "Open", project: string | null = null): Promise<IssueItem[]> {
 		const issues = this.getAllIssues();
 		let fetchedIssues: IssueItem[]
-		if (status === "active") {
-			fetchedIssues = this.filterActiveIssues(issues)
+		if (status !== "All") {
+			fetchedIssues = this.filterIssues(issues, status)
 		} else {
 			fetchedIssues = issues;
 		}

@@ -12,7 +12,8 @@ import {
 	TodoItem,
 	TodoContext,
 	CreateTodoRequest,
-	PRIORITIES
+	PRIORITIES,
+	TodoStatusFilter
 } from "./types";
 import { TodoModal } from './todoModal'
 import {
@@ -64,18 +65,24 @@ export class TodoManager extends Events {
 
 	}
 
-	private findActiveTodos(
-		todos: TodoItem[]
+	private filterTodoStatus(
+		todos: TodoItem[],
+		status: TodoStatusFilter
 	): TodoItem[] {
-		return todos.filter(s => !s.status)  // return any todos with with a status of false, meaning incomplete
+		if (status === "Open") {
+			return todos.filter(s => !s.status)  // return any todos with with a status of false, meaning incomplete
+		} else {
+			return todos.filter(s => !!s.status)  // return any todos with with a status of false, meaning incomplete
+		}
+		
 	}
 
-	async getTodos(status: string = "active", project: string | null = null): Promise<TodoItem[]> {
+	async getTodos(status: TodoStatusFilter = "Open", project: string | null = null): Promise<TodoItem[]> {
 
 		const todos = await this.loadTodos();
 		let fetchedTodos: TodoItem[]
-		if (status === "active") {
-			fetchedTodos = this.findActiveTodos(todos)
+		if (status !== "All") {
+			fetchedTodos = this.filterTodoStatus(todos, status)
 		} else {
 			fetchedTodos = todos;
 		}

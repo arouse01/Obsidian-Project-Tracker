@@ -42,6 +42,7 @@ export interface ProjectInfo {
 	status: string;
 	id?: string;
 	client: string;
+	targetHours?: number;
 }
 
 export interface CreateProjectRequest {
@@ -98,6 +99,10 @@ export interface IssueItem {
 	status: string;
 	startDate: string;
 }
+
+
+export const ISSUE_STATUS_FILTERS = ["Open", "Closed", "All"] as const;
+export type IssueStatusFilter = typeof ISSUE_STATUS_FILTERS[number];
 
 export interface ProjectOption {
 	path: string;
@@ -319,12 +324,17 @@ export interface TodoGroup {
 	todos: TodoItem[];
 }
 
+export const TODO_STATUS_FILTERS = ["Open", "Closed", "All"] as const;
+export type TodoStatusFilter = typeof TODO_STATUS_FILTERS[number];
+
+
+
 export type NoteType = "meeting" | "issue" | "project" | "other"
 
 export interface NoteItem {
 	file: TFile,
 	title: string,
-	project?: ProjectInfo  // not all notes have a project
+	project?: ProjectInfo[]  // not all notes have a project
 	type: NoteType,
 	dateModified?: Date,
 	date?: Date

@@ -9,7 +9,9 @@ import { IssueTracker } from './issueTracker';
 import {
 	IssueItem,
 	PRIORITIES,
-	ProjectInfo
+	ProjectInfo,
+	ISSUE_STATUS_FILTERS,
+	IssueStatusFilter
 } from './types'
 import {
 	
@@ -24,15 +26,20 @@ import {
 	createTableColGroup
 } from './tableFunctions';
 import {
+	formatDate
+} from './utils'
+import {
 	ISSUE_COLS,
 	IssueColumnField,
 	IssueSort,
 	IssueGroupField,
-	IssueGroup
+	IssueGroup,
 } from "./tableConstants"
 import {
 	ISSUE_DASHBOARD_VIEW_TYPE
 } from "./constants"
+
+
 
 export class IssueDashboardView extends Component {
 	
@@ -48,6 +55,7 @@ export class IssueDashboardView extends Component {
 		{ field: "priority", dir: "desc" },
 		{ field: "name", dir: "desc" }
 	];
+	private filterBy: IssueStatusFilter = "Open";  // to drive which issues are visible
 
 	private colOrder: IssueColumnField[] = [
 		"priority",
@@ -62,6 +70,7 @@ export class IssueDashboardView extends Component {
 	private sortButtons = new Map<IssueColumnField, ButtonComponent>();
 
 	private groupButtons = new Map<IssueGroupField, ButtonComponent>();
+	private filterButtons = new Map<IssueStatusFilter, ButtonComponent>();
 
 	private projectMap = new Map<string, string>();
 
@@ -132,9 +141,32 @@ export class IssueDashboardView extends Component {
 		mainSection.addClass("dashboard")
 		mainSection.addClass("font-size-12")
 
+		const controlSection = mainSection.createEl("section");
+		controlSection.addClass('summary-controls');
+		this.createFilterControls(controlSection)
+		/*const filterSection = controlSection.createDiv({ cls: 'project-controls' });
+		// filterSection.addClass("control-row")
+		filterSection.createEl("label", { text: 'Show only:' })
+		const filterSelect = filterSection.createEl('select', {
+			cls: 'dropdown-new'
+		});
+		for (const filter of ISSUE_STATUS_FILTERS) {
+			filterSelect.createEl('option', {
+				value: filter, //'project',
+				text: filter
+			});
+		}
+		filterSelect.value = this.filterBy;
+		filterSelect.addEventListener("change", () => {
+			const value = filterSelect.value;
+			// if ((PROJECT_STATUS_FILTERS as readonly string[]).includes(value)) {
+			this.filterBy = value as IssueStatusFilter;
+			void this.rebuildIssueTable();
+			// }
+
+		});*/
 		if (!this.selectedProject) {
-			const controlSection = mainSection.createEl("section");
-			controlSection.addClass('summary-controls');
+			
 		
 			this.createGroupingControls(controlSection)
 		}
@@ -157,21 +189,41 @@ export class IssueDashboardView extends Component {
 
 
 	}
+	private createFilterControls(section: HTMLElement) {
+		const filterSection = section.createDiv({ cls: 'project-controls' });
+		filterSection.createEl("label", { text: 'Show only:' })
+		const buttonDiv = filterSection.createDiv({ "cls": "project-controls" })
+		for (const filter of ISSUE_STATUS_FILTERS) {
+			const button = new ButtonComponent(buttonDiv)
+
+				.setButtonText(filter)
+				.onClick(async () => {
+					// const value = filterSelect.value;
+					this.filterBy = filter;
+					await this.rebuildIssueTable();
+
+				});
+			button.setClass("project-controls")
+
+			this.filterButtons.set(filter, button);
+		}
+	}
 
 	private createGroupingControls(section: HTMLElement) {
-		const groupingLabelDiv = section.createDiv()
-		groupingLabelDiv.createEl("label", { text: 'Group by:' })
-		section.createDiv()
+		const groupingSection = section.createDiv({ cls: 'project-controls' })
+		groupingSection.createEl("label", { text: 'Group by:' })
+		const buttonDiv = groupingSection.createDiv({ "cls": "project-controls" })
 
 		// Create grouping buttons 
 		for (const group of getGroupOptions(ISSUE_COLS)) {
-			const button = new ButtonComponent(section)
+			const button = new ButtonComponent(buttonDiv)
 				.setButtonText(group.label)
 				.onClick(async () => {
 					this.groupBy = group.value;
 					this.collapsedGroups.clear();
 					await this.rebuildIssueTable();
 				});
+			button.setClass("project-controls")
 
 			this.groupButtons.set(group.value, button);
 		}
@@ -234,13 +286,14 @@ export class IssueDashboardView extends Component {
 	async buildIssueTableBody(tbody: HTMLTableSectionElement): Promise<void> {
 		// update the body of the table only and return the updated table for actual loading into the ui
 		this.updateGroupByButtons();
+		this.updateFilterByButtons();
 		
 		const projects = this.projectManager.getProjects();
 		
 		this.projectMap = new Map(
 			projects.map(project => [project.file.path, project.name])
 		);
-		let issues = await this.issueTracker.getIssues("active", this.selectedProject?.file.path);
+		let issues = await this.issueTracker.getIssues(this.filterBy, this.selectedProject?.file.path);
 
 		issues = sortItems(
 			issues,
@@ -279,6 +332,15 @@ export class IssueDashboardView extends Component {
 
 		this.createAddIssueRow(tbody)
 
+	}
+
+	private updateFilterByButtons(): void {
+		for (const [field, button] of this.filterButtons) {
+			button.buttonEl.toggleClass(
+				"button-selected",
+				this.filterBy === field
+			)
+		}
 	}
 
 	private updateGroupByButtons(): void {
@@ -631,8 +693,12 @@ export class IssueDashboardView extends Component {
 				break;
 
 			case 'startDate':
-				cell.setText(issue.startDate)
-				break;
+				{
+					const date = new Date(issue.startDate)
+					const dateFormatted = formatDate(date, "datetime_short")
+					cell.setText(dateFormatted)
+					break;
+				}
 
 
 			case 'action':

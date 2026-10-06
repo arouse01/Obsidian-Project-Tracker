@@ -1,22 +1,21 @@
 import {
 	App,
-	MetadataCache,
+	// MetadataCache,
 	TFile
 } from 'obsidian';
 import {
 	formatDate,
-	normalizeWikiLink,
+	// normalizeWikiLink,
 	getFrontmatterString,
-	getFrontmatterStringArray
+	getFrontmatterStringArray,
+	parseDateString
 } from './utils';
 import {
 	ProjectInfo,
 	NoteType,
 	NoteItem,
 } from "./types";
-import {
-	ProjectModal
-} from "./projectModal"
+
 import { MyProjectManager } from './projectManager'
 
 
@@ -50,7 +49,7 @@ export class NoteManager {
 			const project = this.projectManager.getFileProject(file)
 
 			const dateRaw = getFrontmatterString(this.app.metadataCache, file, "date")
-			const date = new Date(dateRaw)
+			const date = parseDateString(dateRaw)
 
 			const dateModified = new Date(file.stat.mtime)
 
@@ -83,10 +82,12 @@ export class NoteManager {
 
 	async getProjectNotes(type: NoteType, project: ProjectInfo): Promise<NoteItem[]> {
 		const notes = this.getNotes(type);
-		const projectNotes = notes.filter(note =>
-			note.project?.file.path === project.file.path
+		return notes.filter(note =>
+			note.project?.some(
+				noteProject => noteProject.file.path === project.file.path
+			)
 		);
-		return projectNotes
+
 
 	}
 
@@ -96,7 +97,17 @@ export class NoteManager {
 
 	}
 
-	
+	getProjectSortKey(note: NoteItem): string {
+		if (note.project) {
+			return note.project
+				.map(project => project.name)
+				.sort((a, b) => a.localeCompare(b))
+				.join(", ")
+		} else {
+			return ""
+		}
+		
+	}
 	/*
 	getClientList(): string[] {
 		// Get all clients listed across all projects

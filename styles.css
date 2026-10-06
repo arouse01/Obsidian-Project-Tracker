@@ -165,8 +165,10 @@ button.collaborator-button {
 	font-size: 14px;
 	text-align: center;
 	margin-top: 1rem;
-
+	display: flex;
+	justify-content: space-around;
 }
+
 .bold {
 	font-weight: 600 !important
 }
@@ -509,9 +511,14 @@ hr {
 .summary-controls {
 	display: flex;
 	align-items: center;
-	gap: 20px 8px;
+	gap: 10px 16px;
 	justify-content: center;
 	padding: 2px 0;
+}
+
+.summary-controls.items {
+	gap: inherit 8px;
+
 }
 
 .dashboard .summary-controls {
@@ -574,14 +581,28 @@ checkbox {
 }
 
 /* main viewer tab buttons */
-.dashboard-tab {
+.view-content {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+
+.dashboard-tab-container {
+	flex: 0 0 auto;
+/*	padding-top: 20px;*/
+	z-index: 100;
+	background-color: var(--background-primary);
+}
+
+/*.dashboard-tab {
 	position: relative;
 	margin-bottom: -1px;
 	border: 1px solid transparent;
 	border-bottom: none;
 	border-radius: 6px 6px 0 0;
 	background: transparent;
-}
+}*/
 
 .dashboard-tab-table {
 	/*	overflow: hidden; */
@@ -638,6 +659,13 @@ checkbox {
 	font-size: 10px;
 	justify-content: end;
 	border-radius: 0; /* Remove corner rounding applied by .dashboard-tabs button */
+}
+
+.dashboard-tab-area {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	padding-top: 10px;
 }
 
 .test-css-loading {

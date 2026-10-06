@@ -121,6 +121,7 @@ export type ProjectColumnField = keyof typeof PROJ_COLS;
 
 // type of ProjectColumnField here instead of SortField because it can now let any field be sorted, and that is defined by the master column list above
 export type ProjectSort = ColSort<ProjectColumnField>
+
 export type ProjectGroupField =
 	| "none"
 	| {
@@ -129,6 +130,7 @@ export type ProjectGroupField =
 		? K
 		: never
 	}[keyof typeof PROJ_COLS];
+
 export interface ProjectGroup {
 	key: string;
 	label: string;
@@ -366,7 +368,7 @@ export const ISSUE_COLS = {
 		sortable: false,
 		groupable: false,
 		centered: true,
-		width: "75px"
+		width: "120px"
 	},
 	"action": {
 		label: "Action",
@@ -396,6 +398,7 @@ export interface IssueGroup {
 	label: string;
 	issues: IssueItem[];
 }
+
 
 // NOTES
 export const NOTE_COLS = {

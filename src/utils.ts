@@ -10,19 +10,19 @@ export function formatIssueID(id: number): string {
 	return id.toString().padStart(4, "0");
 }
 
-export function formatTimestamp(date: Date = new Date()): string {
-	return [
-		date.getFullYear(),
-		String(date.getMonth() + 1).padStart(2, "0"),
-		String(date.getDate()).padStart(2, "0")
-	].join("-") + "T" +
-	[
-		String(date.getHours()).padStart(2, "0"),
-		String(date.getMinutes()).padStart(2, "0"),
-		String(date.getSeconds()).padStart(2, "0")
-	].join(":");
+// export function formatTimestamp(date: Date = new Date()): string {
+// 	return [
+// 		date.getFullYear(),
+// 		String(date.getMonth() + 1).padStart(2, "0"),
+// 		String(date.getDate()).padStart(2, "0")
+// 	].join("-") + "T" +
+// 	[
+// 		String(date.getHours()).padStart(2, "0"),
+// 		String(date.getMinutes()).padStart(2, "0"),
+// 		String(date.getSeconds()).padStart(2, "0")
+// 	].join(":");
 		
-}
+// }
 
 export type timestampFormat =
 	| "date"
@@ -56,12 +56,67 @@ export function formatDate(
 			return `${hours}:${minutes}:${seconds}`
 
 		case "datetime_long": 
-			return `${year}-${month}-${day} ${hours}:${minutes}.${ms}`;
+			return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}`;
 
 		case "datetime_short":
-			return `${year}-${month}-${day} ${hours}:${minutes}`;
+			return `${year}-${month}-${day}T${hours}:${minutes}`;
 	}
 	
+}
+
+export function parseDateString(string: string): Date | undefined {
+
+	const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/;
+	const dateTime = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?:\.(\d{1,3}))?$/;
+
+	// input has date only
+	let match = string.match(dateOnly)
+	if (match !== null) {
+		const [, year, month, day] = match;
+		if (
+			year === undefined ||
+			month === undefined ||
+			day === undefined
+		) {
+			return undefined
+		}
+		return new Date(
+			Number(year),
+			Number(month) - 1,
+			Number(day)
+		)
+	}
+
+	match = string.match(dateTime)
+	if (match !== null) {
+		const [, year, month, day, hour, minute, second, millisecond] = match;
+		if (
+			year === undefined ||
+			month === undefined ||
+			day === undefined ||
+			hour === undefined ||
+			minute === undefined
+		) {
+			return undefined
+		}
+		return new Date(
+			Number(year),
+			Number(month) - 1,
+			Number(day),
+			Number(hour),
+			Number(minute),
+			second === undefined ? 0 : Number(second),
+			millisecond === undefined ? 0 : Number(millisecond)
+		)
+	}
+	// try regular automatic parsing, like ISO formatted
+	const timestamp = Date.parse(string);
+	if (Number.isNaN(timestamp)) {
+		return undefined
+	}
+
+	return new Date(timestamp)
+
 }
 
 export function getDateKey(
@@ -152,12 +207,16 @@ export function getFrontmatterStringArray(
 	file: TFile,
 	property: string
 ): string[] {
-
-	const cache = metadataCache.getFileCache(file);
-	const value: unknown = cache?.frontmatter?.[property];
+	const value =
+		getFrontmatterValue(metadataCache, file, property);
+	if (value === undefined) {
+		return []
+	}
+	
+	// const value: unknown = frontmatter[property];
 
 	if (typeof value === "string") {
-		return [value.replace(/^\[\[\]\]$/g, "")];
+		return [value.replace(/^\[\[|\]\]$/g, "")];
 	}
 
 	if (Array.isArray(value)) {
@@ -167,6 +226,19 @@ export function getFrontmatterStringArray(
 	}
 
 	return [];
+}
+
+export function getFrontmatterNumber(
+	metadataCache: MetadataCache,
+	file: TFile,
+	property: string
+): number {
+	const value =
+		getFrontmatterValue(metadataCache, file, property);
+
+	return typeof value === "number"
+		? value
+		: NaN;
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";

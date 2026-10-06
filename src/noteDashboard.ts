@@ -2,7 +2,7 @@ import {
 	App,
 	Component,
 	ButtonComponent,
-	TFile
+	// TFile
 } from 'obsidian';
 import {
 	ProjectInfo,
@@ -11,9 +11,9 @@ import {
 } from "./types";
 import {
 	normalizeWikiLink,
-	getFrontmatterString,
-	getFrontmatterStringArray,
-	formatTimestamp
+	// getFrontmatterString,
+	// getFrontmatterStringArray,
+	formatDate
 } from './utils';
 import { MyProjectManager } from './projectManager'
 import {
@@ -22,7 +22,7 @@ import {
 	// ColSort,
 	TableColumn,
 	updateSortButtons,
-	getGroupOptions,
+	// getGroupOptions,
 	createTableColGroup
 } from './tableFunctions';
 import {
@@ -170,19 +170,19 @@ export class NoteDashboard extends Component {
 		// await this.updateSummary();
 	}
 
-	async rebuildIssueTable(): Promise<void> {
-		const newTable = createEl('table')
-		newTable.addClass('dashboard-table')
-		const columns = this.getVisibleCols();
-		createTableColGroup(newTable, columns);
-		this.createNoteTableHeaders(newTable, columns);
-		const newBody = newTable.createEl('tbody')
-		await this.buildNoteTableBody(newBody);
+	// async rebuildIssueTable(): Promise<void> {
+	// 	const newTable = createEl('table')
+	// 	newTable.addClass('dashboard-table')
+	// 	const columns = this.getVisibleCols();
+	// 	createTableColGroup(newTable, columns);
+	// 	this.createNoteTableHeaders(newTable, columns);
+	// 	const newBody = newTable.createEl('tbody')
+	// 	await this.buildNoteTableBody(newBody);
 
-		this.noteTableEl.replaceWith(newTable);
-		this.noteTableEl = newTable;
-		this.noteTableBodyEl = newBody;
-	}
+	// 	this.noteTableEl.replaceWith(newTable);
+	// 	this.noteTableEl = newTable;
+	// 	this.noteTableBodyEl = newBody;
+	// }
 	
 	async updateNoteTableRows(): Promise<void> {
 		// specifically for updating the rows without touching the headers
@@ -324,8 +324,8 @@ export class NoteDashboard extends Component {
 			}
 
 			case "project": {
-				const projectA = a.project?.name ?? "";
-				const projectB = b.project?.name ?? "";
+				const projectA = this.noteManager.getProjectSortKey(a);
+				const projectB = this.noteManager.getProjectSortKey(b);
 				return projectA.localeCompare(projectB);
 			}
 
@@ -401,7 +401,7 @@ export class NoteDashboard extends Component {
 		// Needs a case statement for each item in types.Todo_Group_Fields to handle returning the group's key, based on the selected grouping
 		switch (this.groupBy) {
 			case "project":
-				return normalizeWikiLink(String(note.project?.name ?? "No project"))
+				return normalizeWikiLink(this.noteManager.getProjectSortKey(note))
 
 			default:
 				return "";
@@ -595,13 +595,18 @@ export class NoteDashboard extends Component {
 
 			case "date":
 				{
+					if (note.date) {
+						const dateFormatted = formatDate(note.date, "datetime_short")
+						cell.setText(dateFormatted)
+					}
+					
 					break
 				}
 
 			case "dateModified":
 				{
 					if (note.dateModified) {
-						const modifiedFormatted = formatTimestamp(note.dateModified)
+						const modifiedFormatted = formatDate(note.dateModified)
 						cell.setText(modifiedFormatted)
 					}
 					
@@ -609,29 +614,30 @@ export class NoteDashboard extends Component {
 				}
 
 			case "project":
-				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
+				{ 
 					cell.addClass("left-align")
 
 					if (note.project) {
+						note.project.forEach((project, ) => {
+							new ButtonComponent(cell)
+								.setButtonText(project.name ?? "none")
+								.setClass("left-align")
+								.onClick(async (event) => {
+									event.preventDefault();
+									const existingLeaf = this.app.workspace.getLeavesOfType(
+										"markdown"
+									).find(leaf => {
+										const view = leaf.view;
+										return view.getState().file === project.file.path;
+									});
 
-						new ButtonComponent(cell)
-							.setButtonText(note.project?.name ?? "none")
-							.setClass("left-align")
-							.onClick(async (event) => {
-								event.preventDefault();
-								const existingLeaf = this.app.workspace.getLeavesOfType(
-									"markdown"
-								).find(leaf => {
-									const view = leaf.view;
-									return view.getState().file === note.project?.file.path;
+									if (existingLeaf) {
+										void this.app.workspace.revealLeaf(existingLeaf);
+									} else {
+										void this.app.workspace.getLeaf(false).openFile(project.file);
+									}
 								});
-
-								if (existingLeaf) {
-									void this.app.workspace.revealLeaf(existingLeaf);
-								} else {
-									void this.app.workspace.getLeaf(false).openFile(note.project!.file);
-								}
-							});
+						})
 					} else {
 						cell.setText("None")
 					}
