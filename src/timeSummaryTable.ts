@@ -499,27 +499,27 @@ export class TimeSummaryTable {
 				const todayMinutes = dailyMinutes.get(getDateKey()) ?? 0;
 				// runningTotal += minutes;
 				const cell = row.createEl("td");
-				cell.setText(formatMinutesToDuration(todayMinutes, true))
+				cell.setText(formatMinutesToDuration(todayMinutes, "alt"))
 				let weekTotal = 0;
 				for (const [, minutes] of dailyMinutes) {
 					weekTotal = weekTotal + minutes;
 				}
 				const totalCell = row.createEl("td");
 				// totalCell.addClass("total-col")
-				totalCell.setText(formatMinutesToDuration(weekTotal, true))
+				totalCell.setText(formatMinutesToDuration(weekTotal, "alt"))
 			} else {
 				let runningTotal = 0;
 				for (const day of summaryData.days) {
 					const minutes = dailyMinutes.get(day) ?? 0;
 					runningTotal += minutes;
 					const cell = row.createEl("td");
-					cell.setText(formatMinutesToDuration(minutes, true))
+					cell.setText(formatMinutesToDuration(minutes, "alt"))
 
 				}
 				// Total column
 				const cell = row.createEl("td");
 				cell.addClass("total-col")
-				cell.setText(formatMinutesToDuration(runningTotal, true))
+				cell.setText(formatMinutesToDuration(runningTotal, "alt"))
 			}
 		}
 		

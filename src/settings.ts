@@ -1,4 +1,9 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import {
+	App,
+	PluginSettingTab,
+	Setting,
+	SettingDefinitionItem
+} from 'obsidian';
 import ProjectTrackerPlugin from './main';
 
 export interface IssueTrackerSettings {
@@ -23,6 +28,66 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: ProjectTrackerPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+	}
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		return [
+			{
+				type: 'group',
+				name: 'General Settings',
+				items: [
+					{
+						name: 'Next issue ID',
+						desc: 'ID number of the next created issue',
+						control: {
+							type: 'number',
+							key: 'nextIssueID', // Maps directly to this.plugin.settings.myToggleSetting
+						}
+					},
+					{
+						name: 'Time log path',
+						desc: 'The .json file that stores time session data',
+						control: {
+							type: 'file',
+							key: 'timeLogPath',
+							placeholder: 'Select a .json...',
+						}
+					},
+					{
+						name: 'Todo log path',
+						desc: 'The .json file that stores todos',
+						control: {
+							type: 'file',
+							key: 'todoLogPath',
+							placeholder: 'Select a .json...',
+						}
+					},
+					{
+						name: 'People folder',
+						desc: 'Path to the folder where client Markdown files are stored',
+						control: {
+							type: 'folder',
+							key: 'peoplePath',
+							placeholder: 'Select a folder...',
+						}
+					}
+				]
+			},
+			{
+				type: 'group',
+				name: 'Advanced Settings',
+				items: [
+					{
+						name: 'Plugin developer note',
+						desc: "The markdown file that contains developer's working notes",
+						control: {
+							type: 'file',
+							key: 'devNotePath',
+							placeholder: 'Select a Markdown file...'
+						}
+					}
+				]
+			}
+		];
 	}
 
 	display(): void {

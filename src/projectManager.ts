@@ -7,7 +7,9 @@ import {
 	normalizeWikiLink,
 	getFrontmatterString,
 	getFrontmatterStringArray,
-	getFrontmatterNumber
+	getFrontmatterNumber,
+	setFrontmatterValue,
+    deleteFrontmatterValue
 } from './utils';
 import {
 	ProjectInfo,
@@ -41,7 +43,7 @@ export class MyProjectManager {
 				name: file.basename,
 				status: getFrontmatterString(this.app.metadataCache, file, "Project Status"),
 				client: getFrontmatterString(this.app.metadataCache, file, "Primary"),
-				targetHours: getFrontmatterNumber(this.app.metadataCache, file, "Primary")
+				targetHours: getFrontmatterNumber(this.app.metadataCache, file, "targetHoursWeek")
 			};
 
 		})
@@ -223,6 +225,7 @@ Creation Date: "${creationTS}"
 type: project
 tags:
   - 
+targetHoursWeek: 
 ---
 
 
@@ -283,7 +286,14 @@ tags:
 		
 	}
 
-
+	async updateTargetTime(project: ProjectInfo, hours: number): Promise<void> {
+		if (hours <= 0) {
+			await deleteFrontmatterValue(this.app, project.file, "targetHoursWeek")
+		} else {
+			await setFrontmatterValue(this.app, project.file, "targetHoursWeek", hours)
+		}
+		
+	}
 	
 	
 }

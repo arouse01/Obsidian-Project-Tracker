@@ -8,7 +8,8 @@ import { MyProjectManager } from './projectManager';
 import {
 	formatMinutesToDuration,
 	normalizeWikiLink,
-	createStatusIcon
+	createStatusIcon,
+	createProgressWheel
 } from './utils';
 import {
 	ProjectInfo,
@@ -175,6 +176,7 @@ export class TimeDashboardView extends ItemView {
 		const colOrder: TimeColumnField[] = [
 			"sessionStatus",
 			"project",
+			"progress",
 			"hoursToday",
 			"hoursWeek",
 			"sessionStart"
@@ -341,7 +343,19 @@ export class TimeDashboardView extends ItemView {
 		groupPos: GroupPosition = null) {
 
 		const row = target.createEl('tr');
-		
+		// adjust formatting based on whether time for the week has been met
+		if (project.targetHours) {
+			const weekMinutes = this.timeSummaries.week.project.get(project.file.path) ?? 0;
+			const targetMinutes = project.targetHours * 60
+			const timePercent = weekMinutes / targetMinutes
+
+			if (timePercent >= 1) {
+				row.addClass("time-goal-met")
+			} else if (timePercent >= 0.75) {
+				row.addClass("time-goal-near")
+			}
+		}
+
 		for (const [field,] of this.getVisibleCols()) {
 
 			const cell = row.createEl("td");
@@ -373,6 +387,7 @@ export class TimeDashboardView extends ItemView {
 		switch (field) {
 			case "sessionStatus":
 				{
+					cell.addClass("time-progress-cell")
 					// const isActive = activePaths.has(project.file.path);
 					if (activeSession) {
 						const indicator = cell.createDiv({ cls: "active-indicator" });
@@ -381,16 +396,43 @@ export class TimeDashboardView extends ItemView {
 						indicator.createDiv({ cls: "blinky-circle-green" })
 						const span = indicator.createSpan();  //⏲
 						span.appendChild(createStatusIcon(true))
-
-					} else {
-						cell.setText("");
 					}
-					break;
+					break; 
 				}
+			case "progress":
+				{
+					cell.addClass("time-progress-cell")
+					const progressDiv = cell.createDiv({ cls: "active-indicator" })
+					progressDiv.addClass("center-align")
+					if (project.targetHours) {
 
+						const weekMinutes = this.timeSummaries.week.project.get(project.file.path) ?? 0;
+						const targetMinutes = project.targetHours * 60
+						const timePercent = weekMinutes / targetMinutes
+						const span = progressDiv.createSpan();  //⏲
+						span.appendChild(createProgressWheel(timePercent))
+
+						const textDiv = cell.createDiv({ cls: "font-size-12" })
+						const targetText = formatMinutesToDuration(targetMinutes, "hours")
+						textDiv.setText(`${targetText}h`)
+						// if (timePercent >= 1) {
+						// 	progressDiv.appendChild(createStatusIcon(true, "#f2f200"))
+						// } else {
+						// 	progressDiv.appendChild(createProgressWheel(timePercent))
+						// }
+
+						// const progressBar = progressCell.createDiv({ cls: "time-progress-bar" })
+						// const progressFill = progressBar.createDiv({ cls: "time-progress-fill" })
+						// progressFill.style.setProperty(
+						// 	"--progress",
+						// 	`${Math.min(timePercent, 1) * 100}%`
+						// );
+					}
+					break
+				}
 			case "project":
 				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
-					// cell.addClass("left-align")
+					cell.addClass("left-align")
 					// cell.addClass("left-indent")
 					const projectLink = cell.createEl("a", { text: project.name });
 					projectLink.addEventListener("click", (event) => {
@@ -426,6 +468,7 @@ export class TimeDashboardView extends ItemView {
 					const weekTimeSum = this.timeSummaries.week.project.get(project.file.path) ?? 0;
 					const weekTimeText = formatMinutesToDuration(weekTimeSum);
 					cell.setText(weekTimeText);
+					
 					break;
 				}
 
@@ -510,7 +553,7 @@ export class TimeDashboardView extends ItemView {
 
 					menu.showAtMouseEvent(event);
 				})
-				break;
+				cell.title = `Right-click for more options`
 				break;
 			}
 

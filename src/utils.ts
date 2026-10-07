@@ -1,6 +1,7 @@
 import {
 	TFile,
-	MetadataCache
+	MetadataCache,
+	App
 } from 'obsidian';
 import {
 	DateKey
@@ -141,9 +142,13 @@ export function dateKeyToDate(
 	return new Date(year, month, day)
 }
 
-export function formatMinutesToDuration(totalMinutes: number, altDisplay: boolean = false): string {
-	if (altDisplay && totalMinutes == 0) {
+export function formatMinutesToDuration(totalMinutes: number, format?: "alt" | "hours"): string {
+	if (format === "alt" && totalMinutes == 0) {
 		return `-`
+	} else if (format === "hours") {
+		const hours = Number((totalMinutes / 60).toFixed(2) )  // rounded to two decimal places
+
+		return `${hours}`
 	} else {
 		const hours = Math.floor(totalMinutes / 60).toString().padStart(1, '0');
 		const minutes = (totalMinutes % 60).toString().padStart(2, '0');
@@ -241,14 +246,131 @@ export function getFrontmatterNumber(
 		: NaN;
 }
 
+export async function setFrontmatterValue(
+	// So we can access without worrying about spaces
+	// fileManager: FileManager,
+	app: App,
+	file: TFile,
+	property: string,
+	value: number | string
+): Promise<void> {
+	
+	// robust against case inconsistency
+	
+	await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, number | string>) => {
+		const propertyLower = property.toLowerCase();
+
+		const key = Object.keys(frontmatter).find(
+			key => key.toLowerCase() === propertyLower
+		);
+		
+		if (key) {
+			frontmatter[key] = value
+		} else {
+			frontmatter[property] = value
+		 }
+		
+	})
+}
+
+export async function deleteFrontmatterValue(
+	// So we can access without worrying about spaces
+	// fileManager: FileManager,
+	app: App,
+	file: TFile,
+	property: string
+): Promise<void> {
+
+	// robust against case inconsistency
+
+	await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, number | string>) => {
+		const propertyLower = property.toLowerCase();
+
+		const key = Object.keys(frontmatter).find(
+			key => key.toLowerCase() === propertyLower
+		);
+
+		if (key) {
+			delete frontmatter[key]
+		} else {
+			delete frontmatter[property]
+		}
+
+	})
+}
+
+export interface HSV {
+	h: number; // 0 - 360
+	s: number; // 0 - 1
+	v: number; // 0 - 1
+}
+
+export function hexToHsv(hex: string): HSV {
+	hex = hex.replace(/^#/, '');
+
+	let r = parseInt(hex.substring(0, 2), 16);
+	let g = parseInt(hex.substring(2, 4), 16);
+	let b = parseInt(hex.substring(4, 6), 16);
+
+	r /= 255;
+	g /= 255;
+	b /= 255;
+
+	const max = Math.max(r, g, b);
+	const min = Math.min(r, g, b);
+	const d = max - min;
+
+	let h = 0;
+	const s = max === 0 ? 0 : d / max;
+	const v = max;
+
+	if (max !== min) {
+		switch (max) {
+			case r:
+				h = (g - b) / d + (g < b ? 6 : 0);
+				break;
+			case g:
+				h = (b - r) / d + 2;
+				break;
+			case b:
+				h = (r - g) / d + 4;
+				break;
+		}
+		h /= 6;
+	}
+
+	return { h: h * 360, s, v };
+}
+
+export function hsvToHex(h: number, s: number, v: number): string {
+	// Normalize saturation and value to 0-1
+	// s /= 100;
+	// v /= 100;
+
+	const k = (n: number) => (n + h / 60) % 6;
+	const f = (n: number) => v - v * s * Math.max(0, Math.min(k(n), 4 - k(n), 1));
+
+	const r = Math.round(255 * f(5));
+	const g = Math.round(255 * f(3));
+	const b = Math.round(255 * f(1));
+
+	// Convert RGB components to 2-digit hex values
+	const toHex = (component: number) => component.toString(16).padStart(2, '0');
+
+	return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 const SVG_NS = "http://www.w3.org/2000/svg";
-export function createStatusIcon(active: boolean): SVGSVGElement {
-	// technically documentation suggests using `document.createSvg` and the like instead but it doesn't work for some reason
-	const svg = document.createElementNS(SVG_NS, "svg");
-	svg.setAttribute("viewBox", "0 0 20 20");
 
-	const defs = document.createElementNS(SVG_NS, "defs")
-
+function gradientanator(base: HSV): [ SVGRadialGradientElement, gradientID: string ] {
+	const stops = [
+		{ offset: 0, v: 1.25, s: 1 },
+		{ offset: 0.15, v: 1.15 },
+		{ offset: 0.40, v: 1.05 },
+		{ offset: 0.65, v: 0.95 },
+		{ offset: 0.85, v: 0.80 },
+		{ offset: 1, v: 0.70 }
+	];
 	const gradient = document.createElementNS(SVG_NS, "radialGradient")
 	const gradientId = `project-status-${crypto.randomUUID()}`;
 	gradient.setAttribute("id", gradientId)
@@ -256,45 +378,59 @@ export function createStatusIcon(active: boolean): SVGSVGElement {
 	gradient.setAttribute("cy", "30%")
 	gradient.setAttribute("r", "80%")
 
-	const stop1 = document.createElementNS(SVG_NS, "stop")
-	stop1.setAttribute("offset", "0%");
-	stop1.setAttribute("stop-color", "#A8EEA8");
+	for (const gradStop of stops) {
+		const stop = document.createElementNS(SVG_NS, "stop")
+		const offset = gradStop.offset.toString()
+		const color = hsvToHex(
+			base.h,
+			base.s,
+			Math.min(1, base.v * gradStop.v)
 
-	const stop2 = document.createElementNS(SVG_NS, "stop");
-	stop2.setAttribute("offset", "15%");
-	stop2.setAttribute("stop-color", "#68D969");
+		)
+		stop.setAttribute("offset", offset);
+		stop.setAttribute("stop-color", color);
 
-	const stop3 = document.createElementNS(SVG_NS, "stop");
-	stop3.setAttribute("offset", "40%");
-	stop3.setAttribute("stop-color", "#35C835");
+		gradient.append(stop)
+	}
+	return [gradient, gradientId]
+}
 
-	const stop4 = document.createElementNS(SVG_NS, "stop");
-	stop4.setAttribute("offset", "65%");
-	stop4.setAttribute("stop-color", "#1CAD1C");
+export function createStatusIcon(active: boolean, baseColor: string = '#6CD900'): SVGSVGElement {
+	const radius = 40
+	const radiusPlus = radius * 1.1;
+	/*const cx = radiusPlus;  // center, x
+	const cy = radiusPlus;  // center, y*/
 
-	const stop5 = document.createElementNS(SVG_NS, "stop");
-	stop5.setAttribute("offset", "85%");
-	stop5.setAttribute("stop-color", "#108510");
+	const base = hexToHsv(baseColor)
+	// const base = {
+	// 	h: 90,
+	// 	s: 1.0,
+	// 	v: 0.85
+	// };
+	const [gradient, gradientId] = gradientanator(base)
+	// const stops = [
+	// 	{ offset: 0, v: 1.25, s:1 },
+	// 	{ offset: 0.15, v: 1.15 },
+	// 	{ offset: 0.40, v: 1.05 },
+	// 	{ offset: 0.65, v: 0.95 },
+	// 	{ offset: 0.85, v: 0.80 },
+	// 	{ offset: 1, v: 0.70 }
+	// ];
 
-	const stop6 = document.createElementNS(SVG_NS, "stop");
-	stop6.setAttribute("offset", "100%");
-	stop6.setAttribute("stop-color", "#106010");
+	// technically documentation suggests using `document.createSvg` and the like instead but it doesn't work for some reason
+	const svg = document.createElementNS(SVG_NS, "svg");
+	svg.setAttribute("viewBox", `0 0 ${2 * radiusPlus} ${2 * radiusPlus}`);
 
-	gradient.appendChild(stop1);
-	gradient.appendChild(stop2);
-	gradient.appendChild(stop3);
-	gradient.appendChild(stop4);
-	gradient.appendChild(stop5);
-	gradient.appendChild(stop6);
+	const defs = document.createElementNS(SVG_NS, "defs")
 
 	defs.appendChild(gradient)
 	if (active) {
 		svg.appendChild(defs)
 	}
 	const circle = document.createElementNS(SVG_NS, "circle");
-	circle.setAttribute("cx", "10");
-	circle.setAttribute("cy", "10");
-	circle.setAttribute("r", "8");
+	circle.setAttribute("cx", `${radiusPlus}`);
+	circle.setAttribute("cy", `${radiusPlus}`);
+	circle.setAttribute("r", `${radius}`);
 	circle.setAttribute("fill", active ? `url(#${gradientId})` : "#d9d9d9");
 
 	svg.appendChild(circle);
@@ -302,3 +438,115 @@ export function createStatusIcon(active: boolean): SVGSVGElement {
 	return svg;
 }
 
+export function createProgressWheel(p: number): SVGSVGElement {
+	const radius = 40;
+	const radiusPlus = radius * 1.1;
+	const cx = radiusPlus;  // center, x
+	const cy = radiusPlus;  // center, y
+	// const circumference = 2 * Math.PI * radius;
+	// const percent = circumference * (1 - proportion)
+
+	// technically documentation suggests using `document.createSvg` and the like instead but it doesn't work for some reason
+	const svg = document.createElementNS(SVG_NS, "svg");
+	svg.setAttribute("viewBox", `0 0 ${2 * radiusPlus} ${2 * radiusPlus}`);
+
+	const track = document.createElementNS(SVG_NS, "circle");
+	track.setAttribute("cx", `${radiusPlus}`)
+	track.setAttribute("cy", `${radiusPlus}`)
+	track.setAttribute("r", `${radius}`)
+	
+	track.setAttribute("class", "progress-track")
+
+	
+	// fill.style.strokeDashoffset = `${percent}`
+	svg.appendChild(track)
+	
+
+	// calculate wedge path
+	const fill = document.createElementNS(SVG_NS, "path");
+	fill.setAttribute("class", "progress-fill")
+	
+	let baseColor: string;
+	if (p <= 0) {
+		fill.setAttribute("d", "");
+		baseColor = "#f2f2f2"
+		track.setAttribute("stroke", `black`)
+		track.setAttribute("strokewidth", `0.1px`)
+	} else if (p >= 1) {
+		fill.setAttribute(
+			"d",
+			`M ${cx} ${cy - radius}
+             A ${radius} ${radius} 0 1 1 ${cx} ${cy + radius}
+             A ${radius} ${radius} 0 1 1 ${cx} ${cy - radius}
+             Z`
+		);
+		fill.setAttribute("class", "progress-max")
+		baseColor = "#f2f200"
+	} else {
+		fill.setAttribute("class", "progress-fill")
+
+		const startAngle = -Math.PI / 2;
+		const endAngle = startAngle + p * 2 * Math.PI;
+
+		const x1 = cx + radius * Math.cos(startAngle);
+		const y1 = cy + radius * Math.sin(startAngle);
+
+		const x2 = cx + radius * Math.cos(endAngle);
+		const y2 = cy + radius * Math.sin(endAngle);
+
+		const largeArcFlag = p > 0.5 ? 1 : 0;
+
+		fill.setAttribute(
+			"d",
+			`M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`
+		);
+		baseColor = "#108510"
+		track.setAttribute("stroke", `black`)
+		track.setAttribute("strokewidth", `0.1px`)
+	}
+	const defs = document.createElementNS(SVG_NS, "defs")
+	const base = hexToHsv(baseColor)
+	const [gradient, gradientId] = gradientanator(base)
+	defs.appendChild(gradient)
+
+		svg.appendChild(defs)
+	fill.setAttribute("fill", `url(#${gradientId})`);
+	svg.appendChild(fill)
+
+	return svg;
+}
+/*
+export function createProgressWheel(container: HTMLElement, percentage: number): HTMLElement {
+	// technically documentation suggests using `document.createSvg` and the like instead but it doesn't work for some reason
+	// const svg = document.createElementNS(SVG_NS, "svg");
+	// svg.setAttribute("viewBox", "0 0 20 20");
+
+	// 1. Create the base container
+	const wheelContainer = container.createDiv({ cls: "progress-wheel-container" });
+
+	// 2. Define SVG layout variables
+	const radius = 12;
+	const circumference = 2 * Math.PI * radius;
+	// Calculate how much of the border to hide based on progress
+	const strokeDashoffset = circumference - (percentage) * circumference;
+
+
+	
+
+	// 3. Inject the SVG structure
+	wheelContainer.innerHTML = `
+        <svg class="progress-wheel-svg" width="24" height="24" viewBox="0 0 24 24">
+            <!-- Background circle -->
+            <circle class="progress-wheel-bg" cx="12" cy="12" r="${radius}" />
+            <!-- Animated foreground progress circle -->
+            <circle class="progress-wheel-bar" cx="12" cy="12" r="${radius}" 
+                    stroke-dasharray="${circumference}" 
+                    stroke-dashoffset="${strokeDashoffset}" />
+        </svg>
+        <!-- Central Percentage Text -->
+        <span class="progress-wheel-text">${percentage}%</span>
+    `;
+
+	return wheelContainer;
+}
+*/

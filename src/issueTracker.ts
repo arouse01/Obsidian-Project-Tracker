@@ -23,7 +23,8 @@ import {
 	formatDate,
 	normalizeWikiLink,
 	getFrontmatterString,
-	getFrontmatterStringArray
+	getFrontmatterStringArray,
+    getFrontmatterNumber
 } from './utils';
 import { IssueModal } from './issueModal'
 import { MyProjectManager } from './projectManager'
@@ -68,7 +69,7 @@ export class IssueTracker extends Events {
 				title: file.basename,
 				status: getFrontmatterString(this.app.metadataCache, file, "Issue Status"),
 				client: getFrontmatterString(this.app.metadataCache, file, "Primary"),
-				priority: +getFrontmatterString(this.app.metadataCache, file, "Priority"),
+				priority: getFrontmatterNumber(this.app.metadataCache, file, "Priority"),
 				projectPath: this.app.metadataCache.getFirstLinkpathDest(
 					normalizeWikiLink(getFrontmatterString(this.app.metadataCache, file, "Project")),
 					file.path

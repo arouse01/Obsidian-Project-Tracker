@@ -24,7 +24,7 @@ export const PROJ_COLS = {
 		label: "Status",
 		sortable: true,
 		groupable: false,
-		width: "55px",
+		width: "50px",
 		tableGroup: "Project",
 		centered: true
 	},
@@ -43,6 +43,14 @@ export const PROJ_COLS = {
 		tableGroup: "Project",
 		width: "250px",
 		maxWidth: "300px"
+	},
+	"progress": {
+		label: "Progress",
+		sortable: false,
+		centered: true,
+		groupable: false,
+		width: "80px",
+		tableGroup: "Project"
 	},
 	"hoursToday": {
 		label: "Today",
@@ -232,7 +240,8 @@ export const TIME_COLS = {
 		sortable: true,
 		groupable: true,
 		width: "45px",
-		centered: true
+		centered: true,
+		// tableGroup: "status"
 	},
 	"primary": {
 		label: "",
@@ -245,9 +254,17 @@ export const TIME_COLS = {
 	"project": {
 		label: "Project",
 		sortable: true,
-		centered: true,
+		centered: false,
 		groupable: false,
 		minWidth: "220px",
+		tableGroup: "project"
+	},
+	"progress": {
+		label: "",
+		sortable: false,
+		centered: true,
+		groupable: false,
+		width: "50px",
 		tableGroup: "project"
 	},
 	"hoursToday": {

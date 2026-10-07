@@ -7,6 +7,9 @@ import {
 } from 'obsidian';
 import { MyProjectManager } from './projectManager';
 import {
+    // CreateGenericModalOptions,
+    CreateModalRequest,
+    ModalContext,
 	ProjectInfo,
 	// ProjectStatus,
 	// RawTimeSession,
@@ -18,10 +21,12 @@ import {
 	formatDate,
 	normalizeWikiLink,
 	getFrontmatterString,
-	createStatusIcon
+	createStatusIcon,
+	createProgressWheel
 } from './utils';
 import { TimeTracker } from './timeTracker';
 import { TimeModal } from './timeModal';
+import { GenericModal } from './genericModal';
 import { IssueTracker } from './issueTracker';
 import { TodoManager } from './todoTracker';
 import {
@@ -44,6 +49,8 @@ import {
 	PROJECT_DASHBOARD_VIEW_TYPE,
 } from "./constants"
 import { TimeSummaryTable } from './timeSummaryTable'
+// import { ProjectSingleView } from './projectView';
+import { TrackerView } from './trackerView';
 
 
 const PROJECT_STATUS_FILTERS = ["Active", "All", "Archived"] as const;
@@ -118,20 +125,23 @@ export class ProjectDashboardView extends Component {
 	// 	.endOf("day")
 	// 	.toDate();
 	// private daySummaryTotals!: TimeSummary[];
-	
+	// private singleProjectDashboard: ProjectSingleView | undefined
 
 	private collapsedGroups = new Set<string>();  // which groups are collapsed in the table
 
 	constructor(
 		private container: HTMLElement,
+		private trackerView: TrackerView,
 		private app: App,
 		private timeTracker: TimeTracker,
 		private projectManager: MyProjectManager,
 		private issueTracker: IssueTracker,
-		private todoManager: TodoManager
+		private todoManager: TodoManager,
+		// private singleViewer?: ProjectSingleView
 	) {
 		super();
 		this.container = container
+		// this.singleProjectDashboard = singleViewer
 	}
 
 	getViewType(): string {
@@ -145,6 +155,10 @@ export class ProjectDashboardView extends Component {
 	getIcon(): string {
 		return 'folder-open-dot';
 	}
+
+	// setSingleProjectView(viewer: ProjectSingleView) {
+	// 	this.singleProjectDashboard = viewer
+	// }
 
 	onload(): void {
 		this.registerEvent(
@@ -595,6 +609,18 @@ export class ProjectDashboardView extends Component {
 		if (groupPos === "first") {
 			row.addClass("first")
 		}
+		// adjust formatting based on whether time for the week has been met
+		if (project.targetHours) {
+			const weekMinutes = this.timeSummaries.week.project.get(project.file.path) ?? 0;
+			const targetMinutes = project.targetHours * 60
+			const timePercent = weekMinutes / targetMinutes
+
+			if (timePercent >= 1) {
+				row.addClass("time-goal-met")
+			} else if (timePercent >= 0.75) {
+				row.addClass("time-goal-near")
+			}
+		}
 		for (const [field, ] of this.getVisibleCols()) {
 
 			const cell = row.createEl("td");
@@ -636,9 +662,9 @@ export class ProjectDashboardView extends Component {
 				this.colOrder = [
 					"collapse",
 					"primary",
-
-					"project",
 					"sessionStatus",
+					"project",
+					"progress",
 					"hoursToday",
 					"hoursWeek",
 					"hoursMonth",
@@ -653,10 +679,11 @@ export class ProjectDashboardView extends Component {
 				break;
 			case 'none':
 				this.colOrder = [
-					
+					"sessionStatus",
 					"project",
 					"primary",
-					"sessionStatus",
+					"progress",
+					
 					"hoursToday",
 					"hoursWeek",
 					"hoursMonth",
@@ -810,21 +837,79 @@ tags:
 
 			case "sessionStatus":
 				{
-					
+					cell.addClass("time-progress-cell" )
 					// const isActive = activePaths.has(project.file.path);
 					if (activeSession) {
 						const indicator = cell.createDiv({ cls: "active-indicator" });
+						indicator.addClass("center-align")
 						indicator.addClass("active")
 						indicator.createDiv({ cls: "blinky-circle-green" })
 						const span = indicator.createSpan();  //⏲
 						span.appendChild(createStatusIcon(true))
-						
-					} else {
-						cell.setText("");
 					}
 					break;
 				}
 
+			case "progress":
+				{
+					cell.addClass("time-progress-cell")
+					const progressDiv = cell.createDiv({ cls: "active-indicator" })
+					progressDiv.addClass("center-align")
+					if (project.targetHours) {
+						
+						const weekMinutes = this.timeSummaries.week.project.get(project.file.path) ?? 0;
+						const targetMinutes = project.targetHours * 60
+						const timePercent = weekMinutes / targetMinutes
+						const span = progressDiv.createSpan();  //⏲
+						span.appendChild(createProgressWheel(timePercent))
+
+						const textDiv = cell.createDiv({ cls: "font-size-12" })
+						const targetText = formatMinutesToDuration(targetMinutes, "hours")
+						textDiv.setText(`${targetText}h`)
+
+						const currHours = formatMinutesToDuration(weekMinutes, "hours")
+						const percent = Math.round(timePercent * 100)
+						cell.title = `${currHours}/${targetText}h (${percent}%)`
+					}
+					cell.addEventListener("contextmenu", (event) => {
+						event.preventDefault();
+
+						// right-click menu
+						const menu = new Menu();
+
+						menu.addItem((item) => {
+							item.setTitle("Update weekly target")
+								.onClick(async () => {
+									const context: ModalContext = {
+										items: [
+											{
+												type: "number",
+												text: "Target weekly hours"
+											}
+										]
+									} 
+									new GenericModal(this.app, {
+										context: context,
+										onSubmit: async (responses: CreateModalRequest) => {
+											const newTarget = responses.responses[0]
+											if (newTarget) {
+												await this.projectManager.updateTargetTime(project, Number(newTarget))
+												void this.updateProjectTableRows()
+											}
+											
+										}
+									}).open();
+									
+										
+								});
+						});
+
+						
+
+						menu.showAtMouseEvent(event);
+					})
+					break
+				}
 			case "project":
 				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
 					cell.addClass("left-align")
@@ -833,18 +918,22 @@ tags:
 						.setClass("left-align")
 						.onClick(async (event) => {
 							event.preventDefault();
-							const existingLeaf = this.app.workspace.getLeavesOfType(
-								"markdown"
-							).find(leaf => {
-								const view = leaf.view;
-								return view.getState().file === project.file.path;
-							});
+							await this.trackerView.goToProjectView(project.file.path)
+							// void this.trackerView.switchTab("Single Project");
+							// await this.singleProjectDashboard?.changeSelectedProject(project.file.path)
+							// const existingLeaf = this.app.workspace.getLeavesOfType(
+							// 	"markdown"
+							// ).find(leaf => {
+							// 	const view = leaf.view;
+							// 	return view.getState().file === project.file.path;
+							// });
 
-							if (existingLeaf) {
-								void this.app.workspace.revealLeaf(existingLeaf);
-							} else {
-								void this.app.workspace.getLeaf(false).openFile(project.file);
-							}
+							// if (existingLeaf) {
+							// 	void this.app.workspace.revealLeaf(existingLeaf);
+							// } else {
+							// 	void this.app.workspace.getLeaf(false).openFile(project.file);
+							// }
+
 						});
 					
 					break;

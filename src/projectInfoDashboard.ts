@@ -1,6 +1,8 @@
 import {
 	App,
 	Component,
+	ButtonComponent,
+	Notice
 } from 'obsidian';
 import {
 	ProjectInfo
@@ -60,29 +62,58 @@ export class ProjectInfoSingle extends Component {
 
 		const mainSection = this.container.createEl("section");
 		mainSection.addClass("project-stats")
+		mainSection.addClass("control-col")
 		// mainSection.addClass("font-size-16")
+		
+		if (this.selectedProject) {
+			const linkDiv = mainSection.createDiv({cls:"dashboard"})
+			const files = this.app.vault.getMarkdownFiles();
+			const projectNotePath = files.find(file => file.path === this.selectedProject?.file.path);
+			if (projectNotePath) {
+				new ButtonComponent(linkDiv)
+					.setButtonText("Open project Markdown file")
+					.setClass("font-size-12")
+					.onClick(async () => {
+						// event.preventDefault();
+						const existingLeaf = this.app.workspace.getLeavesOfType(
+							"markdown"
+						).find(leaf => {
+							const view = leaf.view;
+							return view.getState().file === projectNotePath.path;
+						});
 
+						if (existingLeaf) {
+							void this.app.workspace.revealLeaf(existingLeaf);
+						} else {
+							void this.app.workspace.getLeaf(false).openFile(projectNotePath);
+						}
+					});
+				// devButton.buttonEl.classList.remove("dashboard-tabs")
+			} else {
+				new Notice(`Project note file not found (${this.selectedProject?.file.path}).`);
+			}
+		}
 		
 		// mainSection.addClass("project-dashboard")
-
+		const statsSection = mainSection.createDiv({ cls: "project-stats" })
 		const primary = normalizeWikiLink(this.selectedProject?.client ?? "")
 		const collaborators = getFrontmatterStringArray(this.app.metadataCache, this.selectedProject!.file, "Collaborators")
 
-		const primaryDiv = mainSection.createDiv()
+		const primaryDiv = statsSection.createDiv()
 		primaryDiv.createEl("label", { text: 'Primary: ' })
 		primaryDiv.createEl("label", { text: primary, cls: "bold" })
 
-		const collabDiv = mainSection.createDiv()
+		const collabDiv = statsSection.createDiv()
 		collabDiv.createEl("label", { text: 'Collaborators: ' })
 		collabDiv.createEl("label", { text: collaborators.join(", "), cls: "bold" })
 
 		const tags = getFrontmatterStringArray(this.app.metadataCache, this.selectedProject!.file, "tags")
-		const tagsDiv = mainSection.createDiv()
+		const tagsDiv = statsSection.createDiv()
 		tagsDiv.createEl("label", { text: 'Tags: ' })
 		tagsDiv.createEl("label", { text: tags.join(", "), cls: "bold" })
 
 		const hours = getFrontmatterNumber(this.app.metadataCache, this.selectedProject!.file, "targetHoursWeek")
-		const hoursDiv = mainSection.createDiv()
+		const hoursDiv = statsSection.createDiv()
 		hoursDiv.createEl("label", { text: 'Hours/week: ' })
 		hoursDiv.createEl("label", { text: hours.toString(), cls: "bold" })
 			

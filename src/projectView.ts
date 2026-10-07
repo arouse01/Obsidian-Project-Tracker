@@ -66,6 +66,7 @@ export class ProjectSingleView extends Component {
 	private issueEl!: HTMLDivElement;
 	private meetingEl!: HTMLDivElement;
 	private otherNoteEl!: HTMLDivElement;
+	private projectSelect!: HTMLSelectElement;
 
 	selectedProject: string | undefined;
 	private timeTable: TimeSummarySingle | undefined;
@@ -179,18 +180,18 @@ export class ProjectSingleView extends Component {
 		dashboardContainer.addClass('project-dashboard')
 		const projectSection = dashboardContainer.createDiv({cls: "section-header"})
 		projectSection.addClass("dashboard")
-		const select = projectSection.createEl("select");
-		select.addClass("dropdown-new")
-		select.addClass("center-align")
-		select.addClass("project-selector")
+		this.projectSelect = projectSection.createEl("select");
+		this.projectSelect.addClass("dropdown-new")
+		this.projectSelect.addClass("center-align")
+		this.projectSelect.addClass("project-selector")
 		for (const project of this.getProjectOptions()) {
-			select.createEl("option", {
+			this.projectSelect.createEl("option", {
 				value: project.path,
 				text: project.name
 			})
 		}
-		this.registerDomEvent(select, "change", async () => {
-			const path = select.value;
+		this.registerDomEvent(this.projectSelect, "change", async () => {
+			const path = this.projectSelect.value;
 			this.selectedProject = path;
 			await this.handleProjectChange(path)
 
@@ -243,7 +244,12 @@ export class ProjectSingleView extends Component {
 
 		
 	}
-	
+
+	async changeSelectedProject(path: string): Promise<void> {
+		this.projectSelect.value = path
+		await this.handleProjectChange(path)
+	}
+
 	private async handleProjectChange(path: string): Promise <void> {
 		this.selectedProject = path;
 		if (this.detailsSection === undefined) {

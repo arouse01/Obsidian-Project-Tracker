@@ -341,3 +341,21 @@ export interface NoteItem {
 	tags?: string[]
 	people?: string[]
 }
+
+export interface ModalItem {
+	text: string,
+	type: "string" | "number"
+}
+
+export interface ModalContext {
+	items: ModalItem[]
+}
+
+export interface CreateGenericModalOptions {
+	context: ModalContext;
+	onSubmit: (request: CreateModalRequest) => Promise<void>;
+}
+
+export interface CreateModalRequest {
+	responses: string[]
+}

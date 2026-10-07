@@ -116,6 +116,7 @@ export class TrackerView extends ItemView {
 
 		this.projectDashboard = new ProjectDashboardView(
 			projectViewEl,
+			this,
 			this.app,
 			this.plugin.timeTracker,
 			this.plugin.projectManager,
@@ -150,6 +151,8 @@ export class TrackerView extends ItemView {
 			this.plugin.noteManager
 		)
 		this.addChild(this.singleProjectDashboard)
+
+		// this.projectDashboard.setSingleProjectView(this.singleProjectDashboard)
 
 		this.projectViewEl = projectViewEl;
 		this.todoEl = todoEl;
@@ -243,6 +246,16 @@ export class TrackerView extends ItemView {
 				this.activeTab === tab
 			)
 		}
+	}
+
+	switchTab(tab: DashboardTab): void {
+		this.activeTab = tab;
+		void this.showTab(this.activeTab);
+	}
+
+	async goToProjectView(path: string): Promise<void> {
+		this.switchTab("Single Project")
+		await this.singleProjectDashboard?.changeSelectedProject(path)
 	}
 
 	// private async rebuildContent(): Promise<void> {
