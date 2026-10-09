@@ -4,30 +4,30 @@ import {
 	ButtonComponent,
 	Menu
 } from 'obsidian';
-import { MyProjectManager } from './projectManager';
+import { MyProjectManager } from '@/projects/projectManager';
 import {
 	formatMinutesToDuration,
 	normalizeWikiLink,
 	createStatusIcon,
 	createProgressWheel
-} from './utils';
+} from '@/utils/utils';
 import {
 	ProjectInfo,
 	SessionData,
 	TimeSummaryStore
-} from './types'
-import { TimeTracker } from './timeTracker';
-import { TimeModal } from './timeModal';
+} from '@/utils/types'
+import { TimeTracker } from '@/time/timeTracker';
+import { TimeModal } from '@/time/timeModal';
 import {
 	TIME_DASHBOARD_VIEW_TYPE
-} from "./constants"
+} from '@/utils/constants'
 import {
 	TableColumn,
 	updateSortButtons,
 	createTableColGroup,
 	sortItems,
 	GroupPosition
-} from './tableFunctions';
+} from '@/utils/tableFunctions';
 import {
 	TIME_COLS,
 	TimeColumnField,
@@ -35,8 +35,8 @@ import {
 	ProjectGroup,
 	ProjectColumnField
 	
-} from "./tableConstants"
-import { TimeSummaryTable } from './timeSummaryTable'
+} from '@/utils/tableConstants'
+import { TimeSummaryTable } from '@/time/timeSummaryTable'
 
 
 export class TimeDashboardView extends ItemView {
@@ -403,7 +403,7 @@ export class TimeDashboardView extends ItemView {
 				{
 					cell.addClass("time-progress-cell")
 					const progressDiv = cell.createDiv({ cls: "active-indicator" })
-					progressDiv.addClass("center-align")
+					// progressDiv.addClass("center-align")
 					if (project.targetHours) {
 
 						const weekMinutes = this.timeSummaries.week.project.get(project.file.path) ?? 0;

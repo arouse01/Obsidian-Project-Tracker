@@ -8,7 +8,7 @@ import {
 } from 'obsidian';
 import {
 	IssueTrackerSettings,
-} from './settings';
+} from '@/settings/settings';
 import {
 	IssueContext,
 	CreateIssueRequest,
@@ -17,7 +17,7 @@ import {
 	PRIORITIES,
 	IssueItem,
 	IssueStatusFilter
-} from "./types";
+} from '@/utils/types';
 import {
 	formatIssueID,
 	formatDate,
@@ -25,9 +25,9 @@ import {
 	getFrontmatterString,
 	getFrontmatterStringArray,
     getFrontmatterNumber
-} from './utils';
-import { IssueModal } from './issueModal'
-import { MyProjectManager } from './projectManager'
+} from '@/utils/utils';
+import { IssueModal } from '@/issues/issueModal'
+import { MyProjectManager } from '@/projects/projectManager'
 
 
 

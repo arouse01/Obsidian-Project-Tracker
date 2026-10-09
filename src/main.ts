@@ -8,30 +8,30 @@ import {
 	DEFAULT_SETTINGS,
 	IssueTrackerSettings,
 	IssueTrackerSettingTab,
-} from './settings';
-import { MyProjectManager } from './projectManager';
-import { TimeTracker } from "./timeTracker";
-// import { IssueModal } from "./issueModal"
-import { IssueTracker } from "./issueTracker"
-import { TodoManager } from "./todoTracker"
+} from '@/settings/settings';
+import { MyProjectManager } from '@/projects/projectManager';
+import { TimeTracker } from '@/time/timeTracker';
+// import { IssueModal } from '@/issues/issueModal'
+import { IssueTracker } from '@/issues/issueTracker'
+import { TodoManager } from '@/todos/todoTracker'
 import {
 	TIME_DASHBOARD_VIEW_TYPE,
 	VIEW_TYPE_TRACKER
-} from "./constants"
+} from '@/utils/constants'
 import {
 	TimeDashboardView
-} from './timeDashboard';
+} from '@/time/timeDashboard';
 // import {
 // 	ProjectDashboardView
-// } from './projectDashboard'
+// } from '@/projects/projectDashboard
 // import {
 // 	ProjectSingleView
-// } from './projectView'
+// } from '@/projects/projectView'
 // import {
 // 	TodoDashboardView
-// } from './todoDashboard'
-import { TrackerView } from './trackerView';
-import { NoteManager } from './noteManager'
+// } from '@/todos/todoDashboard'
+import { TrackerView } from '@/trackerView';
+import { NoteManager } from '@/notes/noteManager'
 
 
 

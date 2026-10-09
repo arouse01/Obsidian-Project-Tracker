@@ -8,14 +8,14 @@ import {
 	ProjectInfo,
 	NoteItem,
 	NoteType
-} from "./types";
+} from '@/utils/types';
 import {
 	normalizeWikiLink,
 	// getFrontmatterString,
 	// getFrontmatterStringArray,
 	formatDate
-} from './utils';
-import { MyProjectManager } from './projectManager'
+} from '@/utils/utils';
+import { MyProjectManager } from '@/projects/projectManager'
 import {
 	GroupPosition,
 	sortItems,
@@ -24,17 +24,17 @@ import {
 	updateSortButtons,
 	// getGroupOptions,
 	createTableColGroup
-} from './tableFunctions';
+} from '@/utils/tableFunctions';
 import {
 	NOTE_COLS,
 	NoteColumnField,
 	NoteGroup,
 	NoteGroupField,
 	NoteSort
-} from './tableConstants'
+} from '@/utils/tableConstants'
 import {
 	NoteManager
-} from './noteManager'
+} from '@/notes/noteManager'
 
 export class NoteDashboard extends Component {
 

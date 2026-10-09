@@ -4,7 +4,7 @@ import {
 	Setting,
 	SettingDefinitionItem
 } from 'obsidian';
-import ProjectTrackerPlugin from './main';
+import ProjectTrackerPlugin from '@/main';
 
 export interface IssueTrackerSettings {
 	nextIssueID: number;

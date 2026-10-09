@@ -10,10 +10,10 @@ import {
 import {
 	SessionAction,
 	SessionContext,
-} from "./types";
+} from '@/utils/types';
 import {
 	formatMinutesToDuration
-} from "./utils"
+} from '@/utils/utils'
 
 
 

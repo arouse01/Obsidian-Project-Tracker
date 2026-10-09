@@ -2,31 +2,36 @@ import {
 	App,
 	ButtonComponent,
 	Component,
-	// Menu
+	Menu
 } from 'obsidian';
-import { TimeTracker } from './timeTracker';
-import { MyProjectManager } from "./projectManager"
+import { TimeTracker } from '@/time/timeTracker';
+import { MyProjectManager } from '@/projects/projectManager'
 import {
 	SessionData,
 	PeriodicTimeSummary,
 	ProjectInfo,
-	TimeSummaryStore
-} from './types'
+	TimeSummaryStore,
+    CreateModalRequest,
+    ModalContext
+} from '@/utils/types'
 import {
 	// GroupPosition,
 	SummaryPeriod,
 	getSummaryPeriod
-} from './tableFunctions';
+} from '@/utils/tableFunctions';
 import {
 	formatMinutesToDuration,
-	createStatusIcon
-} from "./utils";
+	createStatusIcon,
+	createProgressWheel,
+	TimeProgressBar
+} from '@/utils/utils';
 import {
 	TimeModal
-} from "./timeModal"
+} from '@/time/timeModal'
 import {
 	TimeSummaryTable
-} from "./timeSummaryTable"
+} from '@/time/timeSummaryTable'
+import { GenericModal } from '@/utils/genericModal';
 
 
 
@@ -39,10 +44,11 @@ export class TimeSummarySingle extends Component {
 
 	private container: HTMLDivElement;  // parent container the component will live in
 
-	private sessionControls!: HTMLDivElement;
+	// private sessionControls!: HTMLDivElement;
 	private activeDiv!: HTMLDivElement;
 	private activeIcon!: HTMLSpanElement;
-	private generalSummary!: HTMLDivElement;
+	// private generalSummary!: HTMLDivElement;
+	private progressIndicator!: TimeProgressBar;
 
 	private todayTime!: HTMLDivElement;
 	private weekTime!: HTMLDivElement;
@@ -131,22 +137,54 @@ export class TimeSummarySingle extends Component {
 	}
 
 	private async buildDashboard() {
+
+		/*
+			```
+			┌──────────────────┬───────────────────────────────────────────┐
+			│                  │ Weekly/monthly summary                    │
+			│ Today       0:00 │                                           │
+			│                  │                                           │
+			│ This week   4:15 │                                           │
+			│                  │                                           │
+			│ This month 16:30 │                                           │
+			│                  │                                           │
+			├──────────────────┤                                           │
+			│ target           │                                           │
+			│ progressBar      │                                           │
+			│ timeRemaining    │                                           │
+			├──────────────────┴───────────────────────────────────────────┤
+			│         sessionControlButtons                                │
+			└──────────────────────────────────────────────────────────────┘
+			```
+
+
+
+		*/
+
+
+
+
 		await this.updateSummaryData()
 
 		const mainSection = this.container.createEl("section");
 		mainSection.addClass("dashboard-section")
 		mainSection.addClass("font-size-12")
+
+		const headerSection = mainSection.createDiv({cls: "time-header"})
+		headerSection.createDiv({ text: "Timekeeping", cls: "section-header" })
+		const statusIconSection = headerSection.createDiv()
+		await this.createStatusIndicator(statusIconSection)
 		// mainSection.createDiv({ text: "Hours worked", cls: "section-header" }) 
 
-		this.sessionControls = mainSection.createDiv({ cls: "project-section" });
-		this.sessionControls.addClass("summary-controls")
-		await this.createControls(this.sessionControls)
-		// mainSection.createDiv({ cls: "divider" });
-		this.generalSummary = mainSection.createDiv({ cls: "project-section" });
-		this.generalSummary.addClass("project-time-section")
-		await this.buildProjectStats(this.generalSummary)
+		const generalSummary = mainSection.createDiv({ cls: "project-section" });
+		generalSummary.addClass("project-time-full-layout")
+		const runningTotals = generalSummary.createDiv({ cls: "project-section" })
+		runningTotals.addClass("time-running-totals")
+		// const timeSummary = leftSummary.createDiv({ cls: "project-section" })
+		await this.buildProjectStats(runningTotals)
 
-		const detailTableSection = mainSection.createDiv({ cls: "project-section" });
+		const detailTableSection = generalSummary.createDiv({ cls: "project-section" });
+		detailTableSection.addClass("time-summary-table")
 		this.summaryTable = new TimeSummaryTable(
 			this.timeTracker,
 			this.projectManager,
@@ -158,6 +196,19 @@ export class TimeSummarySingle extends Component {
 				selectedProject: this.selectedProject?.file.path ?? undefined
 			}
 		)
+		const progressSection = generalSummary.createDiv({ cls: 'project-section' })
+		await this.createProgressTracker(progressSection)
+		// const controlSection = mainSection.createDiv({ cls: "project-status-section" });
+		const statusSection = generalSummary.createDiv({ cls: 'project-section' })
+		statusSection.addClass("session-control-buttons")
+
+		await this.createControls(statusSection)
+		
+		// mainSection.createDiv({ cls: "divider" });
+
+		
+
+		
 
 	}
 
@@ -168,9 +219,11 @@ export class TimeSummarySingle extends Component {
 		// Use svg for icon instead of emoji - renders cleaner across systems
 
 		// this.activeIcon?.setText(this.sessionActive ? "🟢" : "⚪️")
-		this.activeIcon?.empty();
-		this.activeIcon?.appendChild(createStatusIcon(!!this.sessionActive))
-		
+		if (this.activeIcon) {
+			this.activeIcon.empty();
+			this.activeIcon.appendChild(createStatusIcon(!!this.sessionActive))
+			this.activeIcon.title = this.sessionActive ? "Session active" : "Inactive"
+		}
 		this.activeDiv?.toggleClass("active", !!this.sessionActive);
 	}
 
@@ -179,103 +232,112 @@ export class TimeSummarySingle extends Component {
 		this.startAtButton?.setButtonText(this.sessionActive ? "Stop at" : "Start at")
 	}
 
+	private async createProgressTracker(controlSection: HTMLDivElement) {
+		controlSection.addClass("time-progress-cell")
+		const progressDiv = controlSection.createDiv()
+		if (this.selectedProject !== null && this.selectedProject.targetHours) {
+			// progressDiv.addClass("center-align")
+
+
+			const weekMinutes = this.timeSummaries.week.project.get(this.selectedProject.file.path) ?? 0;
+			const targetMinutes = this.selectedProject.targetHours * 60
+			const timePercent = weekMinutes / targetMinutes
+
+			const indicatorType: "bar" | "ball" = "bar"
+
+			if (indicatorType === "bar") {
+				progressDiv.addClass("time-progress-cell")
+				this.progressIndicator = new TimeProgressBar(progressDiv)
+				this.progressIndicator.update(weekMinutes, targetMinutes)
+				controlSection.createDiv({ text: `${Math.round(timePercent * 100) }%` })
+			} else if (indicatorType === "ball") {
+				progressDiv.addClass("active-indicator")
+				const span = progressDiv.createSpan();  //⏲
+				span.appendChild(createProgressWheel(timePercent))
+
+				const textDiv = controlSection.createDiv({ cls: "font-size-12" })
+				const targetText = formatMinutesToDuration(targetMinutes, "hours")
+
+
+				const currHours = formatMinutesToDuration(weekMinutes, "hours")
+				const percent = Math.round(timePercent * 100)
+				textDiv.setText(`${percent}%`)
+				// controlSection.title = `${currHours}/${targetText}h (${percent}%)`
+
+				controlSection.addEventListener("contextmenu", (event) => {
+					event.preventDefault();
+
+					// right-click menu
+					const menu = new Menu();
+
+					menu.addItem((item) => {
+						item.setTitle("Update weekly target")
+							.onClick(async () => {
+								const context: ModalContext = {
+									items: [
+										{
+											type: "number",
+											text: "Target weekly hours"
+										}
+									]
+								}
+								new GenericModal(this.app, {
+									context: context,
+									onSubmit: async (responses: CreateModalRequest) => {
+										const newTarget = responses.responses[0]
+										if (newTarget) {
+											await this.projectManager.updateTargetTime(this.selectedProject, Number(newTarget))
+											// void this.updateProjectTableRows()
+										}
+
+									}
+								}).open();
+
+
+							});
+					});
+
+
+
+					menu.showAtMouseEvent(event);
+				})
+			}
+		}
+	}
+
+	private async createStatusIndicator(target: HTMLDivElement) {
+		if (this.selectedProject !== null) {
+			// const project = this.selectedProjectInfo
+			const activeIndicator = target.createDiv({
+				cls: "font-size-16"
+			})
+			activeIndicator.addClass("status-div")
+			// activeIndicator.addClass("center-align")
+			
+
+			this.activeDiv = activeIndicator.createDiv({ cls: "active-indicator" });
+			this.activeDiv.addClass("large")
+			this.activeDiv.createDiv({ cls: "blinky-circle-green" })
+			this.activeIcon = this.activeDiv.createSpan();
+			// const statusText = !!this.sess
+			// activeIndicator.createSpan({ text: "Status: ", cls: "vertical-middle" })
+		}
+	}
+
 	private async createControls(sessionControls: HTMLDivElement) {
-		sessionControls.addClass("project-controls")
+		// sessionControls.addClass("project-controls")
 		sessionControls.addClass("no-scroll")
 		sessionControls.addClass("control-col")
 		const activeSession = await this.timeTracker.getActiveProjectSession(this.selectedProject?.file.path);
 
 		if (this.selectedProject !== null) {
-			// const project = this.selectedProjectInfo
-			const activeIndicator = sessionControls.createDiv({
-				cls: "font-size-16"
-			})
-			activeIndicator.addClass("center-align")
-			activeIndicator.createSpan({text: "Status: ", cls: "vertical-top"})
-			/*
-			activeIndicator.addEventListener("click", (event) => {
-				event.preventDefault();
+			const buttonDiv = sessionControls.createDiv({ cls: "summary-controls" })
+			buttonDiv.addClass("font-size-14")
 
-				// right-click menu
-				const menu = new Menu();
-
-				menu.addItem((item) => {
-					item.setTitle(activeSession ? "Stop" : "Start")
-						.onClick(async () => {
-							if (activeSession) {
-								await this.timeTracker.stopSessions(undefined, project)
-							} else {
-								await this.timeTracker.startProjectSession(project)
-							}
-							await this.updateSummaryData()
-						})
-				})
-				menu.addItem((item) => {
-					item.setTitle(activeSession ? "Stop at" : "Start at")
-						.onClick(async () => {
-							if (activeSession) {
-								new TimeModal(this.app, {
-									mode: 'stop',
-									session: {
-										projectName: project.name,
-										startTime: activeSession.start
-									},
-									onSubmit: async (timestamp: Date) => {
-										await this.timeTracker.stopSessions(
-											timestamp,
-											project
-										);
-										await this.updateSummaryData()
-									}
-								}).open();
-							} else {
-								new TimeModal(this.app, {
-									mode: 'start',
-									projectPath: project.file.path,
-									onSubmit: async (timestamp: Date) => {
-										await this.timeTracker.startProjectSession(
-											project,
-											timestamp
-										);
-										await this.updateSummaryData()
-									}
-								}).open();
-							}
-						})
-				});
-
-				menu.addItem((item) => {
-					item.setTitle("Add session")
-						.onClick(async () => {
-
-							new TimeModal(this.app, {
-								mode: 'add',
-								projectPath: project.file.path,
-								onSubmit: async (startTimestamp: Date, stopTimestamp: Date) => {
-									await this.timeTracker.addCompleteSession(
-										project,
-										startTimestamp,
-										stopTimestamp
-									);
-									await this.updateSummaryData()
-								}
-							}).open();
-						})
-				});
-
-				menu.showAtMouseEvent(event);
-			})
-			*/
-
-			this.activeDiv = activeIndicator.createDiv({ cls: "active-indicator" });
-			this.activeDiv.addClass("large")
-			this.activeDiv.createDiv({ cls: "blinky-circle-green" })
-			this.activeIcon = this.activeDiv.createSpan();  //⏲
-
-			const buttonDiv = sessionControls.createDiv({cls: "dashboard"})
 			this.startButton = new ButtonComponent(buttonDiv)
 				.setButtonText(activeSession ? "Stop" : "Start")
 				.setClass("button-larger")
+				// .setClass("button-new")
 				.onClick(async () => {
 					if (this.sessionActive) {
 						await this.timeTracker.stopSessions(undefined, this.selectedProject ?? undefined)
@@ -288,6 +350,7 @@ export class TimeSummarySingle extends Component {
 			this.startAtButton = new ButtonComponent(buttonDiv)
 				.setButtonText(activeSession ? "Stop at" : "Start at")
 				.setClass("button-larger")
+				// .setClass("button-new")
 				.onClick(async () => {
 					if (this.sessionActive) {
 						new TimeModal(this.app, {
@@ -322,6 +385,7 @@ export class TimeSummarySingle extends Component {
 			this.addSessionButton = new ButtonComponent(buttonDiv)
 				.setButtonText("Add session")
 				.setClass("button-larger")
+				// .setClass("button-new")
 				.onClick(async () => {
 
 					new TimeModal(this.app, {
@@ -354,37 +418,39 @@ export class TimeSummarySingle extends Component {
 		newDiv.addClass("project-time-section")
 		
 		// today
-		const todayDiv = newDiv.createDiv()
-		todayDiv.createDiv({
+		// const todayDiv = newDiv.createDiv()
+		newDiv.createDiv({
 			text: "Today",
 			cls: "project-time-label"
 		})
 		const todayHours = this.timeSummaries.day.project.get(this.selectedProject?.file.path)
-		this.todayTime = todayDiv.createDiv({
+		this.todayTime = newDiv.createDiv({
 			text: formatMinutesToDuration(todayHours ?? 0),
 			cls: "project-time-value"
 		})
 
 		// week
-		const weekDiv = newDiv.createDiv()
-		weekDiv.createDiv({
+		// const weekDiv = newDiv.createDiv()
+		newDiv.createDiv({
 			text: "This week",
 			cls: "project-time-label"
 		})
-		const weekHours = this.timeSummaries.week.project.get(this.selectedProject?.file.path)
-		this.weekTime = weekDiv.createDiv({
+		const weekHours = this.timeSummaries.week.project.get(this.selectedProject?.file.path) ?? 0
+		this.weekTime = newDiv.createDiv({
 			text: formatMinutesToDuration(weekHours ?? 0),
 			cls: "project-time-value"
 		})
 
+		
+
 		// month
-		const monthDiv = newDiv.createDiv()
-		monthDiv.createDiv({
+		// const monthDiv = newDiv.createDiv()
+		newDiv.createDiv({
 			text: "This month",
 			cls: "project-time-label"
 		})
 		const monthHours = this.timeSummaries.month.project.get(this.selectedProject?.file.path)
-		this.monthTime = monthDiv.createDiv({
+		this.monthTime = newDiv.createDiv({
 			text: formatMinutesToDuration(monthHours ?? 0),
 			cls: "project-time-value"
 		})
@@ -400,7 +466,7 @@ export class TimeSummarySingle extends Component {
 		// week
 		const weekHours = this.timeSummaries.week.project.get(this.selectedProject?.file.path)
 		this.weekTime.setText(formatMinutesToDuration(weekHours ?? 0))
-
+		
 		// month
 		const monthHours = this.timeSummaries.month.project.get(this.selectedProject?.file.path)
 		this.monthTime.setText(formatMinutesToDuration(monthHours ?? 0))

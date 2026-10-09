@@ -4,19 +4,19 @@ import {
 	ButtonComponent,
 	Menu
 } from 'obsidian';
-import { MyProjectManager } from './projectManager';
-import { IssueTracker } from './issueTracker';
+import { MyProjectManager } from '@/projects/projectManager';
+import { IssueTracker } from '@/issues/issueTracker';
 import {
 	IssueItem,
 	PRIORITIES,
 	ProjectInfo,
 	ISSUE_STATUS_FILTERS,
 	IssueStatusFilter
-} from './types'
+} from '@/utils/types'
 import {
 	
 	// PriorityOrder
-} from "./constants";
+} from '@/utils/constants';
 import {
 	sortItems,
 	GroupPosition,
@@ -24,20 +24,20 @@ import {
 	updateSortButtons,
 	getGroupOptions,
 	createTableColGroup
-} from './tableFunctions';
+} from '@/utils/tableFunctions';
 import {
 	formatDate
-} from './utils'
+} from '@/utils/utils'
 import {
 	ISSUE_COLS,
 	IssueColumnField,
 	IssueSort,
 	IssueGroupField,
 	IssueGroup,
-} from "./tableConstants"
+} from '@/utils/tableConstants'
 import {
 	ISSUE_DASHBOARD_VIEW_TYPE
-} from "./constants"
+} from '@/utils/constants'
 
 
 
@@ -142,33 +142,14 @@ export class IssueDashboardView extends Component {
 		mainSection.addClass("font-size-12")
 
 		const controlSection = mainSection.createEl("section");
-		controlSection.addClass('summary-controls');
-		this.createFilterControls(controlSection)
-		/*const filterSection = controlSection.createDiv({ cls: 'project-controls' });
-		// filterSection.addClass("control-row")
-		filterSection.createEl("label", { text: 'Show only:' })
-		const filterSelect = filterSection.createEl('select', {
-			cls: 'dropdown-new'
-		});
-		for (const filter of ISSUE_STATUS_FILTERS) {
-			filterSelect.createEl('option', {
-				value: filter, //'project',
-				text: filter
-			});
-		}
-		filterSelect.value = this.filterBy;
-		filterSelect.addEventListener("change", () => {
-			const value = filterSelect.value;
-			// if ((PROJECT_STATUS_FILTERS as readonly string[]).includes(value)) {
-			this.filterBy = value as IssueStatusFilter;
-			void this.rebuildIssueTable();
-			// }
+		controlSection.addClass('project-controls');
+		const centerSection = controlSection.createEl("section")
+		centerSection.addClass('center-content');
+		centerSection.addClass('summary-controls');
+		this.createFilterControls(centerSection)
 
-		});*/
 		if (!this.selectedProject) {
-			
-		
-			this.createGroupingControls(controlSection)
+			this.createGroupingControls(centerSection)
 		}
 		
 
@@ -184,17 +165,15 @@ export class IssueDashboardView extends Component {
 
 		this.issueTableBodyEl = this.issueTableEl.createEl('tbody')
 
-
-		
-
-
 	}
+
 	private createFilterControls(section: HTMLElement) {
-		const filterSection = section.createDiv({ cls: 'project-controls' });
-		filterSection.createEl("label", { text: 'Show only:' })
-		const buttonDiv = filterSection.createDiv({ "cls": "project-controls" })
+		// const filterSection = section.createDiv({ cls: 'center-content' });
+		const filterDiv = section.createDiv({ "cls": "summary-controls" })
+		filterDiv.createEl("label", { text: 'Show only:' })
+		
 		for (const filter of ISSUE_STATUS_FILTERS) {
-			const button = new ButtonComponent(buttonDiv)
+			const button = new ButtonComponent(filterDiv)
 
 				.setButtonText(filter)
 				.onClick(async () => {
@@ -203,27 +182,26 @@ export class IssueDashboardView extends Component {
 					await this.rebuildIssueTable();
 
 				});
-			button.setClass("project-controls")
+			// button.setClass("project-controls")
 
 			this.filterButtons.set(filter, button);
 		}
 	}
 
 	private createGroupingControls(section: HTMLElement) {
-		const groupingSection = section.createDiv({ cls: 'project-controls' })
-		groupingSection.createEl("label", { text: 'Group by:' })
-		const buttonDiv = groupingSection.createDiv({ "cls": "project-controls" })
-
+		// const groupingSection = section.createDiv({ cls: 'center-content' })
+		const groupingDiv = section.createDiv({ "cls": "summary-controls" })
+		groupingDiv.createEl("label", { text: 'Group by:' })
 		// Create grouping buttons 
 		for (const group of getGroupOptions(ISSUE_COLS)) {
-			const button = new ButtonComponent(buttonDiv)
+			const button = new ButtonComponent(groupingDiv)
 				.setButtonText(group.label)
 				.onClick(async () => {
 					this.groupBy = group.value;
 					this.collapsedGroups.clear();
 					await this.rebuildIssueTable();
 				});
-			button.setClass("project-controls")
+			// button.setClass("project-controls")
 
 			this.groupButtons.set(group.value, button);
 		}

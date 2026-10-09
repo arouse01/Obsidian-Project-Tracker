@@ -4,7 +4,7 @@ import {
 
 import {
 	SortDirection
-} from './types'
+} from '@/utils/types'
 
 
 export type GroupPosition = "first" | "last" | "middle" | null;

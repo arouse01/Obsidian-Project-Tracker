@@ -4,18 +4,18 @@ import {
 	ButtonComponent,
 	Menu
 } from 'obsidian';
-import { MyProjectManager } from './projectManager';
-import { TodoManager } from './todoTracker';
+import { MyProjectManager } from '@/projects/projectManager';
+import { TodoManager } from '@/todos/todoTracker';
 import {
 	TodoItem,
 	PRIORITIES,
 	ProjectInfo,
 	TODO_STATUS_FILTERS,
 	TodoStatusFilter
-} from './types'
+} from '@/utils/types'
 import {
 	formatDate
-} from './utils'
+} from '@/utils/utils'
 import {
 	sortItems,
 	// SummaryColumn,
@@ -24,17 +24,17 @@ import {
 	updateSortButtons,
 	getGroupOptions,
 	createTableColGroup
-} from './tableFunctions';
+} from '@/utils/tableFunctions';
 import {
 	TODO_COLS,
 	TodoColumnField,
 	TodoSort,
 	TodoGroupField,
 	TodoGroup
-} from "./tableConstants"
+} from '@/utils/tableConstants'
 import {
 	TODO_DASHBOARD_VIEW_TYPE
-} from "./constants"
+} from '@/utils/constants'
 
 
 export class TodoDashboardView extends Component {
@@ -138,33 +138,15 @@ export class TodoDashboardView extends Component {
 		mainSection.addClass("font-size-12")
 		
 		const controlSection = mainSection.createEl("section");
-		controlSection.addClass('summary-controls');
-		this.createFilterControls(controlSection)
-		/*const filterSelect = filterSection.createEl('select', {
-			cls: 'dropdown-new'
-		});
-		for (const filter of TODO_STATUS_FILTERS) {
-			filterSelect.createEl('option', {
-				value: filter, //'project',
-				text: filter
-			});
-		}
-		filterSelect.value = this.filterBy;
-		filterSelect.addEventListener("change", () => {
-			const value = filterSelect.value;
-			// if ((PROJECT_STATUS_FILTERS as readonly string[]).includes(value)) {
-			this.filterBy = value as TodoStatusFilter;
-			void this.rebuildTodoTable();
-			// }
-
-		});*/
+		controlSection.addClass('project-controls');
+		const centerSection = controlSection.createEl("section")
+		centerSection.addClass('center-content');
+		centerSection.addClass('summary-controls');
+		this.createFilterControls(centerSection)
+		
 		if (!this.selectedProject) {
-		
-		
-			this.createGroupingControls(controlSection)
+			this.createGroupingControls(centerSection)
 		}
-
-		
 
 		const todoSection = mainSection.createEl("section");
 		// todoSection.addClass("todo-dashboard")
@@ -194,11 +176,11 @@ export class TodoDashboardView extends Component {
 	}
 
 	private createFilterControls(section: HTMLElement) {
-		const filterSection = section.createDiv({ cls: 'project-controls' });
-		filterSection.createEl("label", { text: 'Show only:' })
-		const buttonDiv = filterSection.createDiv({ "cls": "project-controls" })
+		const filterDiv = section.createDiv({ cls: 'summary-controls' });
+		filterDiv.createEl("label", { text: 'Show only:' })
+		
 		for (const filter of TODO_STATUS_FILTERS) {
-			const button = new ButtonComponent(buttonDiv)
+			const button = new ButtonComponent(filterDiv)
 
 				.setButtonText(filter)
 				.onClick(async () => {
@@ -207,21 +189,21 @@ export class TodoDashboardView extends Component {
 					await this.rebuildTodoTable();
 
 				});
-			button.setClass("project-controls")
+			// button.setClass("project-controls")
 
 			this.filterButtons.set(filter, button);
 		}
 	}
 
 	private createGroupingControls(section: HTMLElement) {
-		const groupingSection = section.createDiv({ cls: 'project-controls' })
+		const groupingSection = section.createDiv({ cls: 'summary-controls' })
 		groupingSection.createEl("label", { text: 'Group by:' })
-		const buttonDiv = groupingSection.createDiv({ "cls": "project-controls" })
+		// const buttonDiv = groupingSection.createDiv({ "cls": "project-controls" })
 
 		// Create grouping buttons 
 		// To add a new value, update Todo_Group_Fields in types.ts and then 
 		for (const group of getGroupOptions(TODO_COLS)) {
-			const button = new ButtonComponent(buttonDiv)
+			const button = new ButtonComponent(groupingSection)
 
 				.setButtonText(group.label)
 				.onClick(async () => {
@@ -229,7 +211,7 @@ export class TodoDashboardView extends Component {
 					this.collapsedGroups.clear();
 					await this.rebuildTodoTable();
 				});
-			button.setClass("project-controls")
+			// button.setClass("project-controls")
 
 			this.groupButtons.set(group.value, button);
 		}

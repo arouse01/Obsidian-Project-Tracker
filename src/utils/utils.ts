@@ -5,7 +5,7 @@ import {
 } from 'obsidian';
 import {
 	DateKey
-} from './types';
+} from '@/utils/types';
 
 export function formatIssueID(id: number): string {
 	return id.toString().padStart(4, "0");
@@ -274,7 +274,6 @@ export async function setFrontmatterValue(
 }
 
 export async function deleteFrontmatterValue(
-	// So we can access without worrying about spaces
 	// fileManager: FileManager,
 	app: App,
 	file: TFile,
@@ -515,38 +514,38 @@ export function createProgressWheel(p: number): SVGSVGElement {
 
 	return svg;
 }
-/*
-export function createProgressWheel(container: HTMLElement, percentage: number): HTMLElement {
-	// technically documentation suggests using `document.createSvg` and the like instead but it doesn't work for some reason
-	// const svg = document.createElementNS(SVG_NS, "svg");
-	// svg.setAttribute("viewBox", "0 0 20 20");
 
-	// 1. Create the base container
-	const wheelContainer = container.createDiv({ cls: "progress-wheel-container" });
+export class TimeProgressBar {
+	private readonly container: HTMLDivElement;
+	private readonly fill: HTMLDivElement;
 
-	// 2. Define SVG layout variables
-	const radius = 12;
-	const circumference = 2 * Math.PI * radius;
-	// Calculate how much of the border to hide based on progress
-	const strokeDashoffset = circumference - (percentage) * circumference;
+	constructor(parent: HTMLElement) {
+		this.container = parent.createDiv({ cls: "time-progress-bar" });
+		this.fill = this.container.createDiv({cls: "time-progress-fill"})
+	}
 
+	update(workedMinutes: number, targetMinutes: number): void {
+		const proportion = targetMinutes > 0
+			? workedMinutes / targetMinutes
+			: 0;
 
-	
+		const visualProgress = Math.min(
+			Math.max(proportion, 0),
+			1
+		);
 
-	// 3. Inject the SVG structure
-	wheelContainer.innerHTML = `
-        <svg class="progress-wheel-svg" width="24" height="24" viewBox="0 0 24 24">
-            <!-- Background circle -->
-            <circle class="progress-wheel-bg" cx="12" cy="12" r="${radius}" />
-            <!-- Animated foreground progress circle -->
-            <circle class="progress-wheel-bar" cx="12" cy="12" r="${radius}" 
-                    stroke-dasharray="${circumference}" 
-                    stroke-dashoffset="${strokeDashoffset}" />
-        </svg>
-        <!-- Central Percentage Text -->
-        <span class="progress-wheel-text">${percentage}%</span>
-    `;
+		this.fill.style.width = `${visualProgress * 100}%`;
+	}
 
-	return wheelContainer;
+	getPercentage(workedMinutes: number, targetMinutes: number): number {
+		return targetMinutes > 0
+			? (workedMinutes / targetMinutes) * 100
+			: 0;
+	}
+
+	getElement(): HTMLDivElement {
+		return this.container;
+	}
 }
-*/
+
+

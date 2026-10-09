@@ -11,10 +11,10 @@ import {
 	TodoModalOptions,
 	CreateTodoRequest,
 	TodoItem
-} from "./types";
+} from '@/utils/types';
 import {
 	formatDate
-} from './utils'
+} from '@/utils/utils'
 
 
 export class TodoModal extends Modal {

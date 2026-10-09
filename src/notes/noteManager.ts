@@ -9,14 +9,14 @@ import {
 	getFrontmatterString,
 	getFrontmatterStringArray,
 	parseDateString
-} from './utils';
+} from '@/utils/utils';
 import {
 	ProjectInfo,
 	NoteType,
 	NoteItem,
-} from "./types";
+} from '@/utils/types';
 
-import { MyProjectManager } from './projectManager'
+import { MyProjectManager } from '@/projects/projectManager'
 
 
 export class NoteManager {

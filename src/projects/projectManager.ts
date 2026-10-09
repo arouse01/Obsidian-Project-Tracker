@@ -10,16 +10,16 @@ import {
 	getFrontmatterNumber,
 	setFrontmatterValue,
     deleteFrontmatterValue
-} from './utils';
+} from '@/utils/utils';
 import {
 	ProjectInfo,
 	CreateProjectRequest,
 	ProjectContext,
 	ProjectModalOptions
-} from "./types";
+} from '@/utils/types';
 import {
 	ProjectModal
-} from "./projectModal"
+} from '@/projects/projectModal'
 
 
 export class MyProjectManager {

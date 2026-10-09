@@ -1,13 +1,13 @@
 import {
 	ButtonComponent
 } from 'obsidian';
-import { TimeTracker } from './timeTracker';
-import { MyProjectManager } from "./projectManager"
+import { TimeTracker } from '@/time/timeTracker';
+import { MyProjectManager } from '@/projects/projectManager'
 import {
 	PeriodicTimeSummary,
 	DateKey,
 	TimeSummaryStore
-} from './types'
+} from '@/utils/types'
 import {
 	SummaryPeriod,
 	getSummaryPeriod,
@@ -16,15 +16,15 @@ import {
 	SummaryFormat,
 	createTableColGroup,
 	TimeSummaryTableOptions
-} from './tableFunctions';
+} from '@/utils/tableFunctions';
 import {
 	getDateKey,
 	formatMinutesToDuration,
 	dateKeyToDate
-} from "./utils";
+} from '@/utils/utils';
 // import {
 // 	TimeModal
-// } from "./timeModal"
+// } from '@/time/timeModal'
 
 
 
@@ -291,13 +291,13 @@ export class TimeSummaryTable {
 							weekday: "short",
 							day: "2-digit"
 						}),
-						width: "80px"
+						width: "60px"
 					})),
 
 					{
 						key: "weekTotal",
 						label: "Week Total",
-						width: "120px"
+						width: "100px"
 					}
 				]
 			}
@@ -314,13 +314,13 @@ export class TimeSummaryTable {
 						label: dateKeyToDate(day).toLocaleDateString("en-US", {
 							month: "short"
 						}),
-						width: "80px"
+						width: "60px"
 					})),
 
 					{
 						key: "yearTotal",
 						label: "Yearly Total",
-						width: "120px"
+						width: "100px"
 					}
 				]
 			}

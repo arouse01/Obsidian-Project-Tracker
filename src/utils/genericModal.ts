@@ -14,10 +14,10 @@ import {
 	CreateGenericModalOptions,
 	// ModalContext,
     CreateModalRequest
-} from "./types";
+} from '@/utils/types';
 import {
 	// formatMinutesToDuration
-} from "./utils"
+} from '@/utils/utils'
 
 
 

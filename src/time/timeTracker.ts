@@ -3,7 +3,7 @@ import {
 	Events,
 	TFile
 } from 'obsidian';
-import { MyProjectManager } from './projectManager';
+import { MyProjectManager } from '@/projects/projectManager';
 import {
 	ProjectInfo,
 	RawTimeSession,
@@ -12,12 +12,12 @@ import {
 	SessionData,
 	DateKey,
 	SummarySession
-} from "./types";
+} from '@/utils/types';
 import {
 	getDateKey,
 	dateKeyToDate
-} from './utils'
-// import { SummaryGroup } from './tableFunctions';
+} from '@/utils/utils'
+// import { SummaryGroup } from '@/utils/tableFunctions';
 
 
 export class TimeTracker extends Events {

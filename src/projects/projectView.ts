@@ -6,25 +6,25 @@ import {
 	// TFile,
 	// setIcon
 } from 'obsidian';
-import { MyProjectManager } from './projectManager';
+import { MyProjectManager } from '@/projects/projectManager';
 import {
 	// PeriodicTimeSummary,
 	// ProjectInfo,
 	// TimeSession,
 	// TimeSummary
 	ProjectOption
-} from "./types";
+} from '@/utils/types';
 import {
 	// formatMinutesToDuration,
 	// formatDate,
 	// getFrontmatterString,
 	// getFrontmatterStringArray
 	// normalizeWikiLink
-} from './utils';
-import { TimeTracker } from './timeTracker';
-// import { TimeModal } from './timeModal';
-import { IssueTracker }from './issueTracker';
-import { TodoManager } from './todoTracker';
+} from '@/utils/utils';
+import { TimeTracker } from '@/time/timeTracker';
+// import { TimeModal } from '@/time/timeModal';
+import { IssueTracker }from '@/issues/issueTracker';
+import { TodoManager } from '@/todos/todoTracker';
 import {
 	// SummaryPeriod,
 	// getSummaryPeriod,
@@ -36,25 +36,25 @@ import {
 	// SummaryColumn,
 	// updateSortButtons,
 	// getGroupOptions
-} from './tableFunctions';
+} from '@/utils/tableFunctions';
 import {
 	TodoDashboardView
-} from './todoDashboard'
+} from '@/todos/todoDashboard'
 import {
 	IssueDashboardView
-} from './issueDashboard'
+} from '@/issues/issueDashboard'
 import {
 	TimeSummarySingle
-} from './timeSummarySingle'
+} from '@/time/timeSummarySingle'
 import {
 	ProjectInfoSingle
-} from './projectInfoDashboard';
+} from '@/projects/projectInfoDashboard';
 import {
 	NoteDashboard
-} from './noteDashboard';
+} from '@/notes/noteDashboard';
 import {
 	NoteManager
-} from './noteManager';
+} from '@/notes/noteManager';
 
 
 export class ProjectSingleView extends Component {
@@ -201,7 +201,7 @@ export class ProjectSingleView extends Component {
 		
 		
 		const detailsSection = dashboardContainer.createDiv({ cls: "single-project-section" });
-		detailsSection.createDiv({ text: "Project details", cls: "section-header" })
+		// detailsSection.createDiv({ text: "Project details", cls: "section-header" })
 		this.detailsEl = detailsSection.createDiv()
 		
 
@@ -209,7 +209,7 @@ export class ProjectSingleView extends Component {
 
 		// build the time tracker section
 		const timeSection = dashboardContainer.createDiv({ cls: "single-project-section" });
-		timeSection.createDiv({ text: "Hours worked", cls: "section-header" })
+		
 		this.timeEl = timeSection.createDiv()
 		// this.timeTable = new TimeSummarySingle(this.selectedProject, timeSection, this.app, this.timeTracker, this.projectManager, "week", 0)
 

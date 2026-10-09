@@ -6,14 +6,14 @@ import {
 } from 'obsidian';
 import {
 	ProjectInfo
-} from "./types";
+} from '@/utils/types';
 import {
 	normalizeWikiLink,
 	// getFrontmatterString,
 	getFrontmatterStringArray,
 	getFrontmatterNumber
-} from './utils';
-import { MyProjectManager } from './projectManager'
+} from '@/utils/utils';
+import { MyProjectManager } from '@/projects/projectManager'
 
 
 export class ProjectInfoSingle extends Component {
@@ -60,13 +60,13 @@ export class ProjectInfoSingle extends Component {
 	private async buildDashboard() {
 		await this.updateValues()
 
-		const mainSection = this.container.createEl("section");
-		mainSection.addClass("project-stats")
-		mainSection.addClass("control-col")
+		// const mainSection = this.container.createEl("section");
+		this.container.addClass("project-stats")
+		this.container.addClass("control-col")
 		// mainSection.addClass("font-size-16")
 		
 		if (this.selectedProject) {
-			const linkDiv = mainSection.createDiv({cls:"dashboard"})
+			const linkDiv = this.container.createDiv({cls:"dashboard"})
 			const files = this.app.vault.getMarkdownFiles();
 			const projectNotePath = files.find(file => file.path === this.selectedProject?.file.path);
 			if (projectNotePath) {
@@ -94,8 +94,8 @@ export class ProjectInfoSingle extends Component {
 			}
 		}
 		
-		// mainSection.addClass("project-dashboard")
-		const statsSection = mainSection.createDiv({ cls: "project-stats" })
+		// this.container.addClass("project-dashboard")
+		const statsSection = this.container.createDiv({ cls: "project-stats" })
 		const primary = normalizeWikiLink(this.selectedProject?.client ?? "")
 		const collaborators = getFrontmatterStringArray(this.app.metadataCache, this.selectedProject!.file, "Collaborators")
 

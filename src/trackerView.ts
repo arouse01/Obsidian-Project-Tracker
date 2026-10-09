@@ -9,40 +9,40 @@ import {
 	WorkspaceLeaf,
 	ViewStateResult
 } from 'obsidian';
-import ProjectTrackerPlugin from './main'
+import ProjectTrackerPlugin from '@/main'
 import {
 	// IssueTrackerSettings,
-} from './settings';
+} from '@/settings/settings';
 import {
 	// IssueContext,
 	// CreateIssueRequest,
 	// ProjectInfo,
 	// IssueModalOptions
-} from "./types";
+} from '@/utils/types';
 import {
 	// PRIORITIES,
 	VIEW_TYPE_TRACKER,
-} from "./constants";
+} from './utils/constants';
 import {
 	// formatIssueID,
 	// formatDate,
 	// normalizeWikiLink
-} from './utils';
-// import { IssueModal } from './issueModal'
-// import { MyProjectManager } from './projectManager'
+} from '@/utils/utils';
+// import { IssueModal } from '@/issues/issueModal'
+// import { MyProjectManager } from '@/projects/projectManager'
 import {
 	// TimeDashboardView
-} from './timeDashboard';
+} from '@/time/timeDashboard';
 import {
 	ProjectDashboardView
-} from './projectDashboard'
+} from '@/projects/projectDashboard'
 import {
 	ProjectSingleView
-} from './projectView'
+} from '@/projects/projectView'
 import {
 	TodoDashboardView
-} from './todoDashboard'
-import { IssueDashboardView } from './issueDashboard';
+} from '@/todos/todoDashboard'
+import { IssueDashboardView } from '@/issues/issueDashboard';
 
 const DASHBOARD_TABS = ["Projects", "Todos", "Issues", "Single Project"] as const;
 type DashboardTab = typeof DASHBOARD_TABS[number];

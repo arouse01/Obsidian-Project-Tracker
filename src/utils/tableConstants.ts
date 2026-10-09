@@ -1,14 +1,14 @@
 import {
 	TableColumn,
 	ColSort
-} from './tableFunctions'
+} from '@/utils/tableFunctions'
 import {
 	ProjectInfo,
 	TodoItem,
 	IssueItem,
 	RawTimeSession,
 	NoteItem
-} from "./types"
+} from '@/utils/types'
 
 // PROJECTS
 export const PROJ_COLS = {

@@ -12,7 +12,7 @@ import {
 	ProjectInfo,
 	CreateIssueRequest,
 	IssueModalOptions
-} from "./types";
+} from '@/utils/types';
 
 export class IssueModal extends Modal {
 	private title = "";

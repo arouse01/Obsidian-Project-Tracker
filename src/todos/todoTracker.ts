@@ -6,7 +6,7 @@ import {
 	MarkdownView,
 	MarkdownFileInfo
 } from 'obsidian';
-import { MyProjectManager } from './projectManager';
+import { MyProjectManager } from '@/projects/projectManager';
 import {
 	ProjectInfo,
 	TodoItem,
@@ -14,13 +14,13 @@ import {
 	CreateTodoRequest,
 	PRIORITIES,
 	TodoStatusFilter
-} from "./types";
-import { TodoModal } from './todoModal'
+} from '@/utils/types';
+import { TodoModal } from '@/todos/todoModal'
 import {
 	formatDate,
 	normalizeWikiLink,
 	getFrontmatterStringArray
-} from './utils'
+} from '@/utils/utils'
 
 
 export class TodoManager extends Events {

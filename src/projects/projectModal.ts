@@ -11,10 +11,10 @@ import {
 import {
 	CreateProjectRequest,
 	ProjectModalOptions
-} from "./types";
+} from '@/utils/types';
 import {
 	AutocompleteInput
-} from "./autocomplete"
+} from '@/utils/autocomplete'
 
 
 /*

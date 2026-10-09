@@ -8,7 +8,7 @@
 		"noImplicitReturns": true,
 		"noFallthroughCasesInSwitch": true,
 		"noUncheckedIndexedAccess": true,
-		"moduleResolution": "node",
+		"moduleResolution": "bundler",
 		"isolatedModules": true,
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
@@ -16,6 +16,24 @@
 		"lib": [ "ES2021", "DOM" ],
 		//"noUnusedLocals": true,
 		//"noUnusedParameters": true
+		//"baseUrl": ".",
+		"paths": {
+			//"*": [ "./*" ],
+			"@/*": ["./src/*"],
+			//"@issues/*": [ "./issues/*" ],
+			//"@notes/*": [ "./notes/*" ],
+			//"@projects/*": [ "./projects/*" ],
+			//"@utils/*": [ "./utils/*" ],
+			//"@time/*": [ "./time/*" ],
+			//"@todos/*": [ "./todos/*" ],
+			
+			"@issues/*": [ "./*" ],
+			"@notes/*": [ "./*" ],
+			"@projects/*": [ "./*" ],
+			"@utils/*": [ "./src/*" ],
+			"@time/*": [ "./*" ],
+			"@todos/*": [ "./*" ]
+		}
 	},
 	//"include": ["src/**/*.ts"]
 }

@@ -1,56 +1,56 @@
 import {
-	App,
-	Menu,
-	Component,
-	ButtonComponent,
-	TFile
+    App,
+    ButtonComponent,
+    Component,
+    Menu,
+    TFile
 } from 'obsidian';
-import { MyProjectManager } from './projectManager';
+import {
+    PROJECT_DASHBOARD_VIEW_TYPE,
+} from '@/utils/constants';
+import { GenericModal } from '@/utils/genericModal';
+import { IssueTracker } from '@/issues/issueTracker';
+import { MyProjectManager } from '@/projects/projectManager';
+import {
+    PROJ_COLS,
+    ProjectColumnField,
+    ProjectGroup,
+    ProjectGroupField,
+    ProjectSort
+} from '@/utils/tableConstants';
+import {
+    createTableColGroup,
+    getGroupOptions,
+    GroupPosition,
+    sortItems,
+    // ColSort,
+    TableColumn,
+    updateSortButtons
+} from '@/utils/tableFunctions';
+import { TimeModal } from '@/time/timeModal';
+import { TimeSummaryTable } from '@/time/timeSummaryTable';
+import { TimeTracker } from '@/time/timeTracker';
+import { TodoManager } from '@/todos/todoTracker';
 import {
     // CreateGenericModalOptions,
     CreateModalRequest,
     ModalContext,
-	ProjectInfo,
-	// ProjectStatus,
-	// RawTimeSession,
-	SessionData,
-	TimeSummaryStore
-} from "./types";
+    ProjectInfo,
+    // ProjectStatus,
+    // RawTimeSession,
+    SessionData,
+    TimeSummaryStore
+} from '@/utils/types';
 import {
-	formatMinutesToDuration,
-	formatDate,
-	normalizeWikiLink,
-	getFrontmatterString,
-	createStatusIcon,
-	createProgressWheel
-} from './utils';
-import { TimeTracker } from './timeTracker';
-import { TimeModal } from './timeModal';
-import { GenericModal } from './genericModal';
-import { IssueTracker } from './issueTracker';
-import { TodoManager } from './todoTracker';
-import {
-	GroupPosition,
-	sortItems,
-	// ColSort,
-	TableColumn,
-	updateSortButtons,
-	getGroupOptions,
-	createTableColGroup
-} from './tableFunctions';
-import {
-	PROJ_COLS,
-	ProjectColumnField,
-	ProjectGroup,
-	ProjectGroupField,
-	ProjectSort
-} from './tableConstants'
-import {
-	PROJECT_DASHBOARD_VIEW_TYPE,
-} from "./constants"
-import { TimeSummaryTable } from './timeSummaryTable'
-// import { ProjectSingleView } from './projectView';
-import { TrackerView } from './trackerView';
+    createProgressWheel,
+    createStatusIcon,
+    formatDate,
+    formatMinutesToDuration,
+    getFrontmatterString,
+    normalizeWikiLink
+} from '@/utils/utils';
+// import { ProjectSingleView } from '@/projects/projectView';
+import { TrackerView } from '@/trackerView';
 
 
 const PROJECT_STATUS_FILTERS = ["Active", "All", "Archived"] as const;
@@ -201,53 +201,19 @@ export class ProjectDashboardView extends Component {
 		const controlSection = projectSection.createDiv({ cls: 'project-controls' });
 		controlSection.addClass("control-col")
 
-		const controlRow1 = controlSection.createDiv({ cls: 'project-controls' });
-		controlRow1.addClass("control-row")
+		const centerSection = controlSection.createEl("section")
+		centerSection.addClass('center-content');
+		centerSection.addClass('summary-controls');
+		this.createFilterControls(centerSection)
+		this.createGroupingControls(centerSection)
+		// const controlRow1 = controlSection.createDiv({ cls: 'project-controls' });
+		// controlRow1.addClass("control-row")
 		// filter buttons
-		const filterSection = controlRow1.createDiv({ cls: 'project-controls' });
-		// filterSection.addClass("control-row")
-		filterSection.createEl("label", { text: 'Show only:' })
-		const filterSelect = filterSection.createEl('select', {
-			cls: 'dropdown-new'
-		});
-		for (const filter of PROJECT_STATUS_FILTERS) {
-			filterSelect.createEl('option', {
-				value: filter, //'project',
-				text: filter
-			});
-		}
-		filterSelect.value = this.filterBy;
-		filterSelect.addEventListener("change", () => {
-			const value = filterSelect.value;
-			// if ((PROJECT_STATUS_FILTERS as readonly string[]).includes(value)) {
-				this.filterBy = value as ProjectStatusFilter;
-				void this.rebuildProjectTable();
-			// }
-			
-		});
+		
 	
 
 		// To add more group options, update Project_Group_Fields in types.ts and add the grouping logic to getGroupKey and getGroupLabel
-		const groupingSection = controlRow1.createDiv({ cls: 'project-controls' });
-		groupingSection.addClass("right-align")
-		// groupingSection.addClass("control-row")
-		groupingSection.createEl("label", { text: 'Group by:' })
-		const groupSelect = groupingSection.createEl('select', {
-			cls: 'dropdown-new'
-		});
-		for (const group of getGroupOptions(PROJ_COLS)) {
-			groupSelect.createEl('option', {
-				value: group.value, //'project',
-				text: group.label
-			});
-		}
-		groupSelect.value = this.groupBy;
-		groupSelect.addEventListener("change", () => {
-			this.groupBy = groupSelect.value as ProjectGroupField;
-			this.collapsedGroups.clear();
-			void this.rebuildProjectTable();
-
-		});
+		
 		
 		const projectTableSection = projectSection.createDiv({ cls: 'project-section' });
 		projectTableSection.addClass('project-dashboard');
@@ -279,6 +245,88 @@ export class ProjectDashboardView extends Component {
 			}
 		)
 		// this.summaryTable = new TimeSummaryTable(this.timeTracker, this.projectManager, summarySection, "week", 0)
+	}
+
+	private createFilterControls(section: HTMLElement) {
+		const filterSection = section.createDiv({ cls: 'summary-controls' });
+		// filterSection.addClass("control-row")
+		filterSection.createEl("label", { text: 'Show only:' })
+		const filterSelect = filterSection.createEl('select', {
+			cls: 'dropdown-new'
+		});
+		for (const filter of PROJECT_STATUS_FILTERS) {
+			filterSelect.createEl('option', {
+				value: filter, //'project',
+				text: filter
+			});
+		}
+		filterSelect.value = this.filterBy;
+		filterSelect.addEventListener("change", () => {
+			const value = filterSelect.value;
+			// if ((PROJECT_STATUS_FILTERS as readonly string[]).includes(value)) {
+			this.filterBy = value as ProjectStatusFilter;
+			void this.rebuildProjectTable();
+			// }
+
+		});
+		/*// const filterSection = section.createDiv({ cls: 'center-content' });
+		const filterDiv = section.createDiv({ "cls": "summary-controls" })
+		filterDiv.createEl("label", { text: 'Show only:' })
+
+		for (const filter of ISSUE_STATUS_FILTERS) {
+			const button = new ButtonComponent(filterDiv)
+
+				.setButtonText(filter)
+				.onClick(async () => {
+					// const value = filterSelect.value;
+					this.filterBy = filter;
+					await this.rebuildIssueTable();
+
+				});
+			// button.setClass("project-controls")
+
+			this.filterButtons.set(filter, button);
+		}*/
+	}
+
+	private createGroupingControls(section: HTMLElement) {
+		const groupingSection = section.createDiv({ cls: 'summary-controls' });
+		groupingSection.addClass("right-align")
+		// groupingSection.addClass("control-row")
+		groupingSection.createEl("label", { text: 'Group by:' })
+		const groupSelect = groupingSection.createEl('select', {
+			cls: 'dropdown-new'
+		});
+		for (const group of getGroupOptions(PROJ_COLS)) {
+			groupSelect.createEl('option', {
+				value: group.value, //'project',
+				text: group.label
+			});
+		}
+		groupSelect.value = this.groupBy;
+		groupSelect.addEventListener("change", () => {
+			this.groupBy = groupSelect.value as ProjectGroupField;
+			this.collapsedGroups.clear();
+			void this.rebuildProjectTable();
+
+		});
+
+		/*// const groupingSection = section.createDiv({ cls: 'center-content' })
+		const groupingDiv = section.createDiv({ "cls": "summary-controls" })
+		groupingDiv.createEl("label", { text: 'Group by:' })
+		// Create grouping buttons 
+		for (const group of getGroupOptions(ISSUE_COLS)) {
+			const button = new ButtonComponent(groupingDiv)
+				.setButtonText(group.label)
+				.onClick(async () => {
+					this.groupBy = group.value;
+					this.collapsedGroups.clear();
+					await this.rebuildIssueTable();
+				});
+			// button.setClass("project-controls")
+
+			this.groupButtons.set(group.value, button);
+		}*/
 	}
 
 	async updateProjectTableRows(): Promise<void> {
@@ -854,7 +902,7 @@ tags:
 				{
 					cell.addClass("time-progress-cell")
 					const progressDiv = cell.createDiv({ cls: "active-indicator" })
-					progressDiv.addClass("center-align")
+					// progressDiv.addClass("center-align")
 					if (project.targetHours) {
 						
 						const weekMinutes = this.timeSummaries.week.project.get(project.file.path) ?? 0;
