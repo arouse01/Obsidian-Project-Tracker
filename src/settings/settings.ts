@@ -12,6 +12,7 @@ export interface IssueTrackerSettings {
 	todoLogPath: string;
 	peoplePath: string;
 	devNotePath: string;
+	allowNotifications: boolean;
 }
 
 export const DEFAULT_SETTINGS: IssueTrackerSettings = {
@@ -19,7 +20,8 @@ export const DEFAULT_SETTINGS: IssueTrackerSettings = {
 	timeLogPath: 'Project Management/timeLog.json',
 	todoLogPath: 'Project Management/todoList.json',
 	peoplePath: 'Organizations/',
-	devNotePath: 'Notes/Obsidian Notes'
+	devNotePath: 'Notes/Obsidian Notes',
+	allowNotifications: true
 };
 
 export class IssueTrackerSettingTab extends PluginSettingTab {
@@ -68,6 +70,14 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 							type: 'folder',
 							key: 'peoplePath',
 							placeholder: 'Select a folder...',
+						}
+					},
+					{
+						name: 'Allow time limit notifications',
+						desc: `Allow popups when a project's entered time exceeds the target time`,
+						control: {
+							type: 'toggle',
+							key: 'allowNotifications',
 						}
 					}
 				]

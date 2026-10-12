@@ -11,7 +11,8 @@ import {
 	PeriodicTimeSummary,
 	SessionData,
 	DateKey,
-	SummarySession
+	SummarySession,
+	TimePeriod
 } from '@/utils/types';
 import {
 	getDateKey,
@@ -492,6 +493,45 @@ export class TimeTracker extends Events {
 		
 	}
 
+	async checkTimeLimits() {
+		const timeSummaries = await this.getCurrentTimeSummaries()
+		const projects = this.projectManager.getActiveProjects()
+
+		for (const project of projects) {
+
+			const dayTotal = timeSummaries.week.project.get(project.file.path) ?? 0
+			const weekTarget = project.targetHours?.get("week") ?? 0
+			if (weekTotal > weekTarget && weekTarget > 0) {
+				this.createTimeNotification(project, "week")
+			}
+
+			const weekTotal = timeSummaries.week.project.get(project.file.path) ?? 0
+			const weekTarget = project.targetHours?.get("week") ?? 0
+			if (weekTotal > weekTarget && weekTarget > 0) {
+				this.createTimeNotification(project, "week")
+			}
+		}
+		
+	}
+
+	createTimeNotification(project: ProjectInfo, range: TimePeriod) {
+		// Should only be triggered if the project has targetHours
+		const target = project.targetHours!
+		const targetValue = target.get(range)
+		if (range === "day") {
+			new Notification(`Daily time met`, {
+				body: `${project.name} has reached its daily target of ${targetValue}h.`
+			})
+		} else if (range === "week") {
+			new Notification(`Weekly time met`, {
+				body: `${project.name} has reached its weekly target of ${targetValue}h.`
+			})
+		} else if (range === "month") {
+			new Notification(`Monthly time met`, {
+				body: `${project.name} has reached its monthly target of ${targetValue}h.`
+			})
+		}
+	}
 }
 
 

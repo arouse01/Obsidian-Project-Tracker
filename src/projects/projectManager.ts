@@ -15,11 +15,17 @@ import {
 	ProjectInfo,
 	CreateProjectRequest,
 	ProjectContext,
-	ProjectModalOptions
+	ProjectModalOptions,
+	TimePeriod
 } from '@/utils/types';
 import {
 	ProjectModal
 } from '@/projects/projectModal'
+import {
+	// GroupPosition,
+	SummaryPeriod,
+	getSummaryPeriod
+} from '@/utils/tableFunctions';
 
 
 export class MyProjectManager {
@@ -36,15 +42,21 @@ export class MyProjectManager {
 		const projectFiles = files.filter(file =>
 			file.path.startsWith("Projects/")  // Get all md files in the Projects folder
 		);
+		
 		return projectFiles.map(file => {
+			const targetHours = new Map<TimePeriod, number>
+			targetHours.set("day", getFrontmatterNumber(this.app.metadataCache, file, "targetHoursDay"))
+			targetHours.set("week", getFrontmatterNumber(this.app.metadataCache, file, "targetHoursWeek"))
+			targetHours.set("month", getFrontmatterNumber(this.app.metadataCache, file, "targetHoursMonth"))
 
 			return {
 				file: file,
 				name: file.basename,
 				status: getFrontmatterString(this.app.metadataCache, file, "Project Status"),
 				client: getFrontmatterString(this.app.metadataCache, file, "Primary"),
-				targetHours: getFrontmatterNumber(this.app.metadataCache, file, "targetHoursWeek")
-			};
+				targetHours: targetHours
+			}
+			
 
 		})
 		.sort((a, b) =>

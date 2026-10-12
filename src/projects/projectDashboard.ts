@@ -660,7 +660,7 @@ export class ProjectDashboardView extends Component {
 		// adjust formatting based on whether time for the week has been met
 		if (project.targetHours) {
 			const weekMinutes = this.timeSummaries.week.project.get(project.file.path) ?? 0;
-			const targetMinutes = project.targetHours * 60
+			const targetMinutes = (project.targetHours.get("week") ?? 0) * 60
 			const timePercent = weekMinutes / targetMinutes
 
 			if (timePercent >= 1) {
@@ -906,7 +906,7 @@ tags:
 					if (project.targetHours) {
 						
 						const weekMinutes = this.timeSummaries.week.project.get(project.file.path) ?? 0;
-						const targetMinutes = project.targetHours * 60
+						const targetMinutes = (project.targetHours.get("week") ?? 0) * 60
 						const timePercent = weekMinutes / targetMinutes
 						const span = progressDiv.createSpan();  //⏲
 						span.appendChild(createProgressWheel(timePercent))

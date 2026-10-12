@@ -36,13 +36,14 @@ export interface ProjectContext {
 	collaborators: string[] | null;
 }
 
+
 export interface ProjectInfo {
 	file: TFile;
 	name: string;
 	status: string;
 	id?: string;
 	client: string;
-	targetHours?: number;
+	targetHours?: Map<TimePeriod, number>;
 }
 
 export interface CreateProjectRequest {
@@ -199,7 +200,7 @@ export interface PeriodicTimeSummary {
 }
 
 // structure for holding current summarized values (totals for current day, week, and month): 
-type TimePeriod = "day" | "week" | "month";
+export type TimePeriod = "day" | "week" | "month";
 export type TimeSummaryGroup = "project" | "client"
 
 type TimeSummaryMaps = Record<
