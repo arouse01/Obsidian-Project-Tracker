@@ -43,7 +43,7 @@ export interface ProjectInfo {
 	status: string;
 	id?: string;
 	client: string;
-	targetHours?: Map<TimePeriod, number>;
+	targetHours?: TimeTarget;
 }
 
 export interface CreateProjectRequest {
@@ -213,7 +213,22 @@ export type TimeSummaryStore = Record<
 	TimeSummaryMaps
 	>;
 
+export interface TimeTarget {
+	hours: number,
+	period: TimePeriod
+}
 
+// for weekly planning
+export type WeeklyAllocation = Record<string, number>;
+export type WeeklyTimePlans = Record<DateKey, WeeklyAllocation>;
+
+export type NotificationType = "allocated" | "week" | "month"
+export interface NotificationRecord {
+	projectPath: string;
+	type: NotificationType;
+	periodKey: string;
+	notifiedAt: string
+}
 
 // Todo
 export interface TodoItem {

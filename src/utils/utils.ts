@@ -121,11 +121,19 @@ export function parseDateString(string: string): Date | undefined {
 }
 
 export function getDateKey(
-	date: Date = new Date()
+	date: Date = new Date(),
+	weekStart: boolean = false
 ): DateKey {
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0")
+	let newDate: Date;
+	if (weekStart) {
+		// if we want the start of the week
+		newDate = window.moment().startOf('week').toDate()
+	} else {
+		newDate = date
+	}
+	const year = newDate.getFullYear();
+	const month = String(newDate.getMonth() + 1).padStart(2, "0");
+	const day = String(newDate.getDate()).padStart(2, "0")
 
 	return `${year}-${month}-${day}`;
 
@@ -508,7 +516,7 @@ export function createProgressWheel(p: number): SVGSVGElement {
 	const [gradient, gradientId] = gradientanator(base)
 	defs.appendChild(gradient)
 
-		svg.appendChild(defs)
+	svg.appendChild(defs)
 	fill.setAttribute("fill", `url(#${gradientId})`);
 	svg.appendChild(fill)
 

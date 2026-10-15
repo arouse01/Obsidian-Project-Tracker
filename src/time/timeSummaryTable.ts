@@ -80,6 +80,8 @@ export class TimeSummaryTable {
 		this.createControls();
 		void this.createTable();
 		void this.rebuildSummaryTable();
+		// console.log("refreshAllocations from timeSummaryTable constructor")
+		// void this.timeTracker.refreshAllocations()
 	}
 
 	
@@ -164,6 +166,9 @@ export class TimeSummaryTable {
 	private async createTable() {
 		const sectionSummaryTableEl = this.container.createEl('section');
 		sectionSummaryTableEl.addClass('project-dashboard');
+		if (!this.selectedProjectPath) {
+			sectionSummaryTableEl.addClass('small')
+		}
 
 		this.summaryTableEl = sectionSummaryTableEl.createEl('table');
 		this.summaryTableEl.addClass("dashboard-table")

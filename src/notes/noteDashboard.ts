@@ -15,7 +15,9 @@ import {
 	// getFrontmatterStringArray,
 	formatDate
 } from '@/utils/utils';
-import { MyProjectManager } from '@/projects/projectManager'
+import {
+	MyProjectManager
+} from '@/projects/projectManager'
 import {
 	GroupPosition,
 	sortItems,

@@ -166,6 +166,12 @@ export class ProjectDashboardView extends Component {
 				void this.updateProjectTableRows()
 			})
 		);
+		this.registerEvent(
+			this.timeTracker.on("time-allocations-updated", () => {
+				// when a session is started, stopped, or a whole one is added
+				void this.updateProjectTableRows()
+			})
+		);
 		void this.initialize()
 
 		this.refreshInterval = window.setInterval(() => {
@@ -191,6 +197,7 @@ export class ProjectDashboardView extends Component {
 
 		const dashboardContainer = this.container.createDiv({ cls: "project-section" })
 		dashboardContainer.addClass('project-dashboard')
+		dashboardContainer.addClass('small')
 
 		const projectSection = dashboardContainer.createDiv({ cls: "project-section" });
 		// projectSection.addClass("project-section")
@@ -217,6 +224,7 @@ export class ProjectDashboardView extends Component {
 		
 		const projectTableSection = projectSection.createDiv({ cls: 'project-section' });
 		projectTableSection.addClass('project-dashboard');
+		projectTableSection.addClass('small');
 		projectTableSection.addClass('dashboard');
 
 		this.projectTableEl = projectTableSection.createEl('table');
@@ -234,6 +242,7 @@ export class ProjectDashboardView extends Component {
 		});
 
 		summarySection.addClass('project-dashboard')
+		summarySection.addClass('small')
 		this.summaryTable = new TimeSummaryTable(
 			this.timeTracker,
 			this.projectManager,
@@ -660,7 +669,7 @@ export class ProjectDashboardView extends Component {
 		// adjust formatting based on whether time for the week has been met
 		if (project.targetHours) {
 			const weekMinutes = this.timeSummaries.week.project.get(project.file.path) ?? 0;
-			const targetMinutes = (project.targetHours.get("week") ?? 0) * 60
+			const targetMinutes = (this.timeTracker.currWeekAllocations[project.file.path] ?? 0) * 60
 			const timePercent = weekMinutes / targetMinutes
 
 			if (timePercent >= 1) {
@@ -903,10 +912,17 @@ tags:
 					cell.addClass("time-progress-cell")
 					const progressDiv = cell.createDiv({ cls: "active-indicator" })
 					// progressDiv.addClass("center-align")
-					if (project.targetHours) {
+					let targetMinutes: number
+					try {
+						targetMinutes = (this.timeTracker.currWeekAllocations[project.file.path] ?? 0) * 60
+					} catch {
+						targetMinutes = 0
+					}
+
+					if (targetMinutes > 0) {
 						
 						const weekMinutes = this.timeSummaries.week.project.get(project.file.path) ?? 0;
-						const targetMinutes = (project.targetHours.get("week") ?? 0) * 60
+						// const targetMinutes = (this.timeTracker.currWeekAllocations[project.file.path] ?? 0) * 60
 						const timePercent = weekMinutes / targetMinutes
 						const span = progressDiv.createSpan();  //⏲
 						span.appendChild(createProgressWheel(timePercent))
@@ -941,7 +957,7 @@ tags:
 										onSubmit: async (responses: CreateModalRequest) => {
 											const newTarget = responses.responses[0]
 											if (newTarget) {
-												await this.projectManager.updateTargetTime(project, Number(newTarget))
+												await this.timeTracker.updateWeeklyAllocation(project, Number(newTarget))
 												void this.updateProjectTableRows()
 											}
 											

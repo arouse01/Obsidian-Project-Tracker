@@ -162,13 +162,17 @@ button.collaborator-button {
 }
 
 .project-dashboard {
-	font-size: 14px;
+	font-size: medium;
+}
+
+.project-dashboard.small {
+	font-size: small;
 }
 
 .project-stats {
 	font-size: 14px;
 	text-align: center;
-	margin-top: 1rem;
+	margin-top: 0.25rem;
 	display: flex;
 	justify-content: space-around;
 }
@@ -199,7 +203,7 @@ button.button-new {
 	color: var(--link-color);
 	cursor: pointer;
 	font: inherit;
-/*	height: 24px;*/
+	height: min-content;
 }
 
 .dropdown-new {
@@ -236,7 +240,7 @@ button.button-new {
 }
 
 hr {
-	margin: 0.5rem 0;
+	margin: 0.5rem 0.5rem;
 }
 
 .section-header {
@@ -295,18 +299,23 @@ hr {
 	margin-bottom: 6px;
 	text-align: center;
 }
+/*.subsection {
+	padding-left: 8px;*/
+/*	padding-top: 8px;*/
+/*}*/
 
 .project-section {
 	/*	width: fit-content;*/
 	max-width: 100%;
 	margin: 0 auto;
 	overflow-x: auto;
-	
 }
+
 .single-project-section {
 	max-height: 400px;
 	overflow-y: auto;
 }
+
 .project-selector {
 	display: flex;
 	align-items: center;
@@ -317,10 +326,38 @@ hr {
 	height: fit-content;
 }
 
+.progress-section {
+	display: grid;
+	grid-template-rows: auto auto auto;
+}
+
+.progress-bar-section {
+	display: grid;
+	grid-template-rows: auto auto;
+	grid-template-columns: auto auto auto;
+	grid-template-areas:
+		"title remaining remaining"
+		"total total percent";
+	padding-top: 8px;
+	padding-left: 8px;
+}
 /*.project-selector option {
 	padding-left: 40px;
 	padding-right: 40px;
 }*/
+
+.progress-remaining {
+	display: flex;
+	align-items: center;
+	gap: 0px 4px;
+	justify-content: right;
+}
+
+.progress-time-label {
+	font-size: 12px;
+	color: var(--text-muted);
+	text-align: left;
+}
 
 .project-dashboard .group-row .small-icon {
 	font-size: 8px;
@@ -328,7 +365,7 @@ hr {
 
 .time-header {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: 1fr 1fr 1fr;
 	justify-items: stretch;
 	gap: 2px 8px;
 	padding: 2px 0;
@@ -553,7 +590,7 @@ hr {
 .summary-controls {
 	display: flex;
 	align-items: center;
-	gap: 0px 8px;
+	gap: 0px 12px;
 	justify-content: center;
 	padding: 2px 0;
 }
@@ -600,25 +637,46 @@ hr {
 
 .project-time-full-layout {
 	display: grid;
-	grid-template-rows: auto auto auto;
-	grid-template-columns: 200px 1fr;
+	grid-template-rows: auto auto;
+	grid-template-columns: auto 1fr;
 	grid-template-areas:
 		"runningTotal summaryTable"
-		"c summaryTable"
-		"controlButtons controlButtons";
+		"c summaryTable";
 	gap: 12px;
+	background-color: var(--background-modifier-border);
+	grid-gap: 1px;
+/*	padding: 8px*/
 	/*	justify-content: left;*/
 	/*	width: 75%;*/
 	/*	padding: 8px 0px 0px 0px;*/
 }
+
+.project-time-full-layout > * {
+	/* Matches Obsidian's current theme mode background */
+	background-color: var(--background-primary);
+	padding: 8px;
+}
+
 .time-running-totals {
 	grid-area: runningTotal
 }
+
 .time-summary-table {
-	grid-area: summaryTable
+	grid-area: summaryTable;
+	align-content: center
 }
+
 .session-control-buttons {
-	grid-area: controlButtons
+	grid-area: controlButtons;
+	width: 100%
+}
+
+.hr2, hr.hr2 {
+	border: none;
+	height: 1px;
+	background: var(--hr-color); /* Or use a hex color like #ff5555 */
+	opacity: 0.6;
+	margin: 0.25em 2em;
 }
 
 .project-time-layout {
@@ -635,9 +693,10 @@ hr {
 	display: grid;
 	grid-template-rows: repeat(3, auto);
 	grid-template-columns: repeat(2, auto);
-	gap: 0px 16px;
-	justify-content: left;
-/*	width: 75%;*/
+	gap: 0px 32px;
+	justify-content: center;
+/*	margin-left: 20px;*/
+	/*	width: 75%;*/
 	padding: 8px 0px 0px 0px;
 	align-items: center;
 }
@@ -775,7 +834,7 @@ checkbox {
 	position:relative;
 	align-items: center;
 	justify-content:center;
-	padding: 0px 6px;
+	padding: 0px 4px;
 
 }
 
@@ -787,8 +846,8 @@ checkbox {
 	border: 1px solid var(--prompt-border-color);
 	border-radius: 10px;
 	z-index: 0;
-	height: 18px;
-	width: 120px
+	height: 12px;
+	width: 200px;
 }
 /*.time-progress-bar::after {
 	content: "";

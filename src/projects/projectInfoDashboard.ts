@@ -92,32 +92,36 @@ export class ProjectInfoSingle extends Component {
 			} else {
 				new Notice(`Project note file not found (${this.selectedProject?.file.path}).`);
 			}
-		}
 		
-		// this.container.addClass("project-dashboard")
-		const statsSection = this.container.createDiv({ cls: "project-stats" })
-		const primary = normalizeWikiLink(this.selectedProject?.client ?? "")
-		const collaborators = getFrontmatterStringArray(this.app.metadataCache, this.selectedProject!.file, "Collaborators")
+		
+			// this.container.addClass("project-dashboard")
+			const statsSection = this.container.createDiv({ cls: "project-stats" })
+			const primary = normalizeWikiLink(this.selectedProject?.client ?? "")
+			const collaborators = getFrontmatterStringArray(this.app.metadataCache, this.selectedProject.file, "Collaborators")
 
-		const primaryDiv = statsSection.createDiv()
-		primaryDiv.createEl("label", { text: 'Primary: ' })
-		primaryDiv.createEl("label", { text: primary, cls: "bold" })
+			const primaryDiv = statsSection.createDiv()
+			primaryDiv.createEl("label", { text: 'Primary: ' })
+			primaryDiv.createEl("label", { text: primary, cls: "bold" })
 
-		const collabDiv = statsSection.createDiv()
-		collabDiv.createEl("label", { text: 'Collaborators: ' })
-		collabDiv.createEl("label", { text: collaborators.join(", "), cls: "bold" })
+			const collabDiv = statsSection.createDiv()
+			collabDiv.createEl("label", { text: 'Collaborators: ' })
+			collabDiv.createEl("label", { text: collaborators.join(", "), cls: "bold" })
 
-		const tags = getFrontmatterStringArray(this.app.metadataCache, this.selectedProject!.file, "tags")
-		const tagsDiv = statsSection.createDiv()
-		tagsDiv.createEl("label", { text: 'Tags: ' })
-		tagsDiv.createEl("label", { text: tags.join(", "), cls: "bold" })
+			const tags = getFrontmatterStringArray(this.app.metadataCache, this.selectedProject.file, "tags")
+			const tagsDiv = statsSection.createDiv()
+			tagsDiv.createEl("label", { text: 'Tags: ' })
+			tagsDiv.createEl("label", { text: tags.join(", "), cls: "bold" })
 
-		const hours = getFrontmatterNumber(this.app.metadataCache, this.selectedProject!.file, "targetHoursWeek")
-		const hoursDiv = statsSection.createDiv()
-		hoursDiv.createEl("label", { text: 'Hours/week: ' })
-		hoursDiv.createEl("label", { text: hours.toString(), cls: "bold" })
-			
+			// const hours = getFrontmatterNumber(this.app.metadataCache, this.selectedProject!.file, "targetHours")
+			if (this.selectedProject.targetHours) {
+				const hours = this.selectedProject.targetHours.hours
+				const period = this.selectedProject.targetHours.period
+				const hoursDiv = statsSection.createDiv()
+				hoursDiv.createEl("label", { text: period === "month" ? 'Hours/month: ' : 'Hours/week: ' })
+				hoursDiv.createEl("label", { text: hours.toString(), cls: "bold" })
+			}
 		}
+	}
 
 	
 	

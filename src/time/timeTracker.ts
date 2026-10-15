@@ -12,23 +12,124 @@ import {
 	SessionData,
 	DateKey,
 	SummarySession,
-	TimePeriod
+	TimePeriod,
+    TimeTarget,
+    WeeklyTimePlans,
+	WeeklyAllocation,
+	NotificationRecord,
+    NotificationType
 } from '@/utils/types';
 import {
 	getDateKey,
-	dateKeyToDate
+	dateKeyToDate,
+    formatDate
 } from '@/utils/utils'
+import { IssueTrackerSettings } from '../settings/settings';
 // import { SummaryGroup } from '@/utils/tableFunctions';
 
 
 export class TimeTracker extends Events {
+	weeklyTimePlans!: WeeklyTimePlans;
+	currWeekAllocations!: WeeklyAllocation;
+	private refreshInterval: number | undefined = undefined;
 
 	constructor(
 		private app: App,
 		private projectManager: MyProjectManager,
-		private getTimeLogPath: () => string
+		private settings: IssueTrackerSettings,
+		// private getTimeLogPath: () => string,
+		// private getTimePlanPath: () => string,
+		// private getNotificationLogPath: () => string
 	) {
 		super();
+		// console.log("refreshAllocations from timeTracker constructor")
+		// void this.refreshAllocations()
+		this.refreshInterval = window.setInterval(() => {
+			void this.checkTimeLimits();
+		}, 60000);
+
+	}
+
+	stopMonitoring(): void {
+		if (this.refreshInterval !== undefined) {
+			window.clearInterval(this.refreshInterval);
+			this.refreshInterval = undefined;
+		}
+	}
+
+	async refreshAllocations(): Promise<void> {
+		const thisWeek = getDateKey(undefined, true)
+		this.weeklyTimePlans = await this._loadWeeklyTimePlans()
+		// console.log(this.weeklyTimePlans)
+		this.currWeekAllocations = this.getWeeklyAllocations(thisWeek)
+
+	}
+
+	
+	private async _loadWeeklyTimePlans(): Promise<WeeklyTimePlans> {
+		const path = this.settings.timeAllocPath
+		// console.log(JSON.stringify(path))
+		const file = this.app.vault.getAbstractFileByPath(path);
+		// console.log(file)
+
+		if (!(file instanceof TFile)) {
+			return {};
+		}
+
+		const json = await this.app.vault.read(file);
+		if (json.trim() === "") {
+			return {};
+		}
+
+		try {
+			return JSON.parse(json) as WeeklyTimePlans;
+		} catch (error) {
+			console.error("Failed to parse weekly time plans: ", error);
+			return {};
+		}
+
+	}
+
+	private async _saveWeeklyTimePlans(plans: WeeklyTimePlans): Promise<void> {
+		const planPath = this.settings.timeAllocPath
+		const file = this.app.vault.getAbstractFileByPath(planPath);
+		//console.log(file);
+		// const rawSessions = sessions.map(formattedSession => this._sessionDataToRaw(formattedSession))
+		const timeData = JSON.stringify(plans)
+
+		if (file && (file instanceof TFile)) {
+			// timeLog file exists, write to it
+			await this.app.vault.modify(file, timeData);
+		} else {
+			await this.app.vault.create(planPath, timeData);
+		}
+
+		this.trigger("time-allocations-updated");  // trigger an update of displays related to time tracking
+
+	}
+
+	async updateWeeklyAllocation(
+		project: ProjectInfo,
+		target: number
+	): Promise<void> {
+		const thisWeek = getDateKey(undefined, true);
+		const projectFile = project.file.path;
+
+		if (this.weeklyTimePlans[thisWeek] === undefined) {
+			this.weeklyTimePlans[thisWeek] = {}
+		}
+		
+		this.weeklyTimePlans[thisWeek][projectFile] = target
+
+		this.currWeekAllocations = this.getWeeklyAllocations(thisWeek)
+
+		await this._saveWeeklyTimePlans(this.weeklyTimePlans);
+	}
+
+	getWeeklyAllocations(weekStarting: DateKey): WeeklyAllocation {
+		const allocation = this.weeklyTimePlans[weekStarting]
+		return allocation ?? {}
+		
 	}
 
 	private _parseSessionfromRaw(data: RawTimeSession): SessionData {
@@ -57,7 +158,8 @@ export class TimeTracker extends Events {
 	}
 
 	private async _loadSessions(): Promise<SessionData[]> {
-		const path = this.getTimeLogPath();
+		const path = this.settings.timeLogPath;
+		// console.log(JSON.stringify(path))
 		const file = this.app.vault.getAbstractFileByPath(path);
 
 		if (!(file instanceof TFile)) {
@@ -78,7 +180,7 @@ export class TimeTracker extends Events {
 	private async _saveSessions(
 		sessions: SessionData[]
 	): Promise<void> {
-		const path = this.getTimeLogPath();
+		const path = this.settings.timeLogPath;
 		const file = this.app.vault.getAbstractFileByPath(path);
 		//console.log(file);
 		const rawSessions = sessions.map(formattedSession => this._sessionDataToRaw(formattedSession))
@@ -496,42 +598,152 @@ export class TimeTracker extends Events {
 	async checkTimeLimits() {
 		const timeSummaries = await this.getCurrentTimeSummaries()
 		const projects = this.projectManager.getActiveProjects()
+		const thisWeek = getDateKey(undefined, true)
+		const notifications = await this._loadNotificationLog()
+		this.currWeekAllocations = this.getWeeklyAllocations(thisWeek)
+		if (this.settings.allowNotifications) {
+			for (const project of projects) {
 
-		for (const project of projects) {
+				// Check allocated times first (which can include projects that don't have a standard goal)
+				const allocationNotified = this.checkNotificationLog(notifications, project, "allocated", thisWeek)
+				if (!allocationNotified) {
+					const timePeriod = "allocated"
 
-			const dayTotal = timeSummaries.week.project.get(project.file.path) ?? 0
-			const weekTarget = project.targetHours?.get("week") ?? 0
-			if (weekTotal > weekTarget && weekTarget > 0) {
-				this.createTimeNotification(project, "week")
+					const runningTotal = (timeSummaries.week.project.get(project.file.path) ?? 0) / 60 // timeSummaries returns in minutes
+					const allocatedTarget = this.currWeekAllocations[project.file.path] ?? Infinity 
+					if (runningTotal > allocatedTarget) {
+						this.createTimeNotification(project, timePeriod, thisWeek, allocatedTarget)
+					}
+				}
+
+				// then check project-specific times
+				if (project.targetHours && project.targetHours?.period ==="month") {
+					const timePeriod = project.targetHours.period
+					const timeNotified = this.checkNotificationLog(notifications, project, timePeriod, thisWeek)
+					if (!timeNotified) {
+						
+						const runningTotal = (timeSummaries[timePeriod].project.get(project.file.path) ?? 0) / 60 // timeSummaries returns in minutes
+						const standingTarget = project.targetHours.hours ?? Infinity
+						if (runningTotal > standingTarget) {
+							this.createTimeNotification(project, timePeriod, thisWeek, standingTarget)
+						}
+					}
+				}
 			}
 
-			const weekTotal = timeSummaries.week.project.get(project.file.path) ?? 0
-			const weekTarget = project.targetHours?.get("week") ?? 0
-			if (weekTotal > weekTarget && weekTarget > 0) {
-				this.createTimeNotification(project, "week")
-			}
+
+			// const weekTotal = timeSummaries.week.project.get(project.file.path) ?? 0
+			// const weekTarget = project.targetHours?.get("week") ?? 0
+			// if (weekTotal > weekTarget && weekTarget > 0) {
+			// 	this.createTimeNotification(project, "week")
+			// }
 		}
 		
 	}
 
-	createTimeNotification(project: ProjectInfo, range: TimePeriod) {
-		// Should only be triggered if the project has targetHours
-		const target = project.targetHours!
-		const targetValue = target.get(range)
-		if (range === "day") {
-			new Notification(`Daily time met`, {
-				body: `${project.name} has reached its daily target of ${targetValue}h.`
-			})
-		} else if (range === "week") {
-			new Notification(`Weekly time met`, {
-				body: `${project.name} has reached its weekly target of ${targetValue}h.`
-			})
-		} else if (range === "month") {
-			new Notification(`Monthly time met`, {
-				body: `${project.name} has reached its monthly target of ${targetValue}h.`
-			})
+	createTimeNotification(
+		project: ProjectInfo,
+		type: NotificationType,
+		periodKey: DateKey,
+		target: number
+	) {
+		let message = ''
+		if (type === "allocated") {
+			message = `${project.name} has reached its allocated weekly target of ${target}h.`
+		} else if (type === "week") {
+			message = `${project.name} has reached its weekly target of ${target}h.`
+		} else if (type === "month") {
+			message = `${project.name} has reached its monthly target of ${target}h.`
+		}
+		new Notification(`Time met`, { body: message })
+		void this.logNotification(project, type, periodKey)
+	}
+
+	private checkNotificationLog(
+		notifications: NotificationRecord[],
+		project: ProjectInfo,
+		type: NotificationType,
+		periodKey: string
+	): boolean {
+		return notifications.some(record =>
+			record.projectPath === project.file.path &&
+			record.type === type &&
+			record.periodKey === periodKey
+		)
+
+
+	}
+
+	async logNotification(
+		project: ProjectInfo,
+		type: NotificationType,
+		periodKey: string
+	): Promise<void> {
+		let notifications = await this._loadNotificationLog();
+		/*const activeSessions = this._findActiveSessions(sessions);
+		if (!additive && activeSessions.length > 0) {
+			// if additive is false, it means we want to close all active sessions before starting a new one
+			sessions = this._stopSessions(sessions, timestamp);
+		}*/
+		notifications.push({
+			projectPath: project.file.path,
+			type: type,
+			periodKey: periodKey,
+			notifiedAt: formatDate(undefined, "datetime")
+		});
+
+		await this.saveTimeNotification(notifications);
+	}
+
+	private async _loadNotificationLog(): Promise<NotificationRecord[]> {
+		const logPath = this.settings.notificationLogPath
+		const file = this.app.vault.getAbstractFileByPath(logPath);
+
+		if (!(file instanceof TFile)) {
+			return [];
+		}
+
+		const json = await this.app.vault.read(file);
+		try {
+			return JSON.parse(json) as NotificationRecord[];
+		} catch (error) {
+			console.error("Failed to parse weekly time plans: ", error);
+			return [];
+		}
+		
+	}
+
+	private async saveTimeNotification(notifications: NotificationRecord[]): Promise<void> {
+		const logPath = this.settings.notificationLogPath
+		const file = this.app.vault.getAbstractFileByPath(logPath);
+		//console.log(file);
+		// const rawSessions = sessions.map(formattedSession => this._sessionDataToRaw(formattedSession))
+		// const timeData = JSON.stringify(plans)
+
+		//console.log(file);
+		// const notifications = sessions.map(formattedSession => this._sessionDataToRaw(formattedSession))
+		const notificationData = JSON.stringify(notifications)
+
+		if (file && (file instanceof TFile)) {
+			// timeLog file exists, write to it
+			await this.app.vault.modify(file, notificationData);
+		} else {
+			await this.app.vault.create(logPath, notificationData);
 		}
 	}
+
+	// getWeeklyTargetHours(
+	// 	target: TimeTarget
+	// ): number {
+	// 	switch (target.period) {
+	// 		case "day":
+	// 			return target.hours * 5;
+	// 		case "week": 
+	// 			return target.hours;
+	// 		case "month":
+	// 			return target.hours
+	// 	}
+	// }
 }
 
 

@@ -82,6 +82,8 @@ export class TimeDashboardView extends ItemView {
 		private projectManager: MyProjectManager
 	) {
 		super(leaf);
+		// console.log("refreshAllocations from timeDashboard constructor")
+		// void this.timeTracker.refreshAllocations();
 	}
 
 	getViewType(): string {
@@ -102,9 +104,20 @@ export class TimeDashboardView extends ItemView {
 				void this.updateDashboard()
 			})
 		);
-
+		this.registerEvent(
+			this.timeTracker.on("time-allocations-updated", () => {
+				// when a session is started, stopped, or a whole one is added
+				void this.updateDashboard()
+			})
+		);
 		await this.buildDashboard();
-		await this.updateDashboard();
+
+		this.app.workspace.onLayoutReady(() => {
+			// we need to wait until the layout is ready, then we can read the allocation log
+
+			void this.updateDashboard();
+		})
+		
 
 		this.refreshInterval = window.setInterval(() => {
 			void this.updateDashboard();
@@ -346,7 +359,7 @@ export class TimeDashboardView extends ItemView {
 		// adjust formatting based on whether time for the week has been met
 		if (project.targetHours) {
 			const weekMinutes = this.timeSummaries.week.project.get(project.file.path) ?? 0;
-			const targetMinutes = project.targetHours * 60
+			const targetMinutes = (this.timeTracker.currWeekAllocations[project.file.path] ?? 0) * 60
 			const timePercent = weekMinutes / targetMinutes
 
 			if (timePercent >= 1) {
@@ -403,11 +416,12 @@ export class TimeDashboardView extends ItemView {
 				{
 					cell.addClass("time-progress-cell")
 					const progressDiv = cell.createDiv({ cls: "active-indicator" })
+					const targetMinutes = (this.timeTracker.currWeekAllocations[project.file.path] ?? 0) * 60
 					// progressDiv.addClass("center-align")
-					if (project.targetHours) {
+					if (targetMinutes > 0) {
 
 						const weekMinutes = this.timeSummaries.week.project.get(project.file.path) ?? 0;
-						const targetMinutes = project.targetHours * 60
+						
 						const timePercent = weekMinutes / targetMinutes
 						const span = progressDiv.createSpan();  //⏲
 						span.appendChild(createProgressWheel(timePercent))

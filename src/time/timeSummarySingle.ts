@@ -48,7 +48,8 @@ export class TimeSummarySingle extends Component {
 	private activeDiv!: HTMLDivElement;
 	private activeIcon!: HTMLSpanElement;
 	// private generalSummary!: HTMLDivElement;
-	private progressIndicator!: TimeProgressBar;
+	private progressWeekIndicator!: TimeProgressBar;
+	private progressMonthIndicator!: TimeProgressBar;
 
 	private todayTime!: HTMLDivElement;
 	private weekTime!: HTMLDivElement;
@@ -88,7 +89,7 @@ export class TimeSummarySingle extends Component {
 
 	) {
 		super();
-		this.selectedProject = this.projectManager.getProjectInfoByPath(selectedProjectPath)!
+		this.selectedProject = this.projectManager.getProjectInfoByPath(this.selectedProjectPath)!
 
 		this.container = target;
 		this.summaryPeriod = period;
@@ -109,7 +110,13 @@ export class TimeSummarySingle extends Component {
 				void this.refreshDashboard()
 			})
 		);
-		
+		this.registerEvent(
+			this.timeTracker.on("time-allocations-updated", () => {
+				// when a session is started, stopped, or a whole one is added
+				void this.refreshDashboard()
+			})
+		);
+
 		this.refreshInterval = window.setInterval(() => {
 			void this.refreshDashboard();
 		}, 60000);
@@ -172,18 +179,26 @@ export class TimeSummarySingle extends Component {
 
 		const headerSection = mainSection.createDiv({cls: "time-header"})
 		headerSection.createDiv({ text: "Timekeeping", cls: "section-header" })
+
+		const buttonSection = headerSection.createDiv({ cls: 'project-section' })
 		const statusIconSection = headerSection.createDiv()
+		
+		// statusSection.addClass("button-new")
+
+		await this.createControls(buttonSection)
 		await this.createStatusIndicator(statusIconSection)
 		// mainSection.createDiv({ text: "Hours worked", cls: "section-header" }) 
-
+		mainSection.createEl("hr", { cls: "hr2" })
 		const generalSummary = mainSection.createDiv({ cls: "project-section" });
 		generalSummary.addClass("project-time-full-layout")
-		const runningTotals = generalSummary.createDiv({ cls: "project-section" })
+		const runningTotals = generalSummary.createDiv()
 		runningTotals.addClass("time-running-totals")
+		// runningTotals.addClass("subsection")
 		// const timeSummary = leftSummary.createDiv({ cls: "project-section" })
 		await this.buildProjectStats(runningTotals)
+		// runningTotals.createEl("hr")
 
-		const detailTableSection = generalSummary.createDiv({ cls: "project-section" });
+		const detailTableSection = generalSummary.createDiv();
 		detailTableSection.addClass("time-summary-table")
 		this.summaryTable = new TimeSummaryTable(
 			this.timeTracker,
@@ -196,13 +211,18 @@ export class TimeSummarySingle extends Component {
 				selectedProject: this.selectedProject?.file.path ?? undefined
 			}
 		)
-		const progressSection = generalSummary.createDiv({ cls: 'project-section' })
-		await this.createProgressTracker(progressSection)
+		const targetMinutes = (this.timeTracker.currWeekAllocations[this.selectedProject.file.path] ?? 0) * 60
+		if (targetMinutes > 0) {
+			const progressSection = generalSummary.createDiv({ cls: 'progress-section' })
+			// progressSection.addClass("subsection")
+			progressSection.createDiv({ cls: "font-size-14", text: 'Progress' })
+			await this.createWeekProgressTracker(progressSection)
+			if (this.selectedProject?.targetHours?.period === "month") {
+				await this.createMonthProgressTracker(progressSection)
+			}
+		}
 		// const controlSection = mainSection.createDiv({ cls: "project-status-section" });
-		const statusSection = generalSummary.createDiv({ cls: 'project-section' })
-		statusSection.addClass("session-control-buttons")
-
-		await this.createControls(statusSection)
+		
 		
 		// mainSection.createDiv({ cls: "divider" });
 
@@ -232,78 +252,178 @@ export class TimeSummarySingle extends Component {
 		this.startAtButton?.setButtonText(this.sessionActive ? "Stop at" : "Start at")
 	}
 
-	private async createProgressTracker(controlSection: HTMLDivElement) {
-		controlSection.addClass("time-progress-cell")
-		const progressDiv = controlSection.createDiv()
-		if (this.selectedProject !== null && this.selectedProject.targetHours) {
+	private async createWeekProgressTracker(controlSection: HTMLDivElement) {
+		const weekProgressDiv = controlSection.createDiv({ cls: "progress-bar-section" })
+		// weekProgressDiv.addClass("subsection")
+		const weekTitle = weekProgressDiv.createDiv({ text: `Weekly target`, cls: 'project-time-label' })
+		weekTitle.setCssStyles({ gridArea: 'title' })
+		const progressDiv = weekProgressDiv.createDiv()
+		progressDiv.addClass("time-progress-cell")
+		progressDiv.setCssStyles({ gridArea: 'total'})
+		const targetMinutes = (this.timeTracker.currWeekAllocations[this.selectedProject.file.path] ?? 0) * 60
+		if (this.selectedProject !== null && targetMinutes > 0) {
 			// progressDiv.addClass("center-align")
-
-
-			const weekMinutes = this.timeSummaries.week.project.get(this.selectedProject.file.path) ?? 0;
-			const targetMinutes = this.selectedProject.targetHours * 60
-			const timePercent = weekMinutes / targetMinutes
+			const actualMinutes = this.timeSummaries.week.project.get(this.selectedProject.file.path) ?? 0;
+			const remainingMinutes = targetMinutes - actualMinutes
+			const remaining = remainingMinutes > 0 ? formatMinutesToDuration(remainingMinutes) : 0
+			const remainingTitle = weekProgressDiv.createDiv({ cls: 'progress-remaining' })
+			remainingTitle.setCssStyles({ gridArea: 'remaining', textAlign: 'right' })
+			remainingTitle.createDiv({ text: `Remaining: `, cls: 'progress-time-label'})
+			remainingTitle.createDiv({ text: `${remaining}`, cls: 'font-size-14' }) 
+			const timePercent = actualMinutes / targetMinutes
 
 			const indicatorType: "bar" | "ball" = "bar"
 
 			if (indicatorType === "bar") {
 				progressDiv.addClass("time-progress-cell")
-				this.progressIndicator = new TimeProgressBar(progressDiv)
-				this.progressIndicator.update(weekMinutes, targetMinutes)
-				controlSection.createDiv({ text: `${Math.round(timePercent * 100) }%` })
+				this.progressWeekIndicator = new TimeProgressBar(progressDiv)
+				this.progressWeekIndicator.update(actualMinutes, targetMinutes)
+				
+				const pctDiv = weekProgressDiv.createDiv({ text: `${Math.round(timePercent * 100)}%` })
+				pctDiv.setCssStyles({ gridArea: 'percent' })
 			} else if (indicatorType === "ball") {
 				progressDiv.addClass("active-indicator")
 				const span = progressDiv.createSpan();  //⏲
 				span.appendChild(createProgressWheel(timePercent))
 
-				const textDiv = controlSection.createDiv({ cls: "font-size-12" })
-				const targetText = formatMinutesToDuration(targetMinutes, "hours")
-
-
-				const currHours = formatMinutesToDuration(weekMinutes, "hours")
 				const percent = Math.round(timePercent * 100)
-				textDiv.setText(`${percent}%`)
+				weekProgressDiv.createDiv({ cls: "font-size-12", text: `${percent}%` })
+				
+				weekProgressDiv.createDiv({ cls: "font-size-10", text: `${targetMinutes / 60} h this week` })
 				// controlSection.title = `${currHours}/${targetText}h (${percent}%)`
-
-				controlSection.addEventListener("contextmenu", (event) => {
-					event.preventDefault();
-
-					// right-click menu
-					const menu = new Menu();
-
-					menu.addItem((item) => {
-						item.setTitle("Update weekly target")
-							.onClick(async () => {
-								const context: ModalContext = {
-									items: [
-										{
-											type: "number",
-											text: "Target weekly hours"
-										}
-									]
-								}
-								new GenericModal(this.app, {
-									context: context,
-									onSubmit: async (responses: CreateModalRequest) => {
-										const newTarget = responses.responses[0]
-										if (newTarget) {
-											await this.projectManager.updateTargetTime(this.selectedProject, Number(newTarget))
-											// void this.updateProjectTableRows()
-										}
-
-									}
-								}).open();
-
-
-							});
-					});
-
-
-
-					menu.showAtMouseEvent(event);
-				})
 			}
+			controlSection.addEventListener("contextmenu", (event) => {
+				event.preventDefault();
+
+				// right-click menu
+				const menu = new Menu();
+
+				menu.addItem((item) => {
+					item.setTitle("Update weekly target")
+						.onClick(async () => {
+							const context: ModalContext = {
+								items: [
+									{
+										type: "number",
+										text: "Target weekly hours"
+									}
+								]
+							}
+							new GenericModal(this.app, {
+								context: context,
+								onSubmit: async (responses: CreateModalRequest) => {
+									const newTarget = responses.responses[0]
+									if (newTarget) {
+										await this.timeTracker.updateWeeklyAllocation(this.selectedProject, Number(newTarget))
+										// void this.updateProjectTableRows()
+									}
+
+								}
+							}).open();
+
+
+						});
+				});
+
+
+
+				menu.showAtMouseEvent(event);
+			})
+			
 		}
 	}
+
+	private async createMonthProgressTracker(controlSection: HTMLDivElement) {
+		const monthProgressDiv = controlSection.createDiv({ cls: "progress-bar-section" })
+		// monthProgressDiv.addClass("subsection")
+		const monthTitle = monthProgressDiv.createDiv({ text: `Monthly target`, cls: 'project-time-label' })
+		monthTitle.setCssStyles({ gridArea: 'title' })
+		const progressDiv = monthProgressDiv.createDiv()
+		progressDiv.addClass("time-progress-cell")
+		progressDiv.setCssStyles({ gridArea: 'total' })
+		if (
+			this.selectedProject !== null &&
+			this.selectedProject.targetHours &&
+			this.selectedProject.targetHours.period === "month"
+
+		) {
+			// progressDiv.addClass("center-align")
+			const actualMinutes = this.timeSummaries.month.project.get(this.selectedProject.file.path) ?? 0;
+			const targetMinutes = (this.selectedProject.targetHours.hours ?? 0) * 60
+
+			const remainingMinutes = targetMinutes - actualMinutes
+			const remaining = remainingMinutes > 0 ? formatMinutesToDuration(remainingMinutes) : 0
+			const remainingTitle = monthProgressDiv.createDiv({cls: 'progress-remaining'})
+			remainingTitle.setCssStyles({ gridArea: 'remaining', textAlign: 'right' })
+			remainingTitle.createDiv({ text: `Remaining: `, cls: 'progress-time-label' })
+			remainingTitle.createDiv({ text: `${ remaining }`, cls: 'font-size-14'})
+			const timePercent = actualMinutes / targetMinutes
+
+			const indicatorType: "bar" | "ball" = "bar"
+
+			if (indicatorType === "bar") {
+				progressDiv.addClass("time-progress-cell")
+				this.progressWeekIndicator = new TimeProgressBar(progressDiv)
+				this.progressWeekIndicator.update(actualMinutes, targetMinutes)
+
+				const pctDiv = monthProgressDiv.createDiv({ text: `${Math.round(timePercent * 100)}%` })
+				pctDiv.setCssStyles({ gridArea: 'percent' })
+			} else if (indicatorType === "ball") {
+				progressDiv.addClass("active-indicator")
+				const span = progressDiv.createSpan();  //⏲
+				span.appendChild(createProgressWheel(timePercent))
+
+				const percent = Math.round(timePercent * 100)
+				monthProgressDiv.createDiv({ cls: "font-size-12", text: `${percent}%` })
+
+				monthProgressDiv.createDiv({ cls: "font-size-10", text: `${targetMinutes / 60} h this week` })
+				// controlSection.title = `${currHours}/${targetText}h (${percent}%)`
+			}
+
+	
+
+			
+			controlSection.addEventListener("contextmenu", (event) => {
+				event.preventDefault();
+
+				// right-click menu
+				const menu = new Menu();
+
+				menu.addItem((item) => {
+					item.setTitle("Update weekly target")
+						.onClick(async () => {
+							const context: ModalContext = {
+								items: [
+									{
+										type: "number",
+										text: "Target weekly hours"
+									}
+								]
+							}
+							new GenericModal(this.app, {
+								context: context,
+								onSubmit: async (responses: CreateModalRequest) => {
+									const newTarget = responses.responses[0]
+									if (newTarget) {
+										await this.timeTracker.updateWeeklyAllocation(this.selectedProject, Number(newTarget))
+										// void this.updateProjectTableRows()
+									}
+
+								}
+							}).open();
+
+
+						});
+				});
+
+
+
+				menu.showAtMouseEvent(event);
+			})
+
+		}
+	}
+
 
 	private async createStatusIndicator(target: HTMLDivElement) {
 		if (this.selectedProject !== null) {
@@ -326,8 +446,8 @@ export class TimeSummarySingle extends Component {
 
 	private async createControls(sessionControls: HTMLDivElement) {
 		// sessionControls.addClass("project-controls")
-		sessionControls.addClass("no-scroll")
-		sessionControls.addClass("control-col")
+		// sessionControls.addClass("no-scroll")
+		// sessionControls.addClass("control-col")
 		const activeSession = await this.timeTracker.getActiveProjectSession(this.selectedProject?.file.path);
 
 		if (this.selectedProject !== null) {
@@ -336,8 +456,8 @@ export class TimeSummarySingle extends Component {
 
 			this.startButton = new ButtonComponent(buttonDiv)
 				.setButtonText(activeSession ? "Stop" : "Start")
-				.setClass("button-larger")
-				// .setClass("button-new")
+				// .setClass("button-larger")
+				.setClass("button-new")
 				.onClick(async () => {
 					if (this.sessionActive) {
 						await this.timeTracker.stopSessions(undefined, this.selectedProject ?? undefined)
@@ -349,8 +469,8 @@ export class TimeSummarySingle extends Component {
 
 			this.startAtButton = new ButtonComponent(buttonDiv)
 				.setButtonText(activeSession ? "Stop at" : "Start at")
-				.setClass("button-larger")
-				// .setClass("button-new")
+				// .setClass("button-larger")
+				.setClass("button-new")
 				.onClick(async () => {
 					if (this.sessionActive) {
 						new TimeModal(this.app, {
@@ -384,8 +504,8 @@ export class TimeSummarySingle extends Component {
 
 			this.addSessionButton = new ButtonComponent(buttonDiv)
 				.setButtonText("Add session")
-				.setClass("button-larger")
-				// .setClass("button-new")
+				// .setClass("button-larger")
+				.setClass("button-new")
 				.onClick(async () => {
 
 					new TimeModal(this.app, {
@@ -414,9 +534,14 @@ export class TimeSummarySingle extends Component {
 	}
 
 	private async buildProjectStats(projectSection: HTMLDivElement) {
-		const newDiv = createDiv({ cls: "project-section" })
+		const tempDiv = createDiv()
+		const titleDiv = tempDiv.createDiv({ text: 'Running totals', cls: 'font-size-14' })
+		// titleDiv.addClass("subsection")
+		const newDiv = tempDiv.createDiv({ cls: "project-section" })
 		newDiv.addClass("project-time-section")
+
 		
+		// titleDiv.setCssStyles({gridArea: "a"})
 		// today
 		// const todayDiv = newDiv.createDiv()
 		newDiv.createDiv({
@@ -455,8 +580,8 @@ export class TimeSummarySingle extends Component {
 			cls: "project-time-value"
 		})
 
-		projectSection?.replaceWith(newDiv);
-		projectSection = newDiv;
+		projectSection?.replaceWith(tempDiv);
+		projectSection = tempDiv;
 	}
 
 	updateProjectStats() {

@@ -111,7 +111,12 @@ export class ProjectSingleView extends Component {
 				void this.timeTable?.refreshDashboard()
 			})
 		);
-
+		this.registerEvent(
+			this.timeTracker.on("time-allocations-updated", () => {
+				// when a session is started, stopped, or a whole one is added
+				void this.timeTable?.refreshDashboard()
+			})
+		);
 		void this.initialize();
 
 		this.refreshInterval = window.setInterval(() => {

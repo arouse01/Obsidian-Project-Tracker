@@ -9,18 +9,22 @@ import ProjectTrackerPlugin from '@/main';
 export interface IssueTrackerSettings {
 	nextIssueID: number;
 	timeLogPath: string;
+	timeAllocPath: string;
 	todoLogPath: string;
 	peoplePath: string;
 	devNotePath: string;
+	notificationLogPath: string;
 	allowNotifications: boolean;
 }
 
 export const DEFAULT_SETTINGS: IssueTrackerSettings = {
 	nextIssueID: 1,
 	timeLogPath: 'Project Management/timeLog.json',
+	timeAllocPath: 'Project Management/timeAllocLog.json',
 	todoLogPath: 'Project Management/todoList.json',
 	peoplePath: 'Organizations/',
 	devNotePath: 'Notes/Obsidian Notes',
+	notificationLogPath: 'Project Management/notificationLog.json',
 	allowNotifications: true
 };
 
@@ -55,6 +59,15 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 						}
 					},
 					{
+						name: 'Time allocation path',
+						desc: 'The .json file that stores allocated weekly hours by project',
+						control: {
+							type: 'file',
+							key: 'timeAllocPath',
+							placeholder: 'Select a .json...',
+						}
+					},
+					{
 						name: 'Todo log path',
 						desc: 'The .json file that stores todos',
 						control: {
@@ -70,6 +83,14 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 							type: 'folder',
 							key: 'peoplePath',
 							placeholder: 'Select a folder...',
+						}
+					},
+					{
+						name: 'Notification log path',
+						desc: `The .json file that tracks time notifications`,
+						control: {
+							type: 'file',
+							key: 'notificationLogPath',
 						}
 					},
 					{
@@ -108,8 +129,10 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 		this.buildDevNotePathField(containerEl);
 		this.buildSerialField(containerEl);
 		this.buildTimeLogField(containerEl);
+		this.buildTimeAllocField(containerEl);
 		this.buildTodoLogField(containerEl);
 		this.buildPeoplePathField(containerEl);
+		this.buildNotificationLogField(containerEl);
 
 	}
 
@@ -147,6 +170,20 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 			);
 	}
 
+	buildTimeAllocField(parent: HTMLElement): void {
+		new Setting(parent)
+			.setName('Time allocation path')
+			.setDesc('The .json file that stores allocated weekly hours by project')
+			.addText(text =>
+				text.setValue(this.plugin.settings.timeAllocPath)
+					.onChange(async (value) => {
+						this.plugin.settings.timeAllocPath = value;
+						await this.plugin.saveSettings();
+					})
+					.inputEl.addClass('wide-setting-input')
+			);
+	}
+
 	buildTodoLogField(parent: HTMLElement): void {
 		new Setting(parent)
 			.setName('Todo log path')
@@ -155,6 +192,20 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 				text.setValue(this.plugin.settings.todoLogPath)
 					.onChange(async (value) => {
 						this.plugin.settings.todoLogPath = value;
+						await this.plugin.saveSettings();
+					})
+					.inputEl.addClass('wide-setting-input')
+			);
+	}
+	
+	buildNotificationLogField(parent: HTMLElement): void {
+		new Setting(parent)
+			.setName('Notification log path')
+			.setDesc('Path to the JSON that tracks time notifications')
+			.addText(text =>
+				text.setValue(this.plugin.settings.notificationLogPath)
+					.onChange(async (value) => {
+						this.plugin.settings.notificationLogPath = value;
 						await this.plugin.saveSettings();
 					})
 					.inputEl.addClass('wide-setting-input')

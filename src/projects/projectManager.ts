@@ -16,14 +16,15 @@ import {
 	CreateProjectRequest,
 	ProjectContext,
 	ProjectModalOptions,
-	TimePeriod
+	TimePeriod,
+    TimeTarget
 } from '@/utils/types';
 import {
 	ProjectModal
 } from '@/projects/projectModal'
 import {
 	// GroupPosition,
-	SummaryPeriod,
+	// SummaryPeriod,
 	getSummaryPeriod
 } from '@/utils/tableFunctions';
 
@@ -44,17 +45,16 @@ export class MyProjectManager {
 		);
 		
 		return projectFiles.map(file => {
-			const targetHours = new Map<TimePeriod, number>
-			targetHours.set("day", getFrontmatterNumber(this.app.metadataCache, file, "targetHoursDay"))
-			targetHours.set("week", getFrontmatterNumber(this.app.metadataCache, file, "targetHoursWeek"))
-			targetHours.set("month", getFrontmatterNumber(this.app.metadataCache, file, "targetHoursMonth"))
+			const targetHours = getFrontmatterNumber(this.app.metadataCache, file, "targetHours")
+			const targetPeriod = getFrontmatterString(this.app.metadataCache, file, "targetPeriod")
+
 
 			return {
 				file: file,
 				name: file.basename,
 				status: getFrontmatterString(this.app.metadataCache, file, "Project Status"),
 				client: getFrontmatterString(this.app.metadataCache, file, "Primary"),
-				targetHours: targetHours
+				targetHours: this.getTimeTarget(targetHours, targetPeriod as TimePeriod)
 			}
 			
 
@@ -160,6 +160,31 @@ export class MyProjectManager {
 
 	}
 
+	getTimeTarget(
+		hoursValue: number,
+		periodValue: TimePeriod
+	): TimeTarget | undefined {
+		// parse and validate the target values
+		if (
+			!Number.isFinite(hoursValue) ||
+			hoursValue <= 0
+		) {
+			return undefined
+		}
+
+		if (
+			periodValue !== "day" &&
+			periodValue !== "week" &&
+			periodValue !== "month"
+		) {
+			return undefined
+		}
+		return {
+			hours: hoursValue,
+			period: periodValue
+		}
+
+	}
 	getClientList(): string[] {
 		// Get all clients listed across all projects
 		const files = this.app.vault.getMarkdownFiles();
@@ -279,7 +304,7 @@ targetHoursWeek:
 		if (collaborators.length === 0) {
 			return "Collaborators:\n  -"
 		}
-		const peoplePath = this.getPeoplePath();
+		const peoplePath = this.getPeoplePath(); 
 		const lines = collaborators.map(collab => {
 			const file = this.app.vault
 				.getMarkdownFiles()
@@ -299,6 +324,7 @@ targetHoursWeek:
 	}
 
 	async updateTargetTime(project: ProjectInfo, hours: number): Promise<void> {
+		
 		if (hours <= 0) {
 			await deleteFrontmatterValue(this.app, project.file, "targetHoursWeek")
 		} else {

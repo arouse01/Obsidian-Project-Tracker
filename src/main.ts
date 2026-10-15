@@ -55,8 +55,14 @@ export default class ProjectTrackerPlugin extends Plugin {
 		this.timeTracker = new TimeTracker(
 			this.app,
 			this.projectManager,
-			() => this.settings.timeLogPath
+			this.settings
+			// () => this.settings.timeLogPath,
+			// () => this.settings.timeAllocPath,
+			// () => this.settings.notificationLogPath
 		);
+		this.register(() => {
+			this.timeTracker.stopMonitoring();
+		});
 
 		this.issueTracker = new IssueTracker(
 			this.app,
@@ -258,6 +264,12 @@ export default class ProjectTrackerPlugin extends Plugin {
 		);
 
 		this.addSettingTab(new IssueTrackerSettingTab(this.app, this));
+
+		this.app.workspace.onLayoutReady(() => {
+			// we need to wait until the layout is ready, then we can read and update the allocation log
+			void this.timeTracker.refreshAllocations()
+		})
+		
 	}
 
 	async activateTrackerDashboard(): Promise<void> {
