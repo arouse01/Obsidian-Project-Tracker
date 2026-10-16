@@ -17,7 +17,8 @@ import {
     WeeklyTimePlans,
 	WeeklyAllocation,
 	NotificationRecord,
-    NotificationType
+    NotificationType,
+    CreateAllocRequest
 } from '@/utils/types';
 import {
 	getDateKey,
@@ -109,27 +110,49 @@ export class TimeTracker extends Events {
 	}
 
 	async updateWeeklyAllocation(
-		project: ProjectInfo,
+		project: ProjectInfo | string,
 		target: number
 	): Promise<void> {
 		const thisWeek = getDateKey(undefined, true);
-		const projectFile = project.file.path;
+		let projectPath: string
+		if (typeof project === "string") {
+			projectPath = project
+		} else {
+			projectPath = project.file.path;
+		}
 
 		if (this.weeklyTimePlans[thisWeek] === undefined) {
 			this.weeklyTimePlans[thisWeek] = {}
 		}
 		
-		this.weeklyTimePlans[thisWeek][projectFile] = target
+		this.weeklyTimePlans[thisWeek][projectPath] = target
 
 		this.currWeekAllocations = this.getWeeklyAllocations(thisWeek)
 
 		await this._saveWeeklyTimePlans(this.weeklyTimePlans);
 	}
 
+
 	getWeeklyAllocations(weekStarting: DateKey): WeeklyAllocation {
 		const allocation = this.weeklyTimePlans[weekStarting]
 		return allocation ?? {}
 		
+	}
+
+	async setWeeklyAllocations(request: CreateAllocRequest): Promise<void> {
+		const dateKey = request.dateKey;
+		const allocations = request.allocations
+
+		if (this.weeklyTimePlans[dateKey] === undefined) {
+			this.weeklyTimePlans[dateKey] = {}
+		}
+
+		for (const projPath in allocations) {
+			this.weeklyTimePlans[dateKey][projPath] = allocations[projPath] ?? 0
+		}
+		this.currWeekAllocations = this.getWeeklyAllocations(dateKey)
+
+		await this._saveWeeklyTimePlans(this.weeklyTimePlans);
 	}
 
 	private _parseSessionfromRaw(data: RawTimeSession): SessionData {

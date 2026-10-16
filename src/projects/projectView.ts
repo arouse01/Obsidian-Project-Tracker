@@ -2,8 +2,9 @@ import {
 	App,
 	Component,
 	// Menu,
-	// ButtonComponent,
-	// TFile,
+	ButtonComponent,
+	Notice,
+    ViewStateResult,
 	// setIcon
 } from 'obsidian';
 import { MyProjectManager } from '@/projects/projectManager';
@@ -56,10 +57,13 @@ import {
 	NoteManager
 } from '@/notes/noteManager';
 
+const DASHBOARD_TABS = ["Issues", "Todos", "Meeting notes", "Other project notes"] as const;
+type DashboardTab = typeof DASHBOARD_TABS[number];
 
 export class ProjectSingleView extends Component {
 	private refreshInterval: number | null = null;
 
+	private projectTitle!: HTMLDivElement;
 	private timeEl!: HTMLDivElement;
 	private todoEl!: HTMLDivElement;
 	private detailsEl!: HTMLDivElement;
@@ -77,6 +81,8 @@ export class ProjectSingleView extends Component {
 	private otherNoteTable: NoteDashboard | undefined;
 
 	private indicatorSection!: HTMLDivElement;
+	private activeTab: DashboardTab;
+	private tabButtons = new Map<DashboardTab, ButtonComponent>();
 
 	constructor(
 		private container: HTMLElement,
@@ -86,10 +92,12 @@ export class ProjectSingleView extends Component {
 		private issueTracker: IssueTracker,
 		private todoManager: TodoManager,
 		private noteManager: NoteManager,
-		private project?: string | undefined
+		private project?: string | undefined,
+		activeTab: DashboardTab = "Issues"
 	) {
 		super();
 		this.selectedProject = project
+		this.activeTab = activeTab
 	}
 
 	getViewType(): string {
@@ -129,7 +137,21 @@ export class ProjectSingleView extends Component {
 		await this.buildDashboard();
 		await this.updateTableRows();
 	}
+	// async setState(
+	// 	state: Record<string, unknown>,
+	// 	result: ViewStateResult,
+	// ): Promise<void> {
+	// 	if (
+	// 		state.activeTab === "Issues" ||
+	// 		state.activeTab === "Todos" ||
+	// 		state.activeTab === "Meeting notes" || 
+	// 		state.activeTab === "Other project notes"
+	// 	) {
+	// 		this.activeTab = state.activeTab;
+	// 	}
 
+	// 	await super.setState(state, result);
+	// }
 	async onClose(): Promise<void> {
 		if (this.refreshInterval !== null) {
 			window.clearInterval(this.refreshInterval);
@@ -183,80 +205,276 @@ export class ProjectSingleView extends Component {
 		*/
 		const dashboardContainer = this.container.createDiv()
 		dashboardContainer.addClass('project-dashboard')
-		const projectSection = dashboardContainer.createDiv({cls: "section-header"})
+		const projectSection = dashboardContainer.createDiv({ cls: "section-header" })
+		projectSection.addClass('project-title-section')
 		projectSection.addClass("dashboard")
+		const titleSection = projectSection.createDiv({cls: "project-title-with-button"})
+		this.projectTitle = titleSection.createDiv()
+		this.projectTitle.addClass("project-title")
+		const linkDiv = titleSection.createDiv({ cls: "dashboard" })
+		
+		new ButtonComponent(linkDiv)
+			.setIcon("file-symlink")
+			.setClass("font-size-12")
+			.onClick(async () => {
+				const files = this.app.vault.getMarkdownFiles();
+				const projectNotePath = files.find(file => file.path === this.selectedProject);
+				if (projectNotePath) {
+					// event.preventDefault();
+					const existingLeaf = this.app.workspace.getLeavesOfType(
+						"markdown"
+					).find(leaf => {
+						const view = leaf.view;
+						return view.getState().file === projectNotePath.path;
+					});
+
+					if (existingLeaf) {
+						void this.app.workspace.revealLeaf(existingLeaf);
+					} else {
+						void this.app.workspace.getLeaf(false).openFile(projectNotePath);
+					}
+				} else {
+					new Notice(`Project note file not found (${this.selectedProject}).`);
+				}
+			});
+		// devButton.buttonEl.classList.remove("dashboard-tabs")
+		
+		/*this.projectTitle.addEventListener("click", (event) => {
+			event.preventDefault();
+
+			// right-click menu
+			const menu = new Menu();
+			const files = this.app.vault.getMarkdownFiles();
+			const projectNotePath = files.find(file => file.path === this.selectedProject);
+			if (projectNotePath) {
+				menu.addItem((item) => {
+					item.setTitle("Open project Markdown file")
+						.onClick(async () => {
+							// event.preventDefault();
+							const existingLeaf = this.app.workspace.getLeavesOfType(
+								"markdown"
+							).find(leaf => {
+								const view = leaf.view;
+								return view.getState().file === projectNotePath.path;
+							});
+
+							if (existingLeaf) {
+								void this.app.workspace.revealLeaf(existingLeaf);
+							} else {
+								void this.app.workspace.getLeaf(false).openFile(projectNotePath);
+							}
+						});
+				})
+				menu.showAtMouseEvent(event);
+			}
+
+		})*/
+			
 		this.projectSelect = projectSection.createEl("select");
 		this.projectSelect.addClass("dropdown-new")
-		this.projectSelect.addClass("center-align")
+		// this.projectSelect.addClass("center-align")
 		this.projectSelect.addClass("project-selector")
-		for (const project of this.getProjectOptions()) {
-			this.projectSelect.createEl("option", {
-				value: project.path,
-				text: project.name
-			})
-		}
+		this.projectSelect.required = true;
+		this.updateProjectSelector()
+		// const placeholder = this.projectSelect.createEl("option", {
+		// 	value: "",
+		// 	text: "Select a project"
+		// })
+		// placeholder.hidden = true;
+		// for (const project of this.getProjectOptions()) {
+		// 	this.projectSelect.createEl("option", {
+		// 		value: project.path,
+		// 		text: project.name
+		// 	})
+		// }
 		this.registerDomEvent(this.projectSelect, "change", async () => {
 			const path = this.projectSelect.value;
-			this.selectedProject = path;
-			await this.handleProjectChange(path)
+			if (path !== "") {
+				this.selectedProject = path;
+				await this.handleProjectChange(path);
+				this.projectSelect.value = "";
+			}
 
 
 		});
 		// this.indicatorSection = projectSection.createDiv({cls: "right-align"})
-		
-		
 		const detailsSection = dashboardContainer.createDiv({ cls: "single-project-section" });
 		// detailsSection.createDiv({ text: "Project details", cls: "section-header" })
 		this.detailsEl = detailsSection.createDiv()
-		
-
 		dashboardContainer.createEl("hr")
 
-		// build the time tracker section
 		const timeSection = dashboardContainer.createDiv({ cls: "single-project-section" });
-		
 		this.timeEl = timeSection.createDiv()
-		// this.timeTable = new TimeSummarySingle(this.selectedProject, timeSection, this.app, this.timeTracker, this.projectManager, "week", 0)
+		dashboardContainer.createEl("hr")
+
+		const projectTabsArea = dashboardContainer.createDiv({ cls: "dashboard-tab-container" });
+		await this.buildTabs(projectTabsArea)
+
+		const contentArea = dashboardContainer.createDiv({ cls: "dashboard-tab-area" })
+		
+		await this.buildContentArea(contentArea)
+		
+		this.showTab(this.activeTab)
+
+		
+	}
+
+	async buildContentArea(parent: HTMLDivElement): Promise<void> {
+		this.issueEl = parent.createDiv({ cls: "single-project-section" })
+		this.todoEl = parent.createDiv({ cls: "single-project-section" })
+		this.todoEl.addClass("project-section")
+		this.meetingEl = parent.createDiv({ cls: "single-project-section" })
+		this.otherNoteEl = parent.createDiv({ cls: "single-project-section" })
+/*
+		this.projectDashboard = new ProjectDashboardView(
+			projectViewEl,
+			this,
+			this.app,
+			this.plugin.timeTracker,
+			this.plugin.projectManager,
+			this.plugin.issueTracker,
+			this.plugin.todoManager
+		)
+		this.addChild(this.projectDashboard)
+
+		this.todoDashboard = new TodoDashboardView(
+			todoEl,
+			this.app,
+			this.plugin.todoManager,
+			this.plugin.projectManager
+		)
+		this.addChild(this.todoDashboard)
+
+		this.issueDashboard = new IssueDashboardView(
+			issueEl,
+			this.app,
+			this.plugin.issueTracker,
+			this.plugin.projectManager
+		)
+		this.addChild(this.issueDashboard)
+
+		this.singleProjectDashboard = new ProjectSingleView(
+			singleProjectEl,
+			this.app,
+			this.plugin.timeTracker,
+			this.plugin.projectManager,
+			this.plugin.issueTracker,
+			this.plugin.todoManager,
+			this.plugin.noteManager
+		)
+		this.addChild(this.singleProjectDashboard)
+
+		// this.projectDashboard.setSingleProjectView(this.singleProjectDashboard)
+
+		this.projectViewEl = projectViewEl;
+		this.todoEl = todoEl;
+		this.timeEl = timeEl;
+		this.issueEl = issueEl;
+		this.singleProjectEl = singleProjectEl;
+
+		void this.showTab(this.activeTab);
+		*/
+		
+		/*
 
 		dashboardContainer.createEl("hr")
+
 
 		// build issue table section
 		const issueSection = dashboardContainer.createDiv({ cls: "single-project-section" });
 		issueSection.createDiv({ text: "Project issues", cls: "section-header" });
 		this.issueEl = issueSection.createDiv()
-		
+
 		dashboardContainer.createEl("hr")
 
 		// build todo section
 		const todoSection = dashboardContainer.createDiv({ cls: "single-project-section" });
 		todoSection.createDiv({ text: "Project todos", cls: "section-header" })
 		this.todoEl = todoSection.createDiv({ cls: "project-section" });
-		
+
 		dashboardContainer.createEl("hr")
 
 		// build meeting section
 		const meetingSection = dashboardContainer.createDiv({ cls: "single-project-section" });
 		meetingSection.createDiv({ text: "Meeting notes", cls: "section-header" })
 		this.meetingEl = meetingSection.createDiv()
-		
+
 
 		dashboardContainer.createEl("hr")
 
 		// build other notes section
 		const noteSection = dashboardContainer.createDiv({ cls: "single-project-section" });
-		noteSection.createDiv({ text: "Other project notes", cls: "section-header" }) 
-		this.otherNoteEl = noteSection.createDiv()
-
-		
+		noteSection.createDiv({ text: "Other project notes", cls: "section-header" })
+		this.otherNoteEl = noteSection.createDiv()*/
 	}
 
+	updateProjectSelector() {
+		const placeholder = this.projectSelect.createEl("option", {
+			value: "",
+			text: "Select a project"
+		})
+		placeholder.hidden = true;
+		for (const project of this.getProjectOptions()) {
+			this.projectSelect.createEl("option", {
+				value: project.path,
+				text: project.name
+			})
+		}
+	}
+	private async buildTabs(header: HTMLElement): Promise<void> {
+
+
+		const tabArea = header.createDiv({
+			cls: "dashboard-tabs"
+		})
+		// tabArea.setCssStyles("display: flex")
+		// const tabs = header.createDiv({
+		// 	cls: "dashboard-tabs"
+		// })
+		// const newTable = tabArea.createEl('table')
+		// newTable.addClass("dashboard-tab-table")
+		// const row = newTable.createEl('tr');
+		for (const tab of DASHBOARD_TABS) {
+			// const cell = row.createEl("td");
+			const button = new ButtonComponent(tabArea)
+				.setButtonText(tab)
+				// .setClass("dashboard-tab")
+				.onClick(async () => {
+					const value = tab;
+					this.activeTab = value;
+					void this.showTab(this.activeTab);
+				});
+
+			this.tabButtons.set(tab, button);
+		}
+	}
+
+	showTab(tab: DashboardTab): void {
+		this.issueEl.hidden = tab !== "Issues";
+		this.todoEl.hidden = tab !== "Todos";
+		this.meetingEl.hidden = tab !== "Meeting notes";
+		this.otherNoteEl.hidden = tab !== "Other project notes";
+
+		for (const [tab, button] of this.tabButtons) {
+			button.buttonEl.toggleClass(
+				"button-selected",
+				this.activeTab === tab
+			)
+		}
+	}
+
+	switchTab(tab: DashboardTab): void {
+		this.activeTab = tab;
+		void this.showTab(this.activeTab);
+	}
 	async changeSelectedProject(path: string): Promise<void> {
-		this.projectSelect.value = path
+		this.projectSelect.value = ""
 		await this.handleProjectChange(path)
 	}
 
 	private async handleProjectChange(path: string): Promise <void> {
 		this.selectedProject = path;
+		this.projectTitle.setText(this.projectManager.getProjectNameByPath(path) ?? "")
 		if (this.detailsSection === undefined) {
 			await this.initializeComponents()
 		}

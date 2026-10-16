@@ -46,11 +46,13 @@ import {
     createStatusIcon,
     formatDate,
     formatMinutesToDuration,
+    getDateKey,
     getFrontmatterString,
     normalizeWikiLink
 } from '@/utils/utils';
 // import { ProjectSingleView } from '@/projects/projectView';
 import { TrackerView } from '@/trackerView';
+import { TimeAllocModal } from '../time/timeAllocModal';
 
 
 const PROJECT_STATUS_FILTERS = ["Active", "All", "Archived"] as const;
@@ -200,13 +202,38 @@ export class ProjectDashboardView extends Component {
 		dashboardContainer.addClass('small')
 
 		const projectSection = dashboardContainer.createDiv({ cls: "project-section" });
-		// projectSection.addClass("project-section")
+		const buttonSection = projectSection.createDiv();
+		buttonSection.addClass('dashboard');
+		buttonSection.addClass('font-size-12');
+		buttonSection.addClass('text-centered')
+		new ButtonComponent(buttonSection)
+			.setButtonText("Update weekly goals")
+			// .setClass("todo-dashboard-button")
+			.onClick(async () => {
+				const dateKey = getDateKey(undefined, true);
+				const startWeek = this.timeTracker.weeklyTimePlans[dateKey] ? dateKey : getDateKey(undefined, true, -1)
+				const prevAllocation = this.timeTracker.weeklyTimePlans[startWeek] ?? {}
+
+				new TimeAllocModal(this.app, {
+					dateKey: dateKey,
+					projects: this.projectManager.getActiveProjects(),
+					previousAlloc: prevAllocation,
+					onSubmit: async (request) => {
+						await this.timeTracker.setWeeklyAllocations(
+							request
+						);
+
+					}
+				}).open();
+			});
+// projectSection.addClass("project-section")
 		// projectSection.createEl("h3", {
 		// 	text: "Projects"
 		// });
 
 		const controlSection = projectSection.createDiv({ cls: 'project-controls' });
 		controlSection.addClass("control-col")
+		
 
 		const centerSection = controlSection.createEl("section")
 		centerSection.addClass('center-content');

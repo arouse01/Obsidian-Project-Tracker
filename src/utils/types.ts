@@ -375,3 +375,15 @@ export interface CreateGenericModalOptions {
 export interface CreateModalRequest {
 	responses: string[]
 }
+
+export interface TimeAllocModalOptions {
+	dateKey: DateKey;
+	projects: ProjectInfo[];
+	previousAlloc: WeeklyAllocation;
+	onSubmit: (request: CreateAllocRequest) => Promise<void>;
+}
+
+export interface CreateAllocRequest {
+	dateKey: DateKey;
+	allocations: Record<string, number>;
+}

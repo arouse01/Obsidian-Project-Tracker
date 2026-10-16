@@ -45,7 +45,7 @@ export const PROJ_COLS = {
 		maxWidth: "300px"
 	},
 	"progress": {
-		label: "Progress",
+		label: "Weekly Progress",
 		sortable: false,
 		centered: true,
 		groupable: false,
@@ -264,7 +264,7 @@ export const TIME_COLS = {
 		sortable: false,
 		centered: true,
 		groupable: false,
-		width: "50px",
+		width: "70px",
 		tableGroup: "project"
 	},
 	"hoursToday": {
@@ -512,3 +512,36 @@ export interface NoteGroup {
 	label: string;
 	notes: NoteItem[];
 }
+
+
+// Time allocation table
+export const TIME_ALLOC_COLS = {
+	"project": {
+		label: "Project",
+		sortable: true,
+		centered: false,
+		groupable: false,
+		minWidth: "auto",
+		tableGroup: ""
+	},
+	"weekGoal": {
+		label: "Goal this week",
+		sortable: false,
+		centered: true,
+		groupable: false,
+		width: "20%",
+		tableGroup: ""
+	},
+	"target": {
+		label: "Target",
+		sortable: false,
+		groupable: false,
+		width: "20%",
+		centered: true,
+		tableGroup: ""
+	}
+
+} satisfies Record<string, TableColumn>;
+
+export type TimeAllocColumnField = keyof typeof TIME_ALLOC_COLS;
+export type TimeAllocSort = ColSort<TimeAllocColumnField>

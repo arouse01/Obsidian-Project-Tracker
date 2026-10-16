@@ -9,7 +9,9 @@ import {
 	formatMinutesToDuration,
 	normalizeWikiLink,
 	createStatusIcon,
-	createProgressWheel
+	createProgressWheel,
+    dateKeyToDate,
+    getDateKey
 } from '@/utils/utils';
 import {
 	ProjectInfo,
@@ -37,6 +39,7 @@ import {
 	
 } from '@/utils/tableConstants'
 import { TimeSummaryTable } from '@/time/timeSummaryTable'
+import { TimeAllocModal } from './timeAllocModal';
 
 
 export class TimeDashboardView extends ItemView {
@@ -135,13 +138,37 @@ export class TimeDashboardView extends ItemView {
 		const controlSection = this.contentEl.createEl("section");
 		controlSection.addClass('dashboard');
 		controlSection.addClass('font-size-12');
+		controlSection.addClass('text-centered')
 
 		const title = controlSection.createEl("h1", {
 			text: "Time tracker",
 		});
 		title.addClass("text-centered");
 
-		const tableMainEl = controlSection.createEl('table');
+		new ButtonComponent(controlSection)
+			.setButtonText("Update weekly goals")
+			// .setClass("todo-dashboard-button")
+			.onClick(async () => {
+				const dateKey = getDateKey(undefined, true);
+				const startWeek = this.timeTracker.weeklyTimePlans[dateKey] ? dateKey : getDateKey(undefined, true, -1)
+				const prevAllocation = this.timeTracker.weeklyTimePlans[startWeek] ?? {}
+
+				new TimeAllocModal(this.app, {
+					dateKey: dateKey,
+					projects: this.projectManager.getActiveProjects(),
+					previousAlloc: prevAllocation,
+					onSubmit: async (request) => {
+						await this.timeTracker.setWeeklyAllocations(
+							request
+						);
+
+					}
+				}).open();
+			});
+
+		const tableDiv = this.contentEl.createDiv({ cls: "dashboard" })
+		tableDiv.addClass('font-size-12');
+		const tableMainEl = tableDiv.createEl('table');
 		tableMainEl.addClass('dashboard-table')
 		tableMainEl.addClass('time-table')
 
@@ -174,6 +201,14 @@ export class TimeDashboardView extends ItemView {
 				summaryFormat: "sidebar"
 			}
 		)
+
+		/*const allocButtonDiv = this.contentEl.createDiv("section");
+		allocButtonDiv.addClass("dashboard")
+		allocButtonDiv.addClass("text-centered")
+		allocButtonDiv.createEl("h3", {
+			text: ""
+		}); // lazy spacing*/
+		
 
 		
 	}

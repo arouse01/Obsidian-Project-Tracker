@@ -122,12 +122,13 @@ export function parseDateString(string: string): Date | undefined {
 
 export function getDateKey(
 	date: Date = new Date(),
-	weekStart: boolean = false
+	weekStart: boolean = false,
+	offset: number = 0
 ): DateKey {
 	let newDate: Date;
 	if (weekStart) {
 		// if we want the start of the week
-		newDate = window.moment().startOf('week').toDate()
+		newDate = window.moment().startOf('week').add(offset, "weeks").toDate()
 	} else {
 		newDate = date
 	}
@@ -138,6 +139,7 @@ export function getDateKey(
 	return `${year}-${month}-${day}`;
 
 }
+
 export function dateKeyToDate(
 	dateKey: DateKey
 ): Date {
@@ -532,7 +534,7 @@ export class TimeProgressBar {
 		this.fill = this.container.createDiv({cls: "time-progress-fill"})
 	}
 
-	update(workedMinutes: number, targetMinutes: number): void {
+	update(workedMinutes: number, targetMinutes: number, active: boolean = false): void {
 		const proportion = targetMinutes > 0
 			? workedMinutes / targetMinutes
 			: 0;
@@ -543,6 +545,16 @@ export class TimeProgressBar {
 		);
 
 		this.fill.style.width = `${visualProgress * 100}%`;
+
+		if (visualProgress < 1) {
+			this.fill.toggleClass("time-progress-fill-active", active)
+			this.fill.setCssProps({ "--bar-color": "var(--color-green)" })
+		} else {
+			this.fill.setCssProps({ "--bar-color": "var(--color-yellow)"})
+		}
+
+		
+		
 	}
 
 	getPercentage(workedMinutes: number, targetMinutes: number): number {

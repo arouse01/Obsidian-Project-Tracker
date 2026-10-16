@@ -66,32 +66,7 @@ export class ProjectInfoSingle extends Component {
 		// mainSection.addClass("font-size-16")
 		
 		if (this.selectedProject) {
-			const linkDiv = this.container.createDiv({cls:"dashboard"})
-			const files = this.app.vault.getMarkdownFiles();
-			const projectNotePath = files.find(file => file.path === this.selectedProject?.file.path);
-			if (projectNotePath) {
-				new ButtonComponent(linkDiv)
-					.setButtonText("Open project Markdown file")
-					.setClass("font-size-12")
-					.onClick(async () => {
-						// event.preventDefault();
-						const existingLeaf = this.app.workspace.getLeavesOfType(
-							"markdown"
-						).find(leaf => {
-							const view = leaf.view;
-							return view.getState().file === projectNotePath.path;
-						});
-
-						if (existingLeaf) {
-							void this.app.workspace.revealLeaf(existingLeaf);
-						} else {
-							void this.app.workspace.getLeaf(false).openFile(projectNotePath);
-						}
-					});
-				// devButton.buttonEl.classList.remove("dashboard-tabs")
-			} else {
-				new Notice(`Project note file not found (${this.selectedProject?.file.path}).`);
-			}
+			
 		
 		
 			// this.container.addClass("project-dashboard")

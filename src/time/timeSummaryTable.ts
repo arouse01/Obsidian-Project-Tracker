@@ -265,6 +265,9 @@ export class TimeSummaryTable {
 		summaryTotals: PeriodicTimeSummary
 	): SummaryColumn[] {
 		let summaryCols: SummaryColumn[];
+		const colWidth = this.selectedProjectPath ? "80px" : "60px";
+
+		
 		if (this.summaryFormat === "sidebar") {
 			summaryCols = [
 				{
@@ -296,7 +299,7 @@ export class TimeSummaryTable {
 							weekday: "short",
 							day: "2-digit"
 						}),
-						width: "60px"
+						width: colWidth
 					})),
 
 					{
@@ -319,7 +322,7 @@ export class TimeSummaryTable {
 						label: dateKeyToDate(day).toLocaleDateString("en-US", {
 							month: "short"
 						}),
-						width: "60px"
+						width: colWidth
 					})),
 
 					{

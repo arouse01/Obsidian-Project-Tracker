@@ -34,6 +34,11 @@ import {
 import { GenericModal } from '@/utils/genericModal';
 
 
+interface ProgressSection {
+	barEl: TimeProgressBar,
+	remainingEl: HTMLDivElement,
+	percentEl: HTMLDivElement
+}
 
 export class TimeSummarySingle extends Component {
 
@@ -48,8 +53,8 @@ export class TimeSummarySingle extends Component {
 	private activeDiv!: HTMLDivElement;
 	private activeIcon!: HTMLSpanElement;
 	// private generalSummary!: HTMLDivElement;
-	private progressWeekIndicator!: TimeProgressBar;
-	private progressMonthIndicator!: TimeProgressBar;
+	private progressWeekIndicator!: ProgressSection;
+	private progressMonthIndicator!: ProgressSection;
 
 	private todayTime!: HTMLDivElement;
 	private weekTime!: HTMLDivElement;
@@ -265,22 +270,35 @@ export class TimeSummarySingle extends Component {
 			// progressDiv.addClass("center-align")
 			const actualMinutes = this.timeSummaries.week.project.get(this.selectedProject.file.path) ?? 0;
 			const remainingMinutes = targetMinutes - actualMinutes
-			const remaining = remainingMinutes > 0 ? formatMinutesToDuration(remainingMinutes) : 0
+			const remaining = remainingMinutes > 0 ? formatMinutesToDuration(remainingMinutes) : formatMinutesToDuration(0)
 			const remainingTitle = weekProgressDiv.createDiv({ cls: 'progress-remaining' })
 			remainingTitle.setCssStyles({ gridArea: 'remaining', textAlign: 'right' })
 			remainingTitle.createDiv({ text: `Remaining: `, cls: 'progress-time-label'})
-			remainingTitle.createDiv({ text: `${remaining}`, cls: 'font-size-14' }) 
+			const targetAmount = formatMinutesToDuration(targetMinutes)
+			const remValue = remainingTitle.createDiv({ text: `${remaining}/${targetAmount}`, cls: 'font-size-14' }) 
+
+			
+			// const targetTitle = weekProgressDiv.createDiv({ cls: 'progress-remaining' })
+			// targetTitle.setCssStyles({ gridArea: 'target', textAlign: 'right' })
+			// targetTitle.createDiv({ text: `Remaining: `, cls: 'progress-time-label' })
+			// const targetValue = targetTitle.createDiv({ text: `${targetAmount}`, cls: 'font-size-14' }) 
 			const timePercent = actualMinutes / targetMinutes
 
 			const indicatorType: "bar" | "ball" = "bar"
 
 			if (indicatorType === "bar") {
 				progressDiv.addClass("time-progress-cell")
-				this.progressWeekIndicator = new TimeProgressBar(progressDiv)
-				this.progressWeekIndicator.update(actualMinutes, targetMinutes)
+				const barEl = new TimeProgressBar(progressDiv)
+				barEl.update(actualMinutes, targetMinutes, !!this.sessionActive)
 				
 				const pctDiv = weekProgressDiv.createDiv({ text: `${Math.round(timePercent * 100)}%` })
 				pctDiv.setCssStyles({ gridArea: 'percent' })
+
+				this.progressWeekIndicator = {
+					barEl: barEl,
+					remainingEl: remValue,
+					percentEl: pctDiv
+				}
 			} else if (indicatorType === "ball") {
 				progressDiv.addClass("active-indicator")
 				const span = progressDiv.createSpan();  //⏲
@@ -317,15 +335,10 @@ export class TimeSummarySingle extends Component {
 										await this.timeTracker.updateWeeklyAllocation(this.selectedProject, Number(newTarget))
 										// void this.updateProjectTableRows()
 									}
-
 								}
 							}).open();
-
-
 						});
 				});
-
-
 
 				menu.showAtMouseEvent(event);
 			})
@@ -356,18 +369,33 @@ export class TimeSummarySingle extends Component {
 			const remainingTitle = monthProgressDiv.createDiv({cls: 'progress-remaining'})
 			remainingTitle.setCssStyles({ gridArea: 'remaining', textAlign: 'right' })
 			remainingTitle.createDiv({ text: `Remaining: `, cls: 'progress-time-label' })
-			remainingTitle.createDiv({ text: `${ remaining }`, cls: 'font-size-14'})
+			const targetAmount = formatMinutesToDuration(targetMinutes)
+			const remValue = remainingTitle.createDiv({ text: `${remaining}/${targetAmount}`, cls: 'font-size-14' })
+
+			// const targetTitle = monthProgressDiv.createDiv({ cls: 'progress-remaining' })
+			// targetTitle.setCssStyles({ gridArea: 'target', textAlign: 'right' })
+			// const targetValue = targetTitle.createDiv({ text: `${targetAmount}`, cls: 'font-size-14' }) 
+
 			const timePercent = actualMinutes / targetMinutes
 
 			const indicatorType: "bar" | "ball" = "bar"
 
 			if (indicatorType === "bar") {
 				progressDiv.addClass("time-progress-cell")
-				this.progressWeekIndicator = new TimeProgressBar(progressDiv)
-				this.progressWeekIndicator.update(actualMinutes, targetMinutes)
+				const barEl = new TimeProgressBar(progressDiv)
+				barEl.update(actualMinutes, targetMinutes, !!this.sessionActive)
 
 				const pctDiv = monthProgressDiv.createDiv({ text: `${Math.round(timePercent * 100)}%` })
 				pctDiv.setCssStyles({ gridArea: 'percent' })
+
+				progressDiv.addClass("time-progress-cell")
+				
+
+				this.progressMonthIndicator = {
+					barEl: barEl,
+					remainingEl: remValue,
+					percentEl: pctDiv
+				}
 			} else if (indicatorType === "ball") {
 				progressDiv.addClass("active-indicator")
 				const span = progressDiv.createSpan();  //⏲
@@ -596,8 +624,38 @@ export class TimeSummarySingle extends Component {
 		const monthHours = this.timeSummaries.month.project.get(this.selectedProject?.file.path)
 		this.monthTime.setText(formatMinutesToDuration(monthHours ?? 0))
 
+		if (this.progressWeekIndicator) {
+			this.updateProgressBar(this.progressWeekIndicator, "allocated")
+		}
+
+		if (this.progressMonthIndicator) {
+			this.updateProgressBar(this.progressMonthIndicator, "month")
+		}
 	}
 
+	updateProgressBar(target: ProgressSection, type: "allocated" | "month") {
+		let actualMinutes: number
+		let targetMinutes: number
+		if (type === "allocated") {
+			actualMinutes = this.timeSummaries.week.project.get(this.selectedProject.file.path) ?? 0;
+			targetMinutes = (this.timeTracker.currWeekAllocations[this.selectedProject.file.path] ?? 0) * 60
+		} else {
+			actualMinutes = this.timeSummaries.month.project.get(this.selectedProject.file.path) ?? 0;
+			targetMinutes = (this.selectedProject?.targetHours?.hours ?? 0) * 60
+		}
+		
+		if (targetMinutes > 0) {
+			const remainingMinutes = targetMinutes - actualMinutes
+			const remaining = remainingMinutes > 0 ? formatMinutesToDuration(remainingMinutes) : formatMinutesToDuration(0)
+			const timePercent = actualMinutes / targetMinutes
+			const targetValue = formatMinutesToDuration(targetMinutes)
+
+			target.barEl.update(actualMinutes, targetMinutes, !!this.sessionActive)
+			target.remainingEl.setText(`${remaining}/${targetValue}`)
+			target.percentEl.setText(`${Math.round(timePercent * 100)}%`)
+			// target.targetEl.setText(`${targetValue}`)
+		}
+	}
 	async initialDataRefresh(): Promise<void> {
 
 		this.timeSummaries = await this.timeTracker.getCurrentTimeSummaries();

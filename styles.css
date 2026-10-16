@@ -312,8 +312,9 @@ hr {
 }
 
 .single-project-section {
-	max-height: 400px;
+/*	max-height: 400px;*/
 	overflow-y: auto;
+	padding-bottom: 10px
 }
 
 .project-selector {
@@ -322,8 +323,32 @@ hr {
 	gap: 8px;
 	padding-top: 6px;
 	padding-bottom: 6px;
-	font-size: 24px;
+/*	font-size: 24px;*/
 	height: fit-content;
+}
+
+.project-selector:invalid {
+	color: var(--text-muted);
+}
+
+.project-selector option {
+	color: var(--text-normal);
+}
+
+.project-title {
+	font-size: x-large
+}
+
+.project-title-section {
+	display: grid;
+	grid-auto-flow: column;
+	justify-content: space-between;
+}
+
+.project-title-with-button {
+	display: flex;
+	align-items: flex-end;
+	gap: 0 4px;
 }
 
 .progress-section {
@@ -465,7 +490,7 @@ hr {
 	height: 30px;
 }
 
-.dashboard-table tbody tr:where(:not(.first)):where(:not(.summary-row)):where(:nth-child(even)) {
+.dashboard-table tbody tr:where(:not(.summary-row)):where(:nth-child(even)) {
 	/* alternate row color */
 	background-color: var(--table-bg-alt);
 }
@@ -491,11 +516,12 @@ hr {
 .dashboard-table .group-row {
 	font-weight: 500;
 	background-color: var(--table-group);
+	border-top: 1px solid var(--background-modifier-border);
 }
 
 .dashboard-table tbody .first {
-	border-top: 1px solid var(--background-modifier-border);
-	background-color: var(--table-group);
+/*	border-top: 1px solid var(--background-modifier-border);
+	background-color: var(--table-group);*/
 }
 
 .dashboard-table tr .colgroup-start, .dashboard-table th .colgroup-start {
@@ -862,8 +888,30 @@ checkbox {
 .time-progress-fill {
 	height: 100%;
 	width: var(--progress);
-	background: var(--color-blue);
-	opacity: 0.25;
+	background: var(--bar-color);
+	opacity: 0.5;
+}
+
+.time-progress-fill-active::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	background-image: linear-gradient( 45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent );
+	background-size: 40px 40px;
+	animation: moveStripes 1s linear infinite;
+}
+
+@keyframes moveStripes {
+	from {
+		background-position: 0 0;
+	}
+
+	to {
+		background-position: 40px 0;
+	}
 }
 
 .test-css-loading {
@@ -892,4 +940,26 @@ checkbox {
 
 .progress-max {
 	fill: AccentColor
+}
+
+.allocation-total {
+	height: 32px;
+	width: 60px;
+	align-items: center;
+	margin: auto;
+	display: flex;
+	justify-content: center;
+	border-radius: 4px;
+}
+
+.allocation-total[data-state="low"] {
+	background: var(--background-modifier-warning)
+}
+
+.allocation-total[data-state="regular"] {
+	background: none
+}
+
+.allocation-total[data-state="high"] {
+	background: var(--background-modifier-error)
 }
