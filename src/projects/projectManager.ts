@@ -9,7 +9,8 @@ import {
 	getFrontmatterStringArray,
 	getFrontmatterNumber,
 	setFrontmatterValue,
-    deleteFrontmatterValue
+    deleteFrontmatterValue,
+    createFileSafely
 } from '@/utils/utils';
 import {
 	ProjectInfo,
@@ -25,7 +26,7 @@ import {
 import {
 	// GroupPosition,
 	// SummaryPeriod,
-	getSummaryPeriod
+	// getSummaryPeriod
 } from '@/utils/tableFunctions';
 
 
@@ -271,7 +272,7 @@ targetHoursWeek:
 
 `;
 
-		newFile = await this.app.vault.create(path, content);
+		newFile = await createFileSafely(this.app.vault, path, content);
 
 		return newFile;
 

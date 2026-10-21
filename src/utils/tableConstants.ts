@@ -256,7 +256,7 @@ export const TIME_COLS = {
 		sortable: true,
 		centered: false,
 		groupable: false,
-		minWidth: "180px",
+		minWidth: "175px",
 		tableGroup: "project"
 	},
 	"progress": {
@@ -264,7 +264,7 @@ export const TIME_COLS = {
 		sortable: false,
 		centered: true,
 		groupable: false,
-		width: "70px",
+		width: "75px",
 		tableGroup: "project"
 	},
 	"hoursToday": {

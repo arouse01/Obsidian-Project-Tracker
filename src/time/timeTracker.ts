@@ -12,8 +12,8 @@ import {
 	SessionData,
 	DateKey,
 	SummarySession,
-	TimePeriod,
-    TimeTarget,
+	// TimePeriod,
+    // TimeTarget,
     WeeklyTimePlans,
 	WeeklyAllocation,
 	NotificationRecord,
@@ -59,7 +59,7 @@ export class TimeTracker extends Events {
 	}
 
 	async refreshAllocations(): Promise<void> {
-		const thisWeek = getDateKey(undefined, true)
+		const thisWeek = getDateKey(undefined, "week")
 		this.weeklyTimePlans = await this._loadWeeklyTimePlans()
 		// console.log(this.weeklyTimePlans)
 		this.currWeekAllocations = this.getWeeklyAllocations(thisWeek)
@@ -94,8 +94,7 @@ export class TimeTracker extends Events {
 	private async _saveWeeklyTimePlans(plans: WeeklyTimePlans): Promise<void> {
 		const planPath = this.settings.timeAllocPath
 		const file = this.app.vault.getAbstractFileByPath(planPath);
-		//console.log(file);
-		// const rawSessions = sessions.map(formattedSession => this._sessionDataToRaw(formattedSession))
+
 		const timeData = JSON.stringify(plans)
 
 		if (file && (file instanceof TFile)) {
@@ -106,6 +105,9 @@ export class TimeTracker extends Events {
 		}
 
 		this.trigger("time-allocations-updated");  // trigger an update of displays related to time tracking
+		await this.validatePeriodNotifications(getDateKey(undefined, "week"))
+		await this.validatePeriodNotifications(getDateKey(undefined, "month"))
+
 
 	}
 
@@ -113,7 +115,7 @@ export class TimeTracker extends Events {
 		project: ProjectInfo | string,
 		target: number
 	): Promise<void> {
-		const thisWeek = getDateKey(undefined, true);
+		const thisWeek = getDateKey(undefined, "week");
 		let projectPath: string
 		if (typeof project === "string") {
 			projectPath = project
@@ -217,7 +219,8 @@ export class TimeTracker extends Events {
 		}
 
 		this.trigger("time-tracker-updated");  // trigger an update of displays related to time tracking
-
+		await this.validatePeriodNotifications(getDateKey(undefined, "week"))
+		await this.validatePeriodNotifications(getDateKey(undefined, "month"))
 	}
 
 	private _getSummarySessionsInRange(
@@ -562,10 +565,8 @@ export class TimeTracker extends Events {
 		for (const dateKey of summary.days) {
 			const date = dateKeyToDate(dateKey);
 
-			const monthKey = getDateKey(
-				new Date(date.getFullYear(), date.getMonth(), 1)
-			);
-
+			const monthKey = getDateKey(date, "month");
+			
 			months.add(monthKey);
 		}
 
@@ -587,9 +588,7 @@ export class TimeTracker extends Events {
 			for (const [dateKey, minutes] of dailyTotals) {
 				const date = dateKeyToDate(dateKey);
 
-				const monthKey = getDateKey(
-					new Date(date.getFullYear(), date.getMonth(), 1)
-				);
+				const monthKey = getDateKey(date, "month");
 
 				monthlyTotals.set(
 					monthKey,
@@ -619,49 +618,133 @@ export class TimeTracker extends Events {
 	}
 
 	async checkTimeLimits() {
-		const timeSummaries = await this.getCurrentTimeSummaries()
-		const projects = this.projectManager.getActiveProjects()
-		const thisWeek = getDateKey(undefined, true)
-		const notifications = await this._loadNotificationLog()
+		const thisWeek = getDateKey(undefined, "week")
+		const thisMonth = getDateKey(undefined, "month")
+
 		this.currWeekAllocations = this.getWeeklyAllocations(thisWeek)
+
+		const timeSummaries = await this.getCurrentTimeSummaries()
+		const notifications = await this._loadNotificationLog()
+		
 		if (this.settings.allowNotifications) {
+			
+			const projects = this.projectManager.getActiveProjects()
 			for (const project of projects) {
-
-				// Check allocated times first (which can include projects that don't have a standard goal)
-				const allocationNotified = this.checkNotificationLog(notifications, project, "allocated", thisWeek)
-				if (!allocationNotified) {
+				// start with allocated times, and only check projects that have allocated times
+				const allocatedTarget = this.currWeekAllocations[project.file.path] ?? 0
+				if (allocatedTarget > 0) {
 					const timePeriod = "allocated"
+					const notifiedBool = this.hasBeenNotified(notifications, project.file.path, timePeriod, thisWeek)
+					if (!notifiedBool) {
+						const runningTotal = (timeSummaries.week.project.get(project.file.path) ?? 0) / 60 // timeSummaries returns in minutes
 
-					const runningTotal = (timeSummaries.week.project.get(project.file.path) ?? 0) / 60 // timeSummaries returns in minutes
-					const allocatedTarget = this.currWeekAllocations[project.file.path] ?? Infinity 
-					if (runningTotal > allocatedTarget) {
-						this.createTimeNotification(project, timePeriod, thisWeek, allocatedTarget)
+						if (runningTotal > allocatedTarget) {
+							this.createTimeNotification(project, timePeriod, thisWeek, allocatedTarget)
+						}
 					}
 				}
 
 				// then check project-specific times
-				if (project.targetHours && project.targetHours?.period ==="month") {
-					const timePeriod = project.targetHours.period
-					const timeNotified = this.checkNotificationLog(notifications, project, timePeriod, thisWeek)
-					if (!timeNotified) {
+				const timePeriod = project.targetHours?.period
+				const standingTarget = project.targetHours?.hours ?? 0
+				if (standingTarget > 0) {
+					if (timePeriod === "month") {
+					
 						
-						const runningTotal = (timeSummaries[timePeriod].project.get(project.file.path) ?? 0) / 60 // timeSummaries returns in minutes
-						const standingTarget = project.targetHours.hours ?? Infinity
-						if (runningTotal > standingTarget) {
-							this.createTimeNotification(project, timePeriod, thisWeek, standingTarget)
+						const notifiedBool = this.hasBeenNotified(notifications, project.file.path, timePeriod, thisMonth)
+						if (!notifiedBool) {
+
+							const runningTotal = (timeSummaries[timePeriod].project.get(project.file.path) ?? 0) / 60 // timeSummaries returns in minutes
+							if (runningTotal > standingTarget && standingTarget > 0) {
+								this.createTimeNotification(project, timePeriod, thisMonth, standingTarget)
+							}
 						}
 					}
 				}
 			}
 
 
-			// const weekTotal = timeSummaries.week.project.get(project.file.path) ?? 0
-			// const weekTarget = project.targetHours?.get("week") ?? 0
-			// if (weekTotal > weekTarget && weekTarget > 0) {
-			// 	this.createTimeNotification(project, "week")
-			// }
 		}
 		
+	}
+
+	async validatePeriodNotifications(
+		periodKey: string
+	) {
+		/*
+		Run when allocations are updated and when sessions are ended. Double-check the actual totals and make sure that any created notifications were issued properly. 
+		Otherwise remove the flags so
+		*/
+		const timeSummaries = await this.getCurrentTimeSummaries()
+
+		let badList: string[] = []
+
+		const notifications = await this._loadNotificationLog()
+		const notificationSet = notifications.filter(notification => 
+			// notification.type !== type &&
+			notification.periodKey !== periodKey
+		)
+		for (const notification of notificationSet) {
+			const projectPath = notification.projectPath
+			const id = notification.id
+			const timePeriod = notification.type === "allocated" ? "week" : notification.type
+			const runningTotal = (timeSummaries[timePeriod].project.get(projectPath) ?? 0) / 60
+			let target: number;
+			if (notification.type === "allocated") {
+				target = this.currWeekAllocations[projectPath] ?? 0
+			} else {
+				const project = this.projectManager.getProjectInfoByPath(projectPath)
+				target = project?.targetHours?.hours ?? 0
+			}
+			if (runningTotal < target) {
+				// there's a logged notification but time worked is less than the target, so remove the erroneous log
+				badList.push(id)
+				// await this.deleteTimeNotification(project.file.path, type, periodKey)
+			}
+		}
+
+		if (badList.length > 0) {
+			const updatedNotifications = notifications.filter(notification => !badList.includes(notification.id));
+			await this._saveTimeNotification(updatedNotifications);
+		}
+		
+
+	}
+
+	async validateProjectNotification(
+		project: ProjectInfo,
+		type: NotificationType,
+		periodKey: string
+	) {
+		/*
+		Run when allocations are updated and when sessions are ended. Double-check the actual totals and make sure that any created notifications were issued properly. 
+		Otherwise remove the flags so
+		*/
+
+		const notifications = await this._loadNotificationLog()
+		const notifiedBool = this.hasBeenNotified(notifications, project.file.path, type, periodKey)
+
+		if (notifiedBool) {
+			// only deal with ones that have a notification in the log
+			const timeSummaries = await this.getCurrentTimeSummaries()
+			const timePeriod = type === "allocated" ? "week" : type
+			const runningTotal = (timeSummaries[timePeriod].project.get(project.file.path) ?? 0) / 60 // timeSummaries returns in minutes
+
+			let target: number;
+
+			if (type === "allocated") {
+				// this.currWeekAllocations = this.getWeeklyAllocations(periodKey)
+				// Check allocated times first (which can include projects that don't have a standard goal)
+				target = this.currWeekAllocations[project.file.path] ?? 0
+			} else {	
+				target = project.targetHours?.hours ?? 0
+			}
+			if (runningTotal < target) {
+				// there's a logged notification but time worked is less than the target, so remove the erroneous log
+				await this.deleteTimeNotification(project.file.path, type, periodKey)
+			}
+		}
+
 	}
 
 	createTimeNotification(
@@ -679,45 +762,67 @@ export class TimeTracker extends Events {
 			message = `${project.name} has reached its monthly target of ${target}h.`
 		}
 		new Notification(`Time met`, { body: message })
-		void this.logNotification(project, type, periodKey)
+		void this.logNotification(project.file.path, type, periodKey)
 	}
 
-	private checkNotificationLog(
+	private async deleteTimeNotificationById(
+		id: string
+	) {
+		const notifications = await this._loadNotificationLog();
+		const updatedNotifications = notifications.filter(notification =>
+			notification.id !== id
+		);
+		await this._saveTimeNotification(updatedNotifications);
+	}
+
+	private async deleteTimeNotification(
+		projectPath: string,
+		type: NotificationType,
+		periodKey: string
+	) {
+		const notifications = await this._loadNotificationLog();
+		const updatedNotifications = notifications.filter(notification =>
+			notification.projectPath !== projectPath &&
+			notification.type !== type &&
+			notification.periodKey !== periodKey
+		);
+		await this._saveTimeNotification(updatedNotifications);
+	}
+
+	private hasBeenNotified(
 		notifications: NotificationRecord[],
-		project: ProjectInfo,
+		projectPath: string,
 		type: NotificationType,
 		periodKey: string
 	): boolean {
 		return notifications.some(record =>
-			record.projectPath === project.file.path &&
+			record.projectPath === projectPath &&
 			record.type === type &&
 			record.periodKey === periodKey
 		)
-
-
 	}
 
+	
+
 	async logNotification(
-		project: ProjectInfo,
+		projectPath: string,
 		type: NotificationType,
 		periodKey: string
 	): Promise<void> {
 		let notifications = await this._loadNotificationLog();
-		/*const activeSessions = this._findActiveSessions(sessions);
-		if (!additive && activeSessions.length > 0) {
-			// if additive is false, it means we want to close all active sessions before starting a new one
-			sessions = this._stopSessions(sessions, timestamp);
-		}*/
+
 		notifications.push({
-			projectPath: project.file.path,
+			id: crypto.randomUUID(),
+			projectPath: projectPath,
 			type: type,
 			periodKey: periodKey,
 			notifiedAt: formatDate(undefined, "datetime")
 		});
 
-		await this.saveTimeNotification(notifications);
+		await this._saveTimeNotification(notifications);
 	}
 
+	
 	private async _loadNotificationLog(): Promise<NotificationRecord[]> {
 		const logPath = this.settings.notificationLogPath
 		const file = this.app.vault.getAbstractFileByPath(logPath);
@@ -736,7 +841,7 @@ export class TimeTracker extends Events {
 		
 	}
 
-	private async saveTimeNotification(notifications: NotificationRecord[]): Promise<void> {
+	private async _saveTimeNotification(notifications: NotificationRecord[]): Promise<void> {
 		const logPath = this.settings.notificationLogPath
 		const file = this.app.vault.getAbstractFileByPath(logPath);
 		//console.log(file);

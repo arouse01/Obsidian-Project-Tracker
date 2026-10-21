@@ -4,6 +4,7 @@ import {
 	TFile
 } from 'obsidian';
 import {
+    createFileSafely,
 	formatDate,
 	// normalizeWikiLink,
 	getFrontmatterString,
@@ -14,9 +15,12 @@ import {
 	ProjectInfo,
 	NoteType,
 	NoteItem,
+    ModalContext,
+    CreateModalRequest,
 } from '@/utils/types';
 
 import { MyProjectManager } from '@/projects/projectManager'
+import { GenericModal } from '../utils/genericModal';
 
 
 export class NoteManager {
@@ -159,6 +163,7 @@ topic:
 date: "${creationTS}"
 people:
 - 
+type: meeting
 tags:
 - meeting
 ---
@@ -166,34 +171,53 @@ tags:
 
 `;
 
-		newFile = await this.app.vault.create(path, content);
+		newFile = await createFileSafely(this.app.vault, path, content);
 
 		await this.app.workspace.getLeaf(false).openFile(newFile);
 
 	}
 	
-	async createNoteFile(
+	async addOtherNote(
 		project?: ProjectInfo
 	): Promise<void> {
-	
-		let newFile: TFile;
-
+		// prompt for new file name
 		const projectPath = project?.file.path;
-		const filename = project ? `${project.name}` : "untitled"
-		const path = `Notes/${filename}.md`;
-		const content =
-			`---
-project: "[[${projectPath}]]"
+		const projectPathText = projectPath ? `project : "[[${projectPath}]]"` : `project: `
+		let newFile: TFile;
+		const context: ModalContext = {
+			items: [
+				{
+					type: "string",
+					text: "Note file name"
+				}
+			]
+		}
+		new GenericModal(this.app, {
+			context: context,
+			onSubmit: async (responses: CreateModalRequest) => {
+				const filename = responses.responses[0]
+				if (filename) {
+					const path = `Notes/${filename}.md`;
+					const content =
+							`---
+${projectPathText}
 tags:
   - 
 ---
 
 `;
 
-		newFile = await this.app.vault.create(path, content);
+					newFile = await createFileSafely(this.app.vault, path, content);
 
-		await this.app.workspace.getLeaf(false).openFile(newFile);
+					await this.app.workspace.getLeaf(false).openFile(newFile);
+				}
 
+			}
+		}).open();
+		// const filename = project ? `${project.name}` : "untitled"
+
+			
+		
 
 	}
 

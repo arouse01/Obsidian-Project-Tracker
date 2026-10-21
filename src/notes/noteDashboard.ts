@@ -64,7 +64,7 @@ export class NoteDashboard extends Component {
 	private noteTableEl!: HTMLTableElement;
 	private noteTableBodyEl!: HTMLTableSectionElement;
 
-	private projectMap = new Map<string, string>();
+	// private projectMap = new Map<string, string>();
 
 	private refreshInterval: number | null = null;
 	private collapsedGroups = new Set<string>();  // which groups are collapsed in the table
@@ -81,7 +81,7 @@ export class NoteDashboard extends Component {
 		super();
 
 		this.container = target;
-		this.selectedProject = this.projectManager.getProjectInfoByPath(projectPath)!
+		this.selectedProject = this.projectManager.getProjectInfoByPath(this.projectPath)!
 
 		this.filter = filter;
 		// this.tableContainer = target.createDiv();
@@ -90,6 +90,19 @@ export class NoteDashboard extends Component {
 
 	}
 
+	onload() {
+
+		this.refreshInterval = window.setInterval(() => {
+			void this.updateNoteRows();
+		}, 120000);  // 120000 in ms = 120 s = 2 min
+	}
+
+	async onClose(): Promise<void> {
+		if (this.refreshInterval !== null) {
+			window.clearInterval(this.refreshInterval);
+			this.refreshInterval = null;
+		}
+	}
 
 	async selectProject(projectPath: string) {
 		const project = this.projectManager.getProjectInfoByPath(projectPath)
@@ -104,12 +117,14 @@ export class NoteDashboard extends Component {
 
 	}
 
+	async refresh(): Promise<void> {
+		await this.updateNoteRows();
+	}
+
 	private async buildDashboard() {
 		// await this.updateValues()
 
-		const mainSection = this.container.createEl("section");
-		mainSection.addClass("dashboard")
-		mainSection.addClass("font-size-12")
+		const mainSection = this.container.createEl("section", {cls: "dashboard font-size-12 table-with-icon"});
 
 		if (!this.selectedProject) {
 			const controlSection = mainSection.createEl("section");
@@ -128,7 +143,6 @@ export class NoteDashboard extends Component {
 		this.createNoteTableHeaders(this.noteTableEl, columns);
 
 		this.noteTableBodyEl = this.noteTableEl.createEl('tbody')
-
 			
 		}
 
@@ -163,14 +177,7 @@ export class NoteDashboard extends Component {
 		updateSortButtons(this.sortButtons, this.sortBy, NOTE_COLS);
 	}
 
-	async updateNoteRows(): Promise<void> {
-		// specifically for updating the rows without touching the headers
-		const newBody = createEl('tbody');
-		await this.buildNoteTableBody(newBody);
-		this.noteTableBodyEl?.replaceWith(newBody);
-		this.noteTableBodyEl = newBody;
-		// await this.updateSummary();
-	}
+
 
 	// async rebuildIssueTable(): Promise<void> {
 	// 	const newTable = createEl('table')
@@ -186,7 +193,7 @@ export class NoteDashboard extends Component {
 	// 	this.noteTableBodyEl = newBody;
 	// }
 	
-	async updateNoteTableRows(): Promise<void> {
+	async updateNoteRows(): Promise<void> {
 		// specifically for updating the rows without touching the headers
 		const newBody = createEl('tbody');
 		await this.buildNoteTableBody(newBody);
@@ -198,11 +205,12 @@ export class NoteDashboard extends Component {
 		// update the body of the table only and return the updated table for actual loading into the ui
 		// this.updateGroupByButtons();
 
-		const projects = this.projectManager.getProjects();
+		// const projects = this.projectManager.getProjects();
 
-		this.projectMap = new Map(
-			projects.map(project => [project.file.path, project.name])
-		);
+		// this.projectMap = new Map(
+		// 	projects.map(project => [project.file.path, project.name])
+		// );
+
 		let notes: NoteItem[]
 		if (this.selectedProject) {
 			notes = await this.noteManager.getProjectNotes(this.filter, this.selectedProject);
@@ -527,7 +535,7 @@ export class NoteDashboard extends Component {
 										// group isn't collapsed, collapse it
 										const groupKey = this.getGroupKey(note)
 										this.collapsedGroups.add(groupKey);
-										await this.updateNoteTableRows();
+										await this.updateNoteRows();
 									});
 
 								break;
@@ -587,7 +595,7 @@ export class NoteDashboard extends Component {
 							// group isn't collapsed, collapse it
 
 							this.collapsedGroups.add(groupKey);
-							await this.updateNoteTableRows();
+							await this.updateNoteRows();
 						});
 
 
@@ -699,7 +707,7 @@ export class NoteDashboard extends Component {
 						.onClick(async () => {
 							// group is collapsed, uncollapse it
 							this.collapsedGroups.delete(group.key);
-							await this.updateNoteTableRows();
+							await this.updateNoteRows();
 						});
 					break;
 
@@ -720,7 +728,7 @@ export class NoteDashboard extends Component {
 						.onClick(async () => {
 							// group is collapsed, uncollapse it
 							this.collapsedGroups.delete(group.key);
-							await this.updateNoteTableRows();
+							await this.updateNoteRows();
 						});
 					break
 					/*
@@ -773,14 +781,14 @@ export class NoteDashboard extends Component {
 		cell.addClass('summary-row')
 
 		switch (field) {
-			case "project":
+			case "title":
 				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
 					new ButtonComponent(cell)
-						.setButtonText("New note...")
+						.setButtonText(this.filter ==="other" ? "Add new note..." : "Add meeting note...")
 						.setClass("right-align")
 						.onClick(async () => {
 							await this.addNote();
-							await this.updateNoteTableRows();
+							await this.updateNoteRows();
 						});
 
 					break;
@@ -798,7 +806,14 @@ export class NoteDashboard extends Component {
 	}
 
 	async addNote(): Promise<void> {
+		if (this.selectedProject) {
+			if (this.filter === "meeting") {
+				await this.noteManager.addProjectMeetingNote(this.selectedProject);
 
+			} else if (this.filter === "other") {
+				await this.noteManager.addOtherNote(this.selectedProject);
+			}
+		}
 	}
 }
 

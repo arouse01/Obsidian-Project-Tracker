@@ -24,7 +24,8 @@ import {
 	normalizeWikiLink,
 	getFrontmatterString,
 	getFrontmatterStringArray,
-    getFrontmatterNumber
+    getFrontmatterNumber,
+    createFileSafely
 } from '@/utils/utils';
 import { IssueModal } from '@/issues/issueModal'
 import { MyProjectManager } from '@/projects/projectManager'
@@ -374,7 +375,7 @@ ${request.issue.description}
 
 `;
 
-		newFile = await this.app.vault.create(path, content);
+		newFile = await createFileSafely( this.app.vault, path, content);
 
 		if (request.context.editor) {
 			await this.addIssueLinkToSource(

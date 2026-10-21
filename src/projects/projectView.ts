@@ -320,11 +320,10 @@ export class ProjectSingleView extends Component {
 	}
 
 	async buildContentArea(parent: HTMLDivElement): Promise<void> {
-		this.issueEl = parent.createDiv({ cls: "single-project-section" })
-		this.todoEl = parent.createDiv({ cls: "single-project-section" })
-		this.todoEl.addClass("project-section")
-		this.meetingEl = parent.createDiv({ cls: "single-project-section" })
-		this.otherNoteEl = parent.createDiv({ cls: "single-project-section" })
+		this.issueEl = parent.createDiv({ cls: "single-project-section", attr: { name: "single-project-issue-dashboard" } })
+		this.todoEl = parent.createDiv({ cls: "single-project-section project-section", attr: { name: "single-project-todo-dashboard" } })
+		this.meetingEl = parent.createDiv({ cls: "single-project-section", attr: { name: "single-project-meetings-dashboard" } })
+		this.otherNoteEl = parent.createDiv({ cls: "single-project-section", attr: { name: "single-project-notes-dashboard" } })
 /*
 		this.projectDashboard = new ProjectDashboardView(
 			projectViewEl,
@@ -421,8 +420,8 @@ export class ProjectSingleView extends Component {
 			})
 		}
 	}
-	private async buildTabs(header: HTMLElement): Promise<void> {
 
+	private async buildTabs(header: HTMLElement): Promise<void> {
 
 		const tabArea = header.createDiv({
 			cls: "dashboard-tabs"
@@ -447,6 +446,13 @@ export class ProjectSingleView extends Component {
 
 			this.tabButtons.set(tab, button);
 		}
+
+		new ButtonComponent(tabArea)
+			.setIcon("refresh-cw")
+			.setClass("dev-button")
+			.onClick(async () => {
+				await this.refreshTabs();
+			});
 	}
 
 	showTab(tab: DashboardTab): void {
@@ -467,6 +473,25 @@ export class ProjectSingleView extends Component {
 		this.activeTab = tab;
 		void this.showTab(this.activeTab);
 	}
+
+	async refreshTabs(): Promise<void> {
+		if (this.detailsSection === undefined) {  // just check the details section, don't need to check them all
+			await this.initializeComponents()
+		}
+		try {
+			await Promise.all([
+				// this.detailsSection?.refresh(path),
+				this.timeTable?.refreshDashboard(),
+				this.issueTable?.refresh(),
+				this.todoTable?.refresh(),
+				this.meetingTable?.refresh(),
+				this.otherNoteTable?.refresh()
+			]);
+		} catch (error) {
+			console.error("Failed to update project view", error);
+		} 
+	}
+
 	async changeSelectedProject(path: string): Promise<void> {
 		this.projectSelect.value = ""
 		await this.handleProjectChange(path)
@@ -475,7 +500,7 @@ export class ProjectSingleView extends Component {
 	private async handleProjectChange(path: string): Promise <void> {
 		this.selectedProject = path;
 		this.projectTitle.setText(this.projectManager.getProjectNameByPath(path) ?? "")
-		if (this.detailsSection === undefined) {
+		if (this.detailsSection === undefined) {  // just check the details section, don't need to check them all
 			await this.initializeComponents()
 		}
 		try {

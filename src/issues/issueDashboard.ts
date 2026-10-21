@@ -136,16 +136,16 @@ export class IssueDashboardView extends Component {
 		void this.updateIssueRows();
 	}
 
-	private buildDashboard() {
-		const mainSection = this.container.createEl("section");
-		mainSection.addClass("dashboard")
-		mainSection.addClass("font-size-12")
+	async refresh(): Promise<void> {
+		await this.updateIssueRows();
+	}
 
-		const controlSection = mainSection.createEl("section");
-		controlSection.addClass('project-controls');
-		const centerSection = controlSection.createEl("section")
-		centerSection.addClass('center-content');
-		centerSection.addClass('summary-controls');
+	private buildDashboard() {
+		const mainSection = this.container.createEl("section", {cls: "dashboard font-size-12"});
+
+		const controlSection = mainSection.createEl("section", { cls: "project-controls" });
+
+		const centerSection = controlSection.createEl("section", { cls: "center-content summary-controls" })
 		this.createFilterControls(centerSection)
 
 		if (!this.selectedProject) {
@@ -155,8 +155,7 @@ export class IssueDashboardView extends Component {
 
 		const issueSection = mainSection.createEl("section");
 		// todoSection.addClass("todo-dashboard")
-		this.issueTableEl = issueSection.createEl('table');
-		this.issueTableEl.addClass('dashboard-table')
+		this.issueTableEl = issueSection.createEl('table', {cls: 'dashboard-table'});
 
 		// create colgroup so we can specify column sizes
 		const columns = this.getVisibleCols();
@@ -165,6 +164,7 @@ export class IssueDashboardView extends Component {
 
 		this.issueTableBodyEl = this.issueTableEl.createEl('tbody')
 
+		
 	}
 
 	private createFilterControls(section: HTMLElement) {

@@ -563,7 +563,7 @@ export class TimeSummarySingle extends Component {
 
 	private async buildProjectStats(projectSection: HTMLDivElement) {
 		const tempDiv = createDiv()
-		const titleDiv = tempDiv.createDiv({ text: 'Running totals', cls: 'font-size-14' })
+		tempDiv.createDiv({ text: 'Running totals', cls: 'font-size-14' })
 		// titleDiv.addClass("subsection")
 		const newDiv = tempDiv.createDiv({ cls: "project-section" })
 		newDiv.addClass("project-time-section")

@@ -224,6 +224,7 @@ export type WeeklyTimePlans = Record<DateKey, WeeklyAllocation>;
 
 export type NotificationType = "allocated" | "week" | "month"
 export interface NotificationRecord {
+	id: string;
 	projectPath: string;
 	type: NotificationType;
 	periodKey: string;

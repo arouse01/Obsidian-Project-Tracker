@@ -132,6 +132,10 @@ export class TodoDashboardView extends Component {
 		void this.updateTodoRows();
 	}
 
+	async refresh(): Promise<void> {
+		await this.updateTodoRows();
+	}
+
 	private buildDashboard() {
 		const mainSection = this.container.createEl("section");
 		mainSection.addClass("dashboard")
@@ -162,15 +166,7 @@ export class TodoDashboardView extends Component {
 		this.todoTableBodyEl = this.todoTableEl.createEl('tbody')
 
 
-		/*const bottomSection = mainSection.createEl("section");
-
-		new ButtonComponent(bottomSection)
-			.setButtonText("Create new todo")
-			.setClass("center-align")
-			// .setClass("todo-dashboard-button-add")
-			.onClick(async () => {
-				await this.todoManager.startTodoItem(this.selectedProject);
-			})*/
+		
 
 
 	}

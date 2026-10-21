@@ -10,7 +10,7 @@ import {
 	normalizeWikiLink,
 	createStatusIcon,
 	createProgressWheel,
-    dateKeyToDate,
+    // dateKeyToDate,
     getDateKey
 } from '@/utils/utils';
 import {
@@ -134,6 +134,10 @@ export class TimeDashboardView extends ItemView {
 		}
 	}
 
+	async refresh(): Promise<void> {
+		await this.updateDashboard();
+	}
+
 	private async buildDashboard() {
 		const controlSection = this.contentEl.createEl("section");
 		controlSection.addClass('dashboard');
@@ -149,8 +153,8 @@ export class TimeDashboardView extends ItemView {
 			.setButtonText("Update weekly goals")
 			// .setClass("todo-dashboard-button")
 			.onClick(async () => {
-				const dateKey = getDateKey(undefined, true);
-				const startWeek = this.timeTracker.weeklyTimePlans[dateKey] ? dateKey : getDateKey(undefined, true, -1)
+				const dateKey = getDateKey(undefined, "week");
+				const startWeek = this.timeTracker.weeklyTimePlans[dateKey] ? dateKey : getDateKey(undefined, "week", -1)
 				const prevAllocation = this.timeTracker.weeklyTimePlans[startWeek] ?? {}
 
 				new TimeAllocModal(this.app, {
@@ -461,9 +465,12 @@ export class TimeDashboardView extends ItemView {
 						const span = progressDiv.createSpan();  //⏲
 						span.appendChild(createProgressWheel(timePercent))
 
-						const textDiv = cell.createDiv({ cls: "font-size-12" })
-						const targetText = formatMinutesToDuration(targetMinutes, "hours")
-						textDiv.setText(`${targetText}h`)
+						const currHours = formatMinutesToDuration(weekMinutes, "hours")
+						const targetHours = formatMinutesToDuration(targetMinutes, "hours")
+						const targetText = `${currHours}/${targetHours}h`
+						const textDiv = cell.createDiv({ cls: "font-size-10" })
+						// const targetText = formatMinutesToDuration(targetMinutes, "hours")
+						textDiv.setText(`${targetText}`)
 						// if (timePercent >= 1) {
 						// 	progressDiv.appendChild(createStatusIcon(true, "#f2f200"))
 						// } else {

@@ -1,11 +1,43 @@
 import {
 	TFile,
 	MetadataCache,
-	App
+	App,
+    Vault
 } from 'obsidian';
 import {
-	DateKey
+	DateKey,
+    TimePeriod
 } from '@/utils/types';
+
+export async function createFileSafely(
+	vault: Vault,
+	basePath: string,
+	content: string
+): Promise<TFile> {
+	let path = basePath
+	const fileExists = await vault.adapter.exists(path)
+	if (fileExists) {
+		// get unique filename
+		// split out extension to increment file name
+		let i = 1;
+
+		const extIndex = basePath.lastIndexOf(".")
+		const hasExt = extIndex !== -1 && extIndex > basePath.lastIndexOf('/')
+		const baseName = hasExt ? basePath.substring(0, extIndex) : basePath;
+		const ext = hasExt ? basePath.substring(extIndex) : ''
+
+		while (await vault.adapter.exists(path)) {
+			// loop through and increment until we find a filepath that doesn't exist yet
+			path = `${baseName} ${i}${ext}`;
+			i++;
+		}
+	}
+	
+
+	const newFile = await vault.create(path, content);
+
+	return newFile
+}
 
 export function formatIssueID(id: number): string {
 	return id.toString().padStart(4, "0");
@@ -122,16 +154,15 @@ export function parseDateString(string: string): Date | undefined {
 
 export function getDateKey(
 	date: Date = new Date(),
-	weekStart: boolean = false,
+	period: TimePeriod = "day",
 	offset: number = 0
 ): DateKey {
-	let newDate: Date;
-	if (weekStart) {
-		// if we want the start of the week
-		newDate = window.moment().startOf('week').add(offset, "weeks").toDate()
-	} else {
-		newDate = date
-	}
+	/*
+	*  moment supports functions like startOf(timePeriod) and offsets, so we can do the 
+	*  adjustments there and convert back to a Date object before converting to a DateKey
+	*/
+
+	const newDate = window.moment(date).startOf(period).add(offset, period).toDate()
 	const year = newDate.getFullYear();
 	const month = String(newDate.getMonth() + 1).padStart(2, "0");
 	const day = String(newDate.getDate()).padStart(2, "0")

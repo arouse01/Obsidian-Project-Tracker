@@ -58,7 +58,7 @@ export class TrackerView extends ItemView {
 
 	private projectViewEl!: HTMLElement
 	private todoEl!: HTMLElement
-	private timeEl!: HTMLElement
+	// private timeEl!: HTMLElement
 	private issueEl!: HTMLElement
 	private singleProjectEl!: HTMLElement
 
@@ -108,11 +108,11 @@ export class TrackerView extends ItemView {
 		await this.buildLayout();
 		await this.buildTabs(this.header);
 
-		const projectViewEl = this.container.createDiv()
-		const todoEl = this.container.createDiv()
-		const timeEl = this.container.createDiv()
-		const issueEl = this.container.createDiv()
-		const singleProjectEl = this.container.createDiv()
+		const projectViewEl = this.container.createDiv({ attr: { name: "project-dashboard" } })
+		const todoEl = this.container.createDiv({ attr: { name: "todo-dashboard" } })
+		// const timeEl = this.container.createDiv({ attr: { name: "time-dashboard" } })
+		const issueEl = this.container.createDiv({ attr: { name: "issue-dashboard" } })
+		const singleProjectEl = this.container.createDiv({ attr: { name: "single-project-view", class: "project-dashboard" } })
 
 		this.projectDashboard = new ProjectDashboardView(
 			projectViewEl,
@@ -156,7 +156,7 @@ export class TrackerView extends ItemView {
 
 		this.projectViewEl = projectViewEl;
 		this.todoEl = todoEl;
-		this.timeEl = timeEl;
+		// this.timeEl = timeEl;
 		this.issueEl = issueEl;
 		this.singleProjectEl = singleProjectEl;
 

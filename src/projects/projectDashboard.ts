@@ -42,6 +42,7 @@ import {
     TimeSummaryStore
 } from '@/utils/types';
 import {
+    createFileSafely,
     createProgressWheel,
     createStatusIcon,
     formatDate,
@@ -210,8 +211,8 @@ export class ProjectDashboardView extends Component {
 			.setButtonText("Update weekly goals")
 			// .setClass("todo-dashboard-button")
 			.onClick(async () => {
-				const dateKey = getDateKey(undefined, true);
-				const startWeek = this.timeTracker.weeklyTimePlans[dateKey] ? dateKey : getDateKey(undefined, true, -1)
+				const dateKey = getDateKey(undefined, "week");
+				const startWeek = this.timeTracker.weeklyTimePlans[dateKey] ? dateKey : getDateKey(undefined, "week", -1)
 				const prevAllocation = this.timeTracker.weeklyTimePlans[startWeek] ?? {}
 
 				new TimeAllocModal(this.app, {
@@ -846,7 +847,7 @@ tags:
 
 `;
 
-		newFile = await this.app.vault.create(path, content);
+		newFile = await createFileSafely(this.app.vault, path, content);
 
 		await this.app.workspace.getLeaf(false).openFile(newFile);
 
@@ -954,13 +955,15 @@ tags:
 						const span = progressDiv.createSpan();  //⏲
 						span.appendChild(createProgressWheel(timePercent))
 
-						const textDiv = cell.createDiv({ cls: "font-size-12" })
-						const targetText = formatMinutesToDuration(targetMinutes, "hours")
-						textDiv.setText(`${targetText}h`)
-
 						const currHours = formatMinutesToDuration(weekMinutes, "hours")
+						const targetHours = formatMinutesToDuration(targetMinutes, "hours")
+						const targetText = `${currHours}/${targetHours}h`
+
+						const textDiv = cell.createDiv({ cls: "font-size-10" })
+						textDiv.setText(targetText)
+
 						const percent = Math.round(timePercent * 100)
-						cell.title = `${currHours}/${targetText}h (${percent}%)`
+						cell.title = `${targetText} (${percent}%)`
 					}
 					cell.addEventListener("contextmenu", (event) => {
 						event.preventDefault();
