@@ -198,15 +198,13 @@ export class ProjectDashboardView extends Component {
 
 	private async buildDashboard() {
 
-		const dashboardContainer = this.container.createDiv({ cls: "project-section" })
-		dashboardContainer.addClass('project-dashboard')
-		dashboardContainer.addClass('small')
+		this.container.addClass("project-section")
 
-		const projectSection = dashboardContainer.createDiv({ cls: "project-section" });
-		const buttonSection = projectSection.createDiv();
-		buttonSection.addClass('dashboard');
-		buttonSection.addClass('font-size-12');
-		buttonSection.addClass('text-centered')
+		const dashboardContainer = this.container.createDiv({ cls: "dashboard small table-scroll-area" })
+
+		const projectSection = dashboardContainer.createDiv({ cls: "project-section project-dashboard small" })
+		const buttonSection = projectSection.createDiv({cls: "dashboard font-size-12 text-centered"});
+
 		new ButtonComponent(buttonSection)
 			.setButtonText("Update weekly goals")
 			// .setClass("todo-dashboard-button")
@@ -227,18 +225,11 @@ export class ProjectDashboardView extends Component {
 					}
 				}).open();
 			});
-// projectSection.addClass("project-section")
-		// projectSection.createEl("h3", {
-		// 	text: "Projects"
-		// });
 
-		const controlSection = projectSection.createDiv({ cls: 'project-controls' });
-		controlSection.addClass("control-col")
-		
 
-		const centerSection = controlSection.createEl("section")
-		centerSection.addClass('center-content');
-		centerSection.addClass('summary-controls');
+		const controlSection = projectSection.createDiv({ cls: 'project-controls control-col' });
+		const centerSection = controlSection.createDiv({ cls: "center-content summary-controls" })
+
 		this.createFilterControls(centerSection)
 		this.createGroupingControls(centerSection)
 		// const controlRow1 = controlSection.createDiv({ cls: 'project-controls' });
@@ -250,13 +241,14 @@ export class ProjectDashboardView extends Component {
 		// To add more group options, update Project_Group_Fields in types.ts and add the grouping logic to getGroupKey and getGroupLabel
 		
 		
-		const projectTableSection = projectSection.createDiv({ cls: 'project-section' });
-		projectTableSection.addClass('project-dashboard');
-		projectTableSection.addClass('small');
-		projectTableSection.addClass('dashboard');
+		const projectTableSection = projectSection.createDiv({ cls: 'project-section project-dashboard small dashboard' });
+		// projectTableSection.addClass('table-scroll-area')
+		// projectTableSection.addClass('project-dashboard');
+		// projectTableSection.addClass('small');
+		// projectTableSection.addClass('dashboard');
 
-		this.projectTableEl = projectTableSection.createEl('table');
-		this.projectTableEl.addClass("dashboard-table")
+		this.projectTableEl = projectTableSection.createEl('table', {cls: "dashboard-table table-wrapper"});
+		// this.projectTableEl.addClass("dashboard-table")
 		const columns = this.getVisibleCols();
 		createTableColGroup(this.projectTableEl, columns);
 		this.createProjectTableHeaders(this.projectTableEl, columns);
@@ -264,17 +256,17 @@ export class ProjectDashboardView extends Component {
 		this.projectTableBodyEl = this.projectTableEl.createEl('tbody')
 
 		// Summary table below the main one
-		const summarySection = dashboardContainer.createDiv({ cls: "project-section" });
+		const summarySection = dashboardContainer.createDiv({ cls: "project-section project-dashboard small" });
 		summarySection.createEl("h1", {
-			text: "Statistics"
+			text: "Statistics", attr: {style: "margin-bottom: 0"}
 		});
-
-		summarySection.addClass('project-dashboard')
-		summarySection.addClass('small')
+		const summaryTableDiv = summarySection.createDiv({ cls: 'project-section project-dashboard small dashboard' });
+		// summarySection.addClass('project-dashboard')
+		// summarySection.addClass('small')
 		this.summaryTable = new TimeSummaryTable(
 			this.timeTracker,
 			this.projectManager,
-			summarySection,
+			summaryTableDiv,
 			{
 				period: "week",
 				offset: 0,
@@ -327,9 +319,8 @@ export class ProjectDashboardView extends Component {
 	}
 
 	private createGroupingControls(section: HTMLElement) {
-		const groupingSection = section.createDiv({ cls: 'summary-controls' });
-		groupingSection.addClass("right-align")
-		// groupingSection.addClass("control-row")
+		const groupingSection = section.createDiv({ cls: 'summary-controls right-align' });
+
 		groupingSection.createEl("label", { text: 'Group by:' })
 		const groupSelect = groupingSection.createEl('select', {
 			cls: 'dropdown-new'
@@ -380,8 +371,8 @@ export class ProjectDashboardView extends Component {
 	}
 
 	async rebuildProjectTable(): Promise<void> {
-		const newTable = createEl('table')
-		newTable.addClass("dashboard-table")
+		const newTable = createEl('table', { cls: "dashboard-table table-wrapper" })
+		// newTable.addClass("dashboard-table")
 		const columns = this.getVisibleCols();
 		createTableColGroup(newTable, columns);
 		this.createProjectTableHeaders(newTable, columns);
@@ -521,12 +512,11 @@ export class ProjectDashboardView extends Component {
 	}
 
 	private createNewProjectRow(target: HTMLTableSectionElement) {
-		const row = target.createEl('tr');
-		row.addClass('summary-row')
+		const row = target.createEl('tr', {cls: "summary-row"});
+		
 		for (const [field,] of this.getVisibleCols()) {
-			const cell = row.createEl("td");
-			cell.addClass('group-row')
-			cell.addClass('summary-row')
+			const cell = row.createEl("td", { cls: "group-row summary-row" });
+
 			this.renderAddProjectRowCell(cell, field);
 		}
 		
@@ -674,9 +664,8 @@ export class ProjectDashboardView extends Component {
 	}
 
 	private renderCollapsedGroupRow(target: HTMLTableSectionElement, group: ProjectGroup) {
-		const groupRow = target.createEl('tr');
-		groupRow.addClass("first")
-		groupRow.addClass("group-row")
+		const groupRow = target.createEl('tr', {cls: "first group-row"});
+
 		for (const [field,] of this.getVisibleCols()) {
 
 			const cell = groupRow.createEl("td");
@@ -716,12 +705,11 @@ export class ProjectDashboardView extends Component {
 	}
 
 	private createStopRow(target: HTMLTableSectionElement) {
-		const row = target.createEl('tr');
+		const row = target.createEl('tr', {cls: "summary-row"});
 		row.addClass('summary-row')
 		for (const [field, ] of this.getVisibleCols()) {
-			const cell = row.createEl("td");
-			cell.addClass('group-row')
-			// cell.addClass('summary-row')
+			const cell = row.createEl("td", { cls: "group-row" });
+
 			this.renderProjectSummaryCell(cell, field);
 		}
 		
@@ -925,9 +913,7 @@ tags:
 					cell.addClass("time-progress-cell" )
 					// const isActive = activePaths.has(project.file.path);
 					if (activeSession) {
-						const indicator = cell.createDiv({ cls: "active-indicator" });
-						indicator.addClass("center-align")
-						indicator.addClass("active")
+						const indicator = cell.createDiv({ cls: "active-indicator center-align active" });
 						indicator.createDiv({ cls: "blinky-circle-green" })
 						const span = indicator.createSpan();  //⏲
 						span.appendChild(createStatusIcon(true))
@@ -957,11 +943,14 @@ tags:
 
 						const currHours = formatMinutesToDuration(weekMinutes, "hours")
 						const targetHours = formatMinutesToDuration(targetMinutes, "hours")
-						const targetText = `${currHours}/${targetHours}h`
-
+						
+						
+						
 						const textDiv = cell.createDiv({ cls: "font-size-10" })
-						textDiv.setText(targetText)
-
+						textDiv.appendText(`${currHours}/`)
+						textDiv.createEl('wbr')
+						textDiv.appendText(`${targetHours}h`)
+						const targetText = `${currHours}/${targetHours}h`
 						const percent = Math.round(timePercent * 100)
 						cell.title = `${targetText} (${percent}%)`
 					}

@@ -137,25 +137,22 @@ export class TodoDashboardView extends Component {
 	}
 
 	private buildDashboard() {
-		const mainSection = this.container.createEl("section");
-		mainSection.addClass("dashboard")
-		mainSection.addClass("font-size-12")
-		
-		const controlSection = mainSection.createEl("section");
-		controlSection.addClass('project-controls');
-		const centerSection = controlSection.createEl("section")
-		centerSection.addClass('center-content');
-		centerSection.addClass('summary-controls');
+		this.container.addClass("single-project-section")
+		this.container.addClass("project-section")
+		const mainSection = this.container.createEl("section", { cls: "dashboard font-size-12" });
+
+		const controlSection = mainSection.createDiv({ cls: 'project-controls', attr: { name: "table-filters" } });
+
+		const centerSection = controlSection.createDiv( {cls: 'center-content summary-controls'})
+
 		this.createFilterControls(centerSection)
 		
 		if (!this.selectedProject) {
 			this.createGroupingControls(centerSection)
 		}
 
-		const todoSection = mainSection.createEl("section");
-		// todoSection.addClass("todo-dashboard")
-		this.todoTableEl = todoSection.createEl('table');
-		this.todoTableEl.addClass('dashboard-table')
+		const todoSection = mainSection.createDiv({cls: 'table-scroll-area'});
+		this.todoTableEl = todoSection.createEl('table', {cls: 'dashboard-table'});
 
 		// create colgroup so we can specify column sizes
 		
@@ -164,10 +161,6 @@ export class TodoDashboardView extends Component {
 		this.createTodoTableHeaders(this.todoTableEl, columns);
 
 		this.todoTableBodyEl = this.todoTableEl.createEl('tbody')
-
-
-		
-
 
 	}
 
@@ -254,8 +247,8 @@ export class TodoDashboardView extends Component {
 	}
 
 	async rebuildTodoTable(): Promise<void> {
-		const newTable = createEl('table')
-		newTable.addClass('dashboard-table')
+		const newTable = createEl('table', { cls: 'dashboard-table' })
+
 		const columns = this.getVisibleCols();
 		createTableColGroup(newTable, columns);
 		this.createTodoTableHeaders(newTable, columns);
@@ -350,9 +343,7 @@ export class TodoDashboardView extends Component {
 	}
 
 	private renderCollapsedGroupRow(target: HTMLTableSectionElement, group: TodoGroup) {
-		const groupRow = target.createEl('tr');
-		groupRow.addClass("first")
-		groupRow.addClass("group-row")
+		const groupRow = target.createEl('tr', {cls: 'first group-row'});
 
 		for (const [field,] of this.getVisibleCols()) {
 

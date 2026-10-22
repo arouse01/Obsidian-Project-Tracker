@@ -141,19 +141,21 @@ export class IssueDashboardView extends Component {
 	}
 
 	private buildDashboard() {
-		const mainSection = this.container.createEl("section", {cls: "dashboard font-size-12"});
+		this.container.addClass("single-project-section")
+		this.container.addClass("project-section")
+		const mainSection = this.container.createEl("section", { cls: "dashboard font-size-12" });
 
-		const controlSection = mainSection.createEl("section", { cls: "project-controls" });
+		const controlSection = mainSection.createDiv( { cls: "project-controls" });
 
-		const centerSection = controlSection.createEl("section", { cls: "center-content summary-controls" })
+		const centerSection = controlSection.createDiv( { cls: "center-content summary-controls" })
 		this.createFilterControls(centerSection)
 
 		if (!this.selectedProject) {
 			this.createGroupingControls(centerSection)
 		}
-		
 
-		const issueSection = mainSection.createEl("section");
+		const issueSection = mainSection.createDiv({ cls: "table-scroll-area" });
+
 		// todoSection.addClass("todo-dashboard")
 		this.issueTableEl = issueSection.createEl('table', {cls: 'dashboard-table'});
 
@@ -248,8 +250,8 @@ export class IssueDashboardView extends Component {
 	}
 
 	async rebuildIssueTable(): Promise<void> {
-		const newTable = createEl('table')
-		newTable.addClass('dashboard-table')
+		const newTable = createEl('table', {cls: 'dashboard-table'})
+
 		const columns = this.getVisibleCols();
 		createTableColGroup(newTable, columns);
 		this.createIssueTableHeaders(newTable, columns);
@@ -331,9 +333,7 @@ export class IssueDashboardView extends Component {
 	}
 
 	private renderCollapsedGroupRow(target: HTMLTableSectionElement, group: IssueGroup) {
-		const groupRow = target.createEl('tr');
-		groupRow.addClass("first")
-		groupRow.addClass("group-row")
+		const groupRow = target.createEl('tr', {cls: "first group-row"});
 
 		for (const [field,] of this.getVisibleCols()) {
 

@@ -89,8 +89,7 @@ export class TimeSummaryTable {
 		this.container.addClass('dashboard')
 		if (this.summaryFormat !== "sidebar") { 
 			// in the sidebar we want a client summary only, since horizontal space is limited 
-			const summaryControlsTop = this.container.createDiv();
-			summaryControlsTop.addClass('summary-controls')
+			const summaryControlsTop = this.container.createDiv({cls: 'summary-controls'});
 
 			summaryControlsTop.createEl('label', {
 				text: 'Summarize by:',
@@ -120,8 +119,7 @@ export class TimeSummaryTable {
 			});
 		
 
-			const summaryControlsBottom = this.container.createDiv();
-			summaryControlsBottom.addClass('summary-controls')
+			const summaryControlsBottom = this.container.createDiv({cls: 'summary-controls'});
 			new ButtonComponent(summaryControlsBottom)
 				.setButtonText("⏴")
 				// .setClass("arrow-button")
@@ -164,15 +162,14 @@ export class TimeSummaryTable {
 	}
 
 	private async createTable() {
-		const sectionSummaryTableEl = this.container.createEl('section');
-		sectionSummaryTableEl.addClass('project-dashboard');
+		const sectionSummaryTableEl = this.container.createEl('section', {cls: 'project-dashboard'});
+
 		if (!this.selectedProjectPath) {
 			sectionSummaryTableEl.addClass('small')
 		}
 
-		this.summaryTableEl = sectionSummaryTableEl.createEl('table');
-		this.summaryTableEl.addClass("dashboard-table")
-		this.summaryTableEl.addClass("text-centered")
+		this.summaryTableEl = sectionSummaryTableEl.createEl('table', {cls: 'dashboard-table text-centered'});
+
 		const summaryData = await this.getSummaryData()
 		const summaryCols = this.getSummaryColumns(summaryData);
 		this.createSummaryTableColGroup(this.summaryTableEl, summaryCols);
@@ -423,8 +420,8 @@ export class TimeSummaryTable {
 						cls: "summary-col-subheader"
 					})
 				}
-				const totalCell = headerRow.createEl('th', { text: 'Total' });
-				totalCell.addClass("total-col")
+				headerRow.createEl('th', { text: 'Total', cls: 'total-col' });
+
 			} else {
 				for (const day of summaryData.days) {
 					const dayDate = dateKeyToDate(day)
@@ -439,8 +436,8 @@ export class TimeSummaryTable {
 					})
 				}
 
-				const totalCell = headerRow.createEl('th', { text: 'Total' });
-				totalCell.addClass("total-col")
+				headerRow.createEl('th', { text: 'Total', cls: 'total-col' });
+
 
 			}
 		}
@@ -525,9 +522,8 @@ export class TimeSummaryTable {
 
 				}
 				// Total column
-				const cell = row.createEl("td");
-				cell.addClass("total-col")
-				cell.setText(formatMinutesToDuration(runningTotal, "alt"))
+				row.createEl("td", { text: formatMinutesToDuration(runningTotal, "alt"), cls: 'total-col' });
+
 			}
 		}
 		

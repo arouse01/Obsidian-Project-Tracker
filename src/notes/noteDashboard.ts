@@ -123,19 +123,22 @@ export class NoteDashboard extends Component {
 
 	private async buildDashboard() {
 		// await this.updateValues()
+		this.container.addClass("single-project-section")
+		this.container.addClass("project-section")
 
-		const mainSection = this.container.createEl("section", {cls: "dashboard font-size-12 table-with-icon"});
+		const mainSection = this.container.createDiv( {cls: "dashboard font-size-12"});
 
 		if (!this.selectedProject) {
-			const controlSection = mainSection.createEl("section");
-			controlSection.addClass('summary-controls');
+			mainSection.createDiv({ cls: 'summary-controls' });
 		}
 
 
-		const noteSection = mainSection.createEl("section");
-		// todoSection.addClass("todo-dashboard")
-		this.noteTableEl = noteSection.createEl('table');
-		this.noteTableEl.addClass('dashboard-table')
+		const noteSection = mainSection.createDiv();
+		if (this.selectedProject) {
+			noteSection.addClass('table-scroll-area')
+		}
+
+		this.noteTableEl = noteSection.createEl('table', {cls: 'dashboard-table'});
 
 		// create colgroup so we can specify column sizes
 		const columns = this.getVisibleCols();
@@ -178,21 +181,6 @@ export class NoteDashboard extends Component {
 	}
 
 
-
-	// async rebuildIssueTable(): Promise<void> {
-	// 	const newTable = createEl('table')
-	// 	newTable.addClass('dashboard-table')
-	// 	const columns = this.getVisibleCols();
-	// 	createTableColGroup(newTable, columns);
-	// 	this.createNoteTableHeaders(newTable, columns);
-	// 	const newBody = newTable.createEl('tbody')
-	// 	await this.buildNoteTableBody(newBody);
-
-	// 	this.noteTableEl.replaceWith(newTable);
-	// 	this.noteTableEl = newTable;
-	// 	this.noteTableBodyEl = newBody;
-	// }
-	
 	async updateNoteRows(): Promise<void> {
 		// specifically for updating the rows without touching the headers
 		const newBody = createEl('tbody');
@@ -307,9 +295,7 @@ export class NoteDashboard extends Component {
 	// }
 
 	private renderCollapsedGroupRow(target: HTMLTableSectionElement, group: NoteGroup) {
-		const groupRow = target.createEl('tr');
-		groupRow.addClass("first")
-		groupRow.addClass("group-row")
+		const groupRow = target.createEl('tr', {cls: "first group-row"});
 
 		for (const [field,] of this.getVisibleCols()) {
 

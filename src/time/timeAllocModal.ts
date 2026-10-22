@@ -92,8 +92,8 @@ export class TimeAllocModal extends Modal {
 		└───────────────────────────────────────┘
 		*/
 		const tableDiv = parent.createDiv()
-		const tableMainEl = tableDiv.createEl('table');
-		tableMainEl.addClass("dashboard-table")
+		const tableMainEl = tableDiv.createEl('table', {cls: "dashboard-table"});
+		// tableMainEl.addClass("dashboard-table")
 
 		const timeCols = this.getVisibleCols()
 		createTableColGroup(tableMainEl, timeCols)
@@ -169,8 +169,7 @@ export class TimeAllocModal extends Modal {
 			// create each row
 			const row = target.createEl('tr')
 
-			const projCell = row.createEl("td");
-			projCell.addClass("left-align")
+			const projCell = row.createEl("td", {cls: "left-align"});
 			projCell.createEl("label", { text: project.name });
 
 			const targetCell = row.createEl("td");
@@ -215,17 +214,14 @@ export class TimeAllocModal extends Modal {
 
 	async createSummaryRow(target: HTMLTableSectionElement): Promise<void> {
 		const row = target.createEl('tr');
-		const projCell = row.createEl('td')
-		projCell.addClass('summary-row')
-		projCell.addClass("left-align")
+		const projCell = row.createEl('td', {cls: 'summary-row left-align'})
+
 		projCell.createEl("label", { text: "Total time" });
 
-		const targetCell = row.createEl("td");
-		targetCell.addClass('summary-row')
+		row.createEl("td", {cls: 'summary-row'});
 
-		this.totalField = row.createEl("td");
-		this.totalField.addClass('summary-row')
-		this.totalField.addClass('allocation-total')
+		this.totalField = row.createEl("td", { cls: 'summary-row allocation-total' });
+
 		 // = weekGoalCell.createDiv()
 		// this.totalField.setCssStyles({width:"60px", height:"32px"})
 

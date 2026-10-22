@@ -188,21 +188,67 @@ button.collaborator-button {
 
 .view-content > .dashboard-tab-area {
 	flex: 1 1 auto;
-	min-height: 120px;
+	min-height: 0px;
 	display: flex;
 	flex-direction: column;
 }
 
 .project-dashboard > .dashboard-tab-area {
 	flex: 1 1 auto;
-	min-height: 120px;
+	min-height: 0px;
 	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+}
+
+.table-scroll-area > .dashboard-table {
+/*	width: max-content;*/
+	min-width: 100%;
+	table-layout: auto;
+	margin: 0 auto;
+	border-collapse: collapse;
+	text-align: center;
+}
+
+.single-project-section.project-section {
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
 }
 
 .single-project-view > .project-dashboard {
 	flex: 1 1 auto;
 	min-height: 0;
 	overflow-y: auto;
+}
+
+.single-project-section.project-section > .dashboard {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+project-section.project-section > .dashboard {
+	display: unset;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.table-scroll-area {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	position: relative;
+}
+
+.table-scroll-area .dashboard-table thead th {
+	position: sticky;
+	top: 0;
+	z-index: 3;
+/*	background: var(--background-primary);*/
 }
 
 .project-dashboard.small {
@@ -347,8 +393,10 @@ hr {
 .project-section {
 	/*	width: fit-content;*/
 	max-width: 100%;
-	margin: 0 auto;
-	overflow-x: auto;
+/*	margin: 0 auto;*/
+	overflow-x: unset;
+	display: flex;
+	min-height: 0;
 }
 
 .single-project-section {
@@ -372,6 +420,11 @@ hr {
 	padding-bottom: 6px;
 /*	font-size: 24px;*/
 	height: fit-content;
+}
+
+.table-wrapper {
+	max-width: 100%;
+	overflow-x: auto;
 }
 
 .project-selector:invalid {
@@ -449,6 +502,8 @@ hr {
 	align-items: center;
 	gap: 2px 8px;
 	padding: 2px 0;
+	flex: 0 0 auto;
+
 }
 
 .project-controls .left-content {
@@ -517,7 +572,7 @@ hr {
 /* table template */
 .dashboard-table {
 	width: fit-content;
-	table-layout: fixed;
+	table-layout: auto;
 	margin: 0 auto;
 	border-collapse: collapse;
 	text-align: center;
@@ -534,7 +589,9 @@ hr {
 	text-overflow: ellipsis;
 	height: 30px;
 }
-
+.dashboard-table td {
+    overflow-wrap: anywhere;
+}
 .dashboard-table tbody tr:where(:not(.summary-row)):where(:nth-child(even)) {
 	/* alternate row color */
 	background-color: var(--table-bg-alt);

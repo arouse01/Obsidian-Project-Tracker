@@ -166,11 +166,9 @@ export class TrackerView extends ItemView {
 
 	private async buildLayout(): Promise<void> {
 		this.contentEl.empty();
-		this.header = this.contentEl.createDiv()
-		this.header.addClass("dashboard-tab-container")
+		this.header = this.contentEl.createDiv({ cls: "dashboard-tab-container" })
 
-		this.container = this.contentEl.createDiv()
-		this.container.addClass("dashboard-tab-area")
+		this.container = this.contentEl.createDiv({ cls: "dashboard-tab-area" })
 	}
 
 	private async buildTabs(header: HTMLElement): Promise<void> {
@@ -179,13 +177,7 @@ export class TrackerView extends ItemView {
 		const tabArea = header.createDiv({
 			cls: "dashboard-tabs"
 		})
-		// tabArea.setCssStyles("display: flex")
-		// const tabs = header.createDiv({
-		// 	cls: "dashboard-tabs"
-		// })
-		// const newTable = tabArea.createEl('table')
-		// newTable.addClass("dashboard-tab-table")
-		// const row = newTable.createEl('tr');
+
 		for (const tab of DASHBOARD_TABS) {
 			// const cell = row.createEl("td");
 			const button = new ButtonComponent(tabArea)

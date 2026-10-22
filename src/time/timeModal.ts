@@ -47,13 +47,14 @@ export class TimeModal extends Modal {
 		// this.setTitle('Create Issue');
 		contentEl.empty();
 
-		const form = contentEl.createDiv({ cls: "issue-form" });
-		form.addClass('font-size-12')
+		const form = contentEl.createDiv({ cls: "issue-form font-size-12" });
+
 		if (this.options.mode === "stop" ||
 			this.options.mode === "stopAll") {
 			const infoText = form.createDiv();
 			this.buildStartTimeDisplay(infoText)
 		}
+
 		this.buildTimestampField(form);
 
 		this.buildButtons(form);
@@ -79,8 +80,8 @@ export class TimeModal extends Modal {
 			infoText.addClass("time-modal-secondary");
 			infoText.setText(`Sessions started at:`)
 
-			const tableEl = infoText.createEl('table');
-			tableEl.addClass('summary-section')
+			const tableEl = infoText.createEl('table', {cls: 'summary-section'});
+
 			const tableHeaderEl = tableEl.createEl('thead');
 			const headerRowEl = tableHeaderEl.createEl('tr');
 			headerRowEl.createEl('th', { text: 'Project' });

@@ -139,15 +139,12 @@ export class TimeDashboardView extends ItemView {
 	}
 
 	private async buildDashboard() {
-		const controlSection = this.contentEl.createEl("section");
-		controlSection.addClass('dashboard');
-		controlSection.addClass('font-size-12');
-		controlSection.addClass('text-centered')
+		const controlSection = this.contentEl.createEl("section", {cls: 'dashboard font-size-12 text-centered'});
 
-		const title = controlSection.createEl("h1", {
+		controlSection.createEl("h1", {
 			text: "Time tracker",
+			cls: 'text-centered'
 		});
-		title.addClass("text-centered");
 
 		new ButtonComponent(controlSection)
 			.setButtonText("Update weekly goals")
@@ -170,11 +167,8 @@ export class TimeDashboardView extends ItemView {
 				}).open();
 			});
 
-		const tableDiv = this.contentEl.createDiv({ cls: "dashboard" })
-		tableDiv.addClass('font-size-12');
-		const tableMainEl = tableDiv.createEl('table');
-		tableMainEl.addClass('dashboard-table')
-		tableMainEl.addClass('time-table')
+		const tableDiv = this.contentEl.createDiv({ cls: "dashboard font-size-12" })
+		const tableMainEl = tableDiv.createEl('table', {cls: 'dashboard-table time-table'});
 
 		// create colgroup so we can specify column sizes
 		const timeCols = this.getVisibleCols()
@@ -186,14 +180,12 @@ export class TimeDashboardView extends ItemView {
 		
 		// Summary table creation
 		
-		const summarySection = this.contentEl.createDiv("section");
-		summarySection.addClass("dashboard")
-		const subtitle = summarySection.createEl("h3", {
-			text: "By client"
-		});
-		subtitle.addClass("text-centered");
+		const summarySection = this.contentEl.createDiv({cls: 'dashboard font-size-12'});
 
-		summarySection.addClass('font-size-12')
+		summarySection.createEl("h3", {
+			text: "By client",
+			cls: 'text-centered'
+		});
 
 		this.summaryTable = new TimeSummaryTable(
 			this.timeTracker,
@@ -206,15 +198,6 @@ export class TimeDashboardView extends ItemView {
 			}
 		)
 
-		/*const allocButtonDiv = this.contentEl.createDiv("section");
-		allocButtonDiv.addClass("dashboard")
-		allocButtonDiv.addClass("text-centered")
-		allocButtonDiv.createEl("h3", {
-			text: ""
-		}); // lazy spacing*/
-		
-
-		
 	}
 
 	async updateDashboard(): Promise<void> {
@@ -375,10 +358,7 @@ export class TimeDashboardView extends ItemView {
 		target: HTMLTableSectionElement,
 		project: ProjectGroup
 	) {
-		const row = target.createEl('tr');
-		
-			row.addClass("first")
-		
+		const row = target.createEl('tr', {cls: 'first'});		
 
 		for (const [field,] of this.getVisibleCols()) {
 
@@ -421,8 +401,7 @@ export class TimeDashboardView extends ItemView {
 		const row = target.createEl('tr');
 
 		for (const [field,] of this.getVisibleCols()) {
-			const cell = row.createEl("td");
-			cell.addClass('summary-row')
+			const cell = row.createEl("td", {cls: 'summary-row'});
 			this.renderTimeStopRowCell(cell, field);
 		}
 		
@@ -442,9 +421,7 @@ export class TimeDashboardView extends ItemView {
 					cell.addClass("time-progress-cell")
 					// const isActive = activePaths.has(project.file.path);
 					if (activeSession) {
-						const indicator = cell.createDiv({ cls: "active-indicator" });
-						indicator.addClass("center-align")
-						indicator.addClass("active")
+						const indicator = cell.createDiv({ cls: "active-indicator center-align active" });
 						indicator.createDiv({ cls: "blinky-circle-green" })
 						const span = indicator.createSpan();  //⏲
 						span.appendChild(createStatusIcon(true))

@@ -165,15 +165,15 @@ export const TODO_COLS = {
 		label: "Name",
 		sortable: true,
 		groupable: false,
-		width: "30%",
-		minWidth: "250px",
+		// width: "30%",
+		minWidth: "150px",
 		centered: false
 	},
 	"notes": {
 		label: "Notes",
 		sortable: false,
 		groupable: false,
-		width: "40%",
+		minWidth: "150px",
 		centered: false
 	},
 	"status": {
@@ -188,7 +188,7 @@ export const TODO_COLS = {
 		sortable: true,
 		groupable: true,
 		centered: false,
-		width: "20%"
+		minWidth: "120px"
 	},
 	"dueDate": {
 		label: "Due",
@@ -355,8 +355,8 @@ export const ISSUE_COLS = {
 		label: "Name",
 		sortable: true,
 		groupable: false,
-		width: "30%",
-		minWidth: "250px",
+		// width: "30%",
+		minWidth: "150px",
 		centered: false
 	},
 	"status": {
@@ -371,13 +371,13 @@ export const ISSUE_COLS = {
 		sortable: true,
 		groupable: true,
 		centered: false,
-		width: "20%"
+		minWidth: "150px"
 	},
 	"origin": {
 		label: "Origin",
 		sortable: false,
 		groupable: false,
-		width: "20%",
+		minWidth: "120px",
 		centered: false
 	},
 	"startDate": {
@@ -431,16 +431,14 @@ export const NOTE_COLS = {
 		label: "Title",
 		sortable: true,
 		groupable: false,
-		width: "30%",
-		minWidth: "250px",
+		minWidth: "150px",
 		centered: false
 	},
 	"filename": {
 		label: "Filename",
 		sortable: true,
 		groupable: false,
-		width: "30%",
-		minWidth: "250px",
+		minWidth: "150px",
 		centered: false
 	},
 	"date": {
@@ -448,7 +446,7 @@ export const NOTE_COLS = {
 		sortable: true,
 		groupable: false,
 		centered: true,
-		width: "75px"
+		width: "110px"
 	},
 	"dateModified": {
 		label: "Last Modified",
@@ -462,7 +460,7 @@ export const NOTE_COLS = {
 		sortable: true,
 		groupable: true,
 		centered: false,
-		width: "20%"
+		minWidth: "150px"
 	},
 	"people": {
 		label: "People",

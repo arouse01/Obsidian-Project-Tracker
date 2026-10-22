@@ -44,8 +44,8 @@ export class GenericModal extends Modal {
 		// this.setTitle('Create Issue');
 		contentEl.empty();
 
-		const form = contentEl.createDiv({ cls: "issue-form" });
-		form.addClass('font-size-12')
+		const form = contentEl.createDiv({ cls: "issue-form font-size-12" });
+
 		this.inputs = []
 		const items = this.options.context.items
 		for (const item of items) {

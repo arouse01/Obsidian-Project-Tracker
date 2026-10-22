@@ -203,14 +203,10 @@ export class ProjectSingleView extends Component {
 
 
 		*/
-		const dashboardContainer = this.container.createDiv()
-		dashboardContainer.addClass('project-dashboard')
-		const projectSection = dashboardContainer.createDiv({ cls: "section-header" })
-		projectSection.addClass('project-title-section')
-		projectSection.addClass("dashboard")
+		const dashboardContainer = this.container.createDiv({cls: 'project-dashboard'})
+		const projectSection = dashboardContainer.createDiv({ cls: "section-header project-title-section dashboard" })
 		const titleSection = projectSection.createDiv({cls: "project-title-with-button"})
-		this.projectTitle = titleSection.createDiv()
-		this.projectTitle.addClass("project-title")
+		this.projectTitle = titleSection.createDiv({cls: "project-title"})
 		const linkDiv = titleSection.createDiv({ cls: "dashboard" })
 		
 		new ButtonComponent(linkDiv)
@@ -237,7 +233,6 @@ export class ProjectSingleView extends Component {
 					new Notice(`Project note file not found (${this.selectedProject}).`);
 				}
 			});
-		// devButton.buttonEl.classList.remove("dashboard-tabs")
 		
 		/*this.projectTitle.addEventListener("click", (event) => {
 			event.preventDefault();
@@ -270,23 +265,10 @@ export class ProjectSingleView extends Component {
 
 		})*/
 			
-		this.projectSelect = projectSection.createEl("select");
-		this.projectSelect.addClass("dropdown-new")
-		// this.projectSelect.addClass("center-align")
-		this.projectSelect.addClass("project-selector")
+		this.projectSelect = projectSection.createEl("select", {cls: "dropdown-new project-selector"});
 		this.projectSelect.required = true;
 		this.updateProjectSelector()
-		// const placeholder = this.projectSelect.createEl("option", {
-		// 	value: "",
-		// 	text: "Select a project"
-		// })
-		// placeholder.hidden = true;
-		// for (const project of this.getProjectOptions()) {
-		// 	this.projectSelect.createEl("option", {
-		// 		value: project.path,
-		// 		text: project.name
-		// 	})
-		// }
+		
 		this.registerDomEvent(this.projectSelect, "change", async () => {
 			const path = this.projectSelect.value;
 			if (path !== "") {
@@ -320,10 +302,10 @@ export class ProjectSingleView extends Component {
 	}
 
 	async buildContentArea(parent: HTMLDivElement): Promise<void> {
-		this.issueEl = parent.createDiv({ cls: "single-project-section", attr: { name: "single-project-issue-dashboard" } })
+		this.issueEl = parent.createDiv({ cls: "single-project-section project-section", attr: { name: "single-project-issue-dashboard" } })
 		this.todoEl = parent.createDiv({ cls: "single-project-section project-section", attr: { name: "single-project-todo-dashboard" } })
-		this.meetingEl = parent.createDiv({ cls: "single-project-section", attr: { name: "single-project-meetings-dashboard" } })
-		this.otherNoteEl = parent.createDiv({ cls: "single-project-section", attr: { name: "single-project-notes-dashboard" } })
+		this.meetingEl = parent.createDiv({ cls: "single-project-section project-section", attr: { name: "single-project-meetings-dashboard" } })
+		this.otherNoteEl = parent.createDiv({ cls: "single-project-section project-section", attr: { name: "single-project-notes-dashboard" } })
 /*
 		this.projectDashboard = new ProjectDashboardView(
 			projectViewEl,

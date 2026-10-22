@@ -178,14 +178,12 @@ export class TimeSummarySingle extends Component {
 
 		await this.updateSummaryData()
 
-		const mainSection = this.container.createEl("section");
-		mainSection.addClass("dashboard-section")
-		mainSection.addClass("font-size-12")
+		const mainSection = this.container.createEl("section", {cls: 'dashboard-section font-size-12'});
 
 		const headerSection = mainSection.createDiv({cls: "time-header"})
 		headerSection.createDiv({ text: "Timekeeping", cls: "section-header" })
 
-		const buttonSection = headerSection.createDiv({ cls: 'project-section' })
+		const buttonSection = headerSection.createDiv()
 		const statusIconSection = headerSection.createDiv()
 		
 		// statusSection.addClass("button-new")
@@ -194,17 +192,17 @@ export class TimeSummarySingle extends Component {
 		await this.createStatusIndicator(statusIconSection)
 		// mainSection.createDiv({ text: "Hours worked", cls: "section-header" }) 
 		mainSection.createEl("hr", { cls: "hr2" })
-		const generalSummary = mainSection.createDiv({ cls: "project-section" });
-		generalSummary.addClass("project-time-full-layout")
-		const runningTotals = generalSummary.createDiv()
-		runningTotals.addClass("time-running-totals")
+		const generalSummary = mainSection.createDiv({ cls: "project-section project-time-full-layout" });
+
+		const runningTotals = generalSummary.createDiv({ cls: "time-running-totals" })
+
 		// runningTotals.addClass("subsection")
 		// const timeSummary = leftSummary.createDiv({ cls: "project-section" })
 		await this.buildProjectStats(runningTotals)
 		// runningTotals.createEl("hr")
 
-		const detailTableSection = generalSummary.createDiv();
-		detailTableSection.addClass("time-summary-table")
+		const detailTableSection = generalSummary.createDiv({ cls: "time-summary-table" });
+
 		this.summaryTable = new TimeSummaryTable(
 			this.timeTracker,
 			this.projectManager,
@@ -262,8 +260,7 @@ export class TimeSummarySingle extends Component {
 		// weekProgressDiv.addClass("subsection")
 		const weekTitle = weekProgressDiv.createDiv({ text: `Weekly target`, cls: 'project-time-label' })
 		weekTitle.setCssStyles({ gridArea: 'title' })
-		const progressDiv = weekProgressDiv.createDiv()
-		progressDiv.addClass("time-progress-cell")
+		const progressDiv = weekProgressDiv.createDiv({ cls: "time-progress-cell" })
 		progressDiv.setCssStyles({ gridArea: 'total'})
 		const targetMinutes = (this.timeTracker.currWeekAllocations[this.selectedProject.file.path] ?? 0) * 60
 		if (this.selectedProject !== null && targetMinutes > 0) {
@@ -351,8 +348,7 @@ export class TimeSummarySingle extends Component {
 		// monthProgressDiv.addClass("subsection")
 		const monthTitle = monthProgressDiv.createDiv({ text: `Monthly target`, cls: 'project-time-label' })
 		monthTitle.setCssStyles({ gridArea: 'title' })
-		const progressDiv = monthProgressDiv.createDiv()
-		progressDiv.addClass("time-progress-cell")
+		const progressDiv = monthProgressDiv.createDiv({ cls: "time-progress-cell" })
 		progressDiv.setCssStyles({ gridArea: 'total' })
 		if (
 			this.selectedProject !== null &&
@@ -387,9 +383,6 @@ export class TimeSummarySingle extends Component {
 
 				const pctDiv = monthProgressDiv.createDiv({ text: `${Math.round(timePercent * 100)}%` })
 				pctDiv.setCssStyles({ gridArea: 'percent' })
-
-				progressDiv.addClass("time-progress-cell")
-				
 
 				this.progressMonthIndicator = {
 					barEl: barEl,
@@ -457,14 +450,11 @@ export class TimeSummarySingle extends Component {
 		if (this.selectedProject !== null) {
 			// const project = this.selectedProjectInfo
 			const activeIndicator = target.createDiv({
-				cls: "font-size-16"
-			})
-			activeIndicator.addClass("status-div")
-			// activeIndicator.addClass("center-align")
-			
+				cls: "font-size-16 status-div"
+			})			
 
-			this.activeDiv = activeIndicator.createDiv({ cls: "active-indicator" });
-			this.activeDiv.addClass("large")
+			this.activeDiv = activeIndicator.createDiv({ cls: "active-indicator large" });
+
 			this.activeDiv.createDiv({ cls: "blinky-circle-green" })
 			this.activeIcon = this.activeDiv.createSpan();
 			// const statusText = !!this.sess
@@ -479,8 +469,7 @@ export class TimeSummarySingle extends Component {
 		const activeSession = await this.timeTracker.getActiveProjectSession(this.selectedProject?.file.path);
 
 		if (this.selectedProject !== null) {
-			const buttonDiv = sessionControls.createDiv({ cls: "summary-controls" })
-			buttonDiv.addClass("font-size-14")
+			const buttonDiv = sessionControls.createDiv({ cls: "summary-controls font-size-14" })
 
 			this.startButton = new ButtonComponent(buttonDiv)
 				.setButtonText(activeSession ? "Stop" : "Start")
@@ -564,11 +553,9 @@ export class TimeSummarySingle extends Component {
 	private async buildProjectStats(projectSection: HTMLDivElement) {
 		const tempDiv = createDiv()
 		tempDiv.createDiv({ text: 'Running totals', cls: 'font-size-14' })
-		// titleDiv.addClass("subsection")
-		const newDiv = tempDiv.createDiv({ cls: "project-section" })
-		newDiv.addClass("project-time-section")
 
-		
+		const newDiv = tempDiv.createDiv({ cls: "project-section project-time-section" })
+
 		// titleDiv.setCssStyles({gridArea: "a"})
 		// today
 		// const todayDiv = newDiv.createDiv()
