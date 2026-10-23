@@ -127,7 +127,6 @@ export class TrackerView extends ItemView {
 
 		this.todoDashboard = new TodoDashboardView(
 			todoEl,
-			this.app,
 			this.plugin.todoManager,
 			this.plugin.projectManager
 		)

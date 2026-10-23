@@ -1,5 +1,4 @@
 import {
-	App,
 	Component,
 	ButtonComponent,
 	Menu
@@ -77,14 +76,13 @@ export class TodoDashboardView extends Component {
 
 	constructor(
 		private container: HTMLElement,
-		private app: App,
 		private todoManager: TodoManager,
 		private projectManager: MyProjectManager,
 		private projectPath?: string | undefined
 	) {
 		super();
 		this.container = container;
-		this.selectedProject = this.projectManager.getProjectInfoByPath(projectPath)
+		this.selectedProject = this.projectManager.getProjectInfoByPath(this.projectPath)
 	}
 
 	getViewType(): string {

@@ -5,8 +5,7 @@ import { TimeTracker } from '@/time/timeTracker';
 import { MyProjectManager } from '@/projects/projectManager'
 import {
 	PeriodicTimeSummary,
-	DateKey,
-	TimeSummaryStore
+	DateKey
 } from '@/utils/types'
 import {
 	SummaryPeriod,
@@ -22,44 +21,24 @@ import {
 	formatMinutesToDuration,
 	dateKeyToDate
 } from '@/utils/utils';
-// import {
-// 	TimeModal
-// } from '@/time/timeModal'
 
 
 
 
 export class TimeSummaryTable {
 
-	private timeSummaries: TimeSummaryStore = {
-		day: {
-			project: new Map(),
-			client: new Map()
-		},
-		week: {
-			project: new Map(),
-			client: new Map()
-		},
-		month: {
-			project: new Map(),
-			client: new Map()
-		}
-	};
 	private summaryFormat: SummaryFormat;
 	private summaryPeriod: SummaryPeriod;
 	private periodOffset: number;
 	private summaryGroup: SummaryGroup = "client";
 	private selectedProjectPath: string | null;
 
-
 	private container: HTMLDivElement;
-	// private tableContainer: HTMLElement;
 
 	private summaryTableEl!: HTMLTableElement;
 	private summaryTableBodyEl!: HTMLTableSectionElement;
 	private rangeText!: HTMLElement;
 
-	// private activeSessionMap = new Map<string, SessionData>();
 	constructor(
 		private timeTracker: TimeTracker,
 		private projectManager: MyProjectManager,
@@ -180,15 +159,6 @@ export class TimeSummaryTable {
 		this.selectedProjectPath = projectPath
 	}
 
-	async updateSummaries(): Promise<void> {
-		// const activeSessions = await this.timeTracker.getActiveSessions();
-		// this.activeSessionMap = new Map(
-		// 	activeSessions.map(session => [session.projectPath, session])
-		// );
-		this.timeSummaries = await this.timeTracker.getCurrentTimeSummaries();
-		
-
-	}
 	async getSummaryData(): Promise<PeriodicTimeSummary> {
 
 		let summaryTotals: PeriodicTimeSummary;
@@ -231,12 +201,16 @@ export class TimeSummaryTable {
 	}
 
 	async rebuildSummaryTable(): Promise<void> {
-		// Get summary data first, then use it to build the summary table. Works different from the project table because the columns that appear are much more dependent on app state, which also affects how the calculations work
+		/*
+			Get summary data first, then use it to build the summary table. 
+			Works different from the project table because the columns that 
+			appear are much more dependent on app state, which also affects 
+			how the calculations work
+		*/
 		const summaryTotals = await this.getSummaryData();
 		const { start, end } = getSummaryPeriod(this.periodOffset, this.summaryPeriod);
 
 		let dateRangeText: string;
-		// let summaryTotals: PeriodicTimeSummary;
 
 		const newTable = createEl('table');
 

@@ -1,63 +1,22 @@
 import {
 	App,
 	Component,
-	// Menu,
 	ButtonComponent,
-	Notice,
-    ViewStateResult,
-	// setIcon
+	Notice
 } from 'obsidian';
 import { MyProjectManager } from '@/projects/projectManager';
-import {
-	// PeriodicTimeSummary,
-	// ProjectInfo,
-	// TimeSession,
-	// TimeSummary
-	ProjectOption
-} from '@/utils/types';
-import {
-	// formatMinutesToDuration,
-	// formatDate,
-	// getFrontmatterString,
-	// getFrontmatterStringArray
-	// normalizeWikiLink
-} from '@/utils/utils';
+import { ProjectOption } from '@/utils/types';
 import { TimeTracker } from '@/time/timeTracker';
-// import { TimeModal } from '@/time/timeModal';
 import { IssueTracker }from '@/issues/issueTracker';
 import { TodoManager } from '@/todos/todoTracker';
-import {
-	// SummaryPeriod,
-	// getSummaryPeriod,
-	// SummaryGroup,
-	// sortItems,
-	// GroupDefs,
-	// ColSort,
-	// TableColumn,
-	// SummaryColumn,
-	// updateSortButtons,
-	// getGroupOptions
-} from '@/utils/tableFunctions';
-import {
-	TodoDashboardView
-} from '@/todos/todoDashboard'
-import {
-	IssueDashboardView
-} from '@/issues/issueDashboard'
-import {
-	TimeSummarySingle
-} from '@/time/timeSummarySingle'
-import {
-	ProjectInfoSingle
-} from '@/projects/projectInfoDashboard';
-import {
-	NoteDashboard
-} from '@/notes/noteDashboard';
-import {
-	NoteManager
-} from '@/notes/noteManager';
+import { TodoDashboardView } from '@/todos/todoDashboard';
+import { IssueDashboardView } from '@/issues/issueDashboard';
+import { TimeSummarySingle } from '@/time/timeSummarySingle';
+import { ProjectInfoSingle } from '@/projects/projectInfoDashboard';
+import { NoteDashboard } from '@/notes/noteDashboard';
+import { NoteManager } from '@/notes/noteManager';
 
-const DASHBOARD_TABS = ["Issues", "Todos", "Meeting notes", "Other project notes"] as const;
+const DASHBOARD_TABS = ["Todos", "Issues", "Meeting notes", "Other project notes"] as const;
 type DashboardTab = typeof DASHBOARD_TABS[number];
 
 export class ProjectSingleView extends Component {
@@ -80,7 +39,6 @@ export class ProjectSingleView extends Component {
 	private meetingTable: NoteDashboard | undefined;
 	private otherNoteTable: NoteDashboard | undefined;
 
-	private indicatorSection!: HTMLDivElement;
 	private activeTab: DashboardTab;
 	private tabButtons = new Map<DashboardTab, ButtonComponent>();
 
@@ -96,7 +54,7 @@ export class ProjectSingleView extends Component {
 		activeTab: DashboardTab = "Issues"
 	) {
 		super();
-		this.selectedProject = project
+		this.selectedProject = this.project
 		this.activeTab = activeTab
 	}
 
@@ -279,9 +237,9 @@ export class ProjectSingleView extends Component {
 
 
 		});
-		// this.indicatorSection = projectSection.createDiv({cls: "right-align"})
+
 		const detailsSection = dashboardContainer.createDiv({ cls: "single-project-section" });
-		// detailsSection.createDiv({ text: "Project details", cls: "section-header" })
+
 		this.detailsEl = detailsSection.createDiv()
 		dashboardContainer.createEl("hr")
 
@@ -302,8 +260,8 @@ export class ProjectSingleView extends Component {
 	}
 
 	async buildContentArea(parent: HTMLDivElement): Promise<void> {
-		this.issueEl = parent.createDiv({ cls: "single-project-section project-section", attr: { name: "single-project-issue-dashboard" } })
 		this.todoEl = parent.createDiv({ cls: "single-project-section project-section", attr: { name: "single-project-todo-dashboard" } })
+		this.issueEl = parent.createDiv({ cls: "single-project-section project-section", attr: { name: "single-project-issue-dashboard" } })
 		this.meetingEl = parent.createDiv({ cls: "single-project-section project-section", attr: { name: "single-project-meetings-dashboard" } })
 		this.otherNoteEl = parent.createDiv({ cls: "single-project-section project-section", attr: { name: "single-project-notes-dashboard" } })
 /*
@@ -518,7 +476,6 @@ export class ProjectSingleView extends Component {
 			)
 			this.todoTable = new TodoDashboardView(
 				this.todoEl,
-				this.app,
 				this.todoManager,
 				this.projectManager,
 				this.selectedProject

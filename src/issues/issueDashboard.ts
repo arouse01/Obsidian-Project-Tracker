@@ -633,12 +633,7 @@ export class IssueDashboardView extends Component {
 			case "status":
 				{
 					cell.setText(issue.status)
-					// const check = cell.createEl('input')
-					// check.type = 'checkbox';
-					// check.checked = issue.status;
-					// check.addEventListener('change', (event: Event) => {
-					// 	void this.todoCheckboxChange(event, issue.id)
-					// })
+
 					break;
 				}
 				

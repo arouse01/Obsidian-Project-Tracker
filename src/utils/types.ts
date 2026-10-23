@@ -68,6 +68,16 @@ export interface IssueContext {
 	editor?: Editor
 }
 
+export interface IssueAppendContext {
+	tempTitle: string;
+	selectedText: string;
+	projectPaths: string[] | null;
+	projectNames: string[] | null;
+	sourceFile: TFile | null;
+	line: number | null;
+	editor?: Editor
+}
+
 export interface CreateIssueRequest {
 	issue: IssueData;
 	context: IssueContext;
@@ -78,6 +88,11 @@ export interface IssueModalOptions {
 	projects: ProjectInfo[];
 	priorities: PriorityOption[];
 	onSubmit: (request: CreateIssueRequest) => Promise<void>;
+}
+
+export interface IssueSelectModalOptions {
+	issueList: IssueItem[];
+	onSubmit: (request: string) => Promise<void>;
 }
 
 export interface IssueData {
@@ -361,7 +376,7 @@ export interface NoteItem {
 
 export interface ModalItem {
 	text: string,
-	type: "string" | "number"
+	type: "string" | "number",
 }
 
 export interface ModalContext {

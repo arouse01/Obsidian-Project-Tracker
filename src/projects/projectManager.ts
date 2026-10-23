@@ -28,11 +28,13 @@ import {
 	// SummaryPeriod,
 	// getSummaryPeriod
 } from '@/utils/tableFunctions';
+import ProjectTrackerPlugin from '../main';
 
 
 export class MyProjectManager {
 	constructor(
 		private app: App,
+		private plugin: ProjectTrackerPlugin,
 		private getPeoplePath: () => string
 	) {
 		this.app = app
@@ -157,8 +159,8 @@ export class MyProjectManager {
 		return project?.name ?? null;
 	}
 
-	goToProjectView(path: string) {
-
+	async goToProjectView(path: string) {
+		await this.plugin.openProjectinTracker(path)
 	}
 
 	getTimeTarget(

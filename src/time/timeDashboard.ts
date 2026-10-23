@@ -20,15 +20,13 @@ import {
 } from '@/utils/types'
 import { TimeTracker } from '@/time/timeTracker';
 import { TimeModal } from '@/time/timeModal';
-import {
-	TIME_DASHBOARD_VIEW_TYPE
-} from '@/utils/constants'
+import { TIME_DASHBOARD_VIEW_TYPE } from '@/utils/constants'
 import {
 	TableColumn,
 	updateSortButtons,
 	createTableColGroup,
 	sortItems,
-	GroupPosition
+	// GroupPosition
 } from '@/utils/tableFunctions';
 import {
 	TIME_COLS,
@@ -36,10 +34,10 @@ import {
 	TimeSort,
 	ProjectGroup,
 	ProjectColumnField
-	
 } from '@/utils/tableConstants'
 import { TimeSummaryTable } from '@/time/timeSummaryTable'
 import { TimeAllocModal } from './timeAllocModal';
+import ProjectTrackerPlugin from '../main';
 
 
 export class TimeDashboardView extends ItemView {
@@ -64,12 +62,7 @@ export class TimeDashboardView extends ItemView {
 
 	private groupBy: string = "primary";
 
-	private summaryPeriod: "week" | "month" = "week";  // to drive the summary period selection
-	private periodOffset = 0;  // to drive the summary period selection, how far in the past to go
-
 	private projectTableBodyEl!: HTMLTableSectionElement;
-	private summaryTableBodyEl!: HTMLTableSectionElement;
-	// private rangeText!: HTMLElement;
 
 	private summaryTable!: TimeSummaryTable;
 
@@ -81,6 +74,7 @@ export class TimeDashboardView extends ItemView {
 
 	constructor(
 		leaf: WorkspaceLeaf,
+		private plugin: ProjectTrackerPlugin,
 		private timeTracker: TimeTracker,
 		private projectManager: MyProjectManager
 	) {
@@ -322,26 +316,22 @@ export class TimeDashboardView extends ItemView {
 		const groups = this.groupProjects(projects)
 
 		for (const group of groups) {
-			// this.createSummaryRow(
-			// 	tbody,
-			// 	group
-			// );
 
-			for (const [index, project] of group.projects.entries()) {
-				let groupPos: GroupPosition = null;
-				if (index === 0) {
-					groupPos = "first";
-				} else if (index === group.projects.length - 1) {
-					groupPos = "last"
-				} else {
-					groupPos = "middle"
-				}
+			for (const [, project] of group.projects.entries()) {
+				// let groupPos: GroupPosition = null;
+				// if (index === 0) {
+				// 	groupPos = "first";
+				// } else if (index === group.projects.length - 1) {
+				// 	groupPos = "last"
+				// } else {
+				// 	groupPos = "middle"
+				// }
 				
 
 				this.createTimeRow(
 					tbody,
 					project,
-					groupPos
+					// groupPos
 				);
 			}
 		}
@@ -354,25 +344,11 @@ export class TimeDashboardView extends ItemView {
 
 	}
 
-	private createSummaryRow(
-		target: HTMLTableSectionElement,
-		project: ProjectGroup
-	) {
-		const row = target.createEl('tr', {cls: 'first'});		
-
-		for (const [field,] of this.getVisibleCols()) {
-
-			const cell = row.createEl("td");
-
-			this.renderGroupCell(cell, field, project);
-		}
-
-	}
-
 	private createTimeRow(
 		target: HTMLTableSectionElement,
 		project: ProjectInfo,
-		groupPos: GroupPosition = null) {
+		// groupPos: GroupPosition = null
+	) {
 
 		const row = target.createEl('tr');
 		// adjust formatting based on whether time for the week has been met
@@ -392,7 +368,7 @@ export class TimeDashboardView extends ItemView {
 
 			const cell = row.createEl("td");
 
-			this.renderTimeCell(cell, field, project, groupPos);
+			this.renderTimeCell(cell, field, project);
 		}
 
 	}
@@ -411,7 +387,7 @@ export class TimeDashboardView extends ItemView {
 		cell: HTMLTableCellElement,
 		field: TimeColumnField,
 		project: ProjectInfo,
-		groupPos: GroupPosition
+		// groupPos: GroupPosition
 	): void {
 		const activeSession = this.activeSessionMap.get(project.file.path);
 
@@ -444,22 +420,15 @@ export class TimeDashboardView extends ItemView {
 
 						const currHours = formatMinutesToDuration(weekMinutes, "hours")
 						const targetHours = formatMinutesToDuration(targetMinutes, "hours")
-						const targetText = `${currHours}/${targetHours}h`
-						const textDiv = cell.createDiv({ cls: "font-size-10" })
-						// const targetText = formatMinutesToDuration(targetMinutes, "hours")
-						textDiv.setText(`${targetText}`)
-						// if (timePercent >= 1) {
-						// 	progressDiv.appendChild(createStatusIcon(true, "#f2f200"))
-						// } else {
-						// 	progressDiv.appendChild(createProgressWheel(timePercent))
-						// }
 
-						// const progressBar = progressCell.createDiv({ cls: "time-progress-bar" })
-						// const progressFill = progressBar.createDiv({ cls: "time-progress-fill" })
-						// progressFill.style.setProperty(
-						// 	"--progress",
-						// 	`${Math.min(timePercent, 1) * 100}%`
-						// );
+						const textDiv = cell.createDiv({ cls: "font-size-10" })
+						textDiv.appendText(`${currHours}/`)
+						textDiv.createEl('wbr')
+						textDiv.appendText(`${targetHours}h`)
+						const targetText = `${currHours}/${targetHours}h`
+						const percent = Math.round(timePercent * 100)
+						cell.title = `${targetText} (${percent}%)`
+						
 					}
 					break
 				}
@@ -467,6 +436,17 @@ export class TimeDashboardView extends ItemView {
 				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
 					cell.addClass("left-align")
 					// cell.addClass("left-indent")
+					new ButtonComponent(cell)
+						.setButtonText(project.name)
+						.setClass("left-align")
+						.onClick(async (event) => {
+							event.preventDefault();
+							void this.plugin.openProjectinTracker(project.file.path)
+
+						});
+
+					break;
+/*
 					const projectLink = cell.createEl("a", { text: project.name });
 					projectLink.addEventListener("click", (event) => {
 						event.preventDefault();
@@ -485,9 +465,9 @@ export class TimeDashboardView extends ItemView {
 					});
 
 					break;
+*/
 				}
 
-			
 			case "hoursToday":
 				{
 					const dailyTimeSum = this.timeSummaries.day.project.get(project.file.path) ?? 0;
@@ -657,92 +637,6 @@ export class TimeDashboardView extends ItemView {
 		}
 	}
 
-	private renderGroupCell(
-		cell: HTMLTableCellElement,
-		field: TimeColumnField,
-		group: ProjectGroup
-	): void {
-
-		const activeCount = group.projects.filter(
-			project => this.activeSessionMap.has(project.file.path)).length;
-
-		switch (field) {
-			
-			case "sessionStatus":
-				{
-
-
-					if (activeCount === 0) {
-						cell.setText("");
-						/*} else if (activeCount === group.projects.length) {
-							const indicator = cell.createDiv({ cls: "active-indicator" });
-							indicator.createDiv({ cls: "blinky-circle-green" })
-							const span = indicator.createSpan();  //⏲
-							span.setText("🟢")*/
-					} else {
-						// some but not all projects active
-						const indicator = cell.createDiv({ cls: "active-indicator" });
-						indicator.createDiv({ cls: "blinky-circle-green" })
-						const span = indicator.createSpan();  //⏲
-						span.setText("🟢")
-					}
-					break;
-				}
-
-			case "project":  // stacking like this means both cases resolve to the code below
-			case "primary":
-				{
-					/*
-						Client is being displayed in the Project column because when grouping by client, the client column
-						is not included. For the client value to be displayed, it has to get put in a column that IS present, 
-						and we're not summarizing the project names so that column is empty anyway
-					*/
-					cell.setText(group.label)
-					cell.addClass("left-align")
-					
-					break
-					
-
-				}
-
-			case "hoursToday":
-				{
-					const dailyTimeSum = this.timeSummaries.day.client.get(group.key) ?? 0;
-					const dailyTimeText = formatMinutesToDuration(dailyTimeSum);
-					cell.setText(dailyTimeText);
-					cell.addClass("underline")
-
-					break;
-				}
-
-			case 'hoursWeek':
-				{
-					const weekTimeSum = this.timeSummaries.week.client.get(group.key) ?? 0;
-					const weekTimeText = formatMinutesToDuration(weekTimeSum);
-					cell.setText(weekTimeText);
-					cell.addClass("underline")
-					break;
-				}
-
-			case 'hoursMonth':
-				{
-					const weekTimeSum = this.timeSummaries.month.client.get(group.key) ?? 0;
-					const weekTimeText = formatMinutesToDuration(weekTimeSum);
-					cell.setText(weekTimeText);
-					cell.addClass("underline")
-					break;
-				}
-
-			case 'sessionStart':
-				break;
-
-			case 'sessionAt':
-				break;
-
-
-		}
-	}
-
 	private renderTimeStopRowCell(
 		cell: HTMLTableCellElement,
 		field: TimeColumnField
@@ -855,62 +749,6 @@ export class TimeDashboardView extends ItemView {
 	}
 
 
-	/*async updateSummaryTable(): Promise<void> {
-
-		// create temporary body for table, then fill it and swap for the current one instead of clearing the whole thing
-		const newBody = createEl('tbody')
-
-		await this.buildSummaryTableBody(newBody)
-
-		this.summaryTableBodyEl?.replaceWith(newBody);
-		this.summaryTableBodyEl = newBody;
-		const newBody = createEl('tbody')
-
-		const summaryTotals = await this.timeTracker.getTimeSummary(start, end);
-		*//*
-			summaryTotals are returned as array of TimeSummary objects 
-			which is projectPath (string) and totalMinutes (number), so 
-			we have to loop through and assign to the table
-		*//*
-		for (const timeSum of summaryTotals) {
-
-			// create row skeleton, and assign values to objects after (for cleaner visual code organization)
-			const row = newBody.createEl('tr');
-
-			const projectCell = row.createEl('td');
-			const totalCell = row.createEl('td');
-
-
-			const file = this.app.vault.getAbstractFileByPath(timeSum.key);
-
-			if (file instanceof TFile) {
-				const projectName = file.basename;
-				projectCell.setText(projectName);
-			}
-
-
-			const durationText = formatMinutesToDuration(timeSum.totalMinutes);
-			totalCell.setText(durationText)
-
-		}
-		// this.summaryTableBodyEl.empty();
-		this.summaryTableBodyEl.replaceWith(newBody);
-		this.summaryTableBodyEl = newBody;
-	}
-
-	private getSummaryPeriod(): { start: Date; end: Date } {
-		const start = window.moment()
-			.add(this.periodOffset, this.summaryPeriod)
-			.startOf(this.summaryPeriod)
-			.toDate();
-
-		const end = window.moment()
-			.add(this.periodOffset, this.summaryPeriod)
-			.endOf(this.summaryPeriod)
-			.toDate();
-
-		return { start, end };
-	}*/
 	private compareProjects(
 		a: ProjectInfo,
 		b: ProjectInfo,

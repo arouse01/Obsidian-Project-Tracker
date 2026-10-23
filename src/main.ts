@@ -11,29 +11,15 @@ import {
 } from '@/settings/settings';
 import { MyProjectManager } from '@/projects/projectManager';
 import { TimeTracker } from '@/time/timeTracker';
-// import { IssueModal } from '@/issues/issueModal'
 import { IssueTracker } from '@/issues/issueTracker'
 import { TodoManager } from '@/todos/todoTracker'
 import {
 	TIME_DASHBOARD_VIEW_TYPE,
 	VIEW_TYPE_TRACKER
 } from '@/utils/constants'
-import {
-	TimeDashboardView
-} from '@/time/timeDashboard';
-// import {
-// 	ProjectDashboardView
-// } from '@/projects/projectDashboard
-// import {
-// 	ProjectSingleView
-// } from '@/projects/projectView'
-// import {
-// 	TodoDashboardView
-// } from '@/todos/todoDashboard'
+import { TimeDashboardView } from '@/time/timeDashboard';
 import { TrackerView } from '@/trackerView';
-import { NoteManager } from '@/notes/noteManager'
-
-
+import { NoteManager } from '@/notes/noteManager';
 
 export default class ProjectTrackerPlugin extends Plugin {
 	projectManager!: MyProjectManager;
@@ -42,11 +28,16 @@ export default class ProjectTrackerPlugin extends Plugin {
 	issueTracker!: IssueTracker;
 	todoManager!: TodoManager;
 	noteManager!: NoteManager;
+	statusBar!: HTMLElement;
+	private timeoutId: number | null = null
 
 	async onload() {
 
+		this.statusBar = this.addStatusBarItem()
+
 		this.projectManager = new MyProjectManager(
 			this.app,
+			this,
 			() => this.settings.peoplePath
 		);
 
@@ -54,11 +45,9 @@ export default class ProjectTrackerPlugin extends Plugin {
 
 		this.timeTracker = new TimeTracker(
 			this.app,
+			this,
 			this.projectManager,
 			this.settings
-			// () => this.settings.timeLogPath,
-			// () => this.settings.timeAllocPath,
-			// () => this.settings.notificationLogPath
 		);
 		this.register(() => {
 			this.timeTracker.stopMonitoring();
@@ -79,54 +68,27 @@ export default class ProjectTrackerPlugin extends Plugin {
 
 		this.noteManager = new NoteManager(
 			this.app,
-			this.projectManager,
-
+			this.projectManager
 		)
 
 		this.registerView(
 			VIEW_TYPE_TRACKER,
-			leaf => new TrackerView(leaf, this, () => this.settings.devNotePath)
+			leaf => new TrackerView(
+				leaf,
+				this,
+				() => this.settings.devNotePath
+			)
 		);
-
-		// this.registerView(
-		// 	PROJECT_DASHBOARD_VIEW_TYPE,
-		// 	leaf => new ProjectDashboardView(
-		// 		leaf,
-		// 		this.timeTracker,
-		// 		this.projectManager,
-		// 		this.issueTracker,
-		// 		this.todoManager
-		// 	)
-		// );
-
-		// this.registerView(
-		// 	PROJECT_SINGLE_VIEW_TYPE,
-		// 	leaf => new ProjectSingleView(
-		// 		leaf,
-		// 		this.timeTracker,
-		// 		this.projectManager,
-		// 		this.issueTracker,
-		// 		this.todoManager
-		// 	)
-		// );
 
 		this.registerView(
 			TIME_DASHBOARD_VIEW_TYPE,
 			leaf => new TimeDashboardView(
 				leaf,
+				this,
 				this.timeTracker,
 				this.projectManager
 			)
 		);
-
-		// this.registerView(
-		// 	TODO_DASHBOARD_VIEW_TYPE,
-		// 	leaf => new TodoDashboardView(
-		// 		leaf,
-		// 		this.todoManager,
-		// 		this.projectManager
-		// 	)
-		// );
 
 		this.addCommand({
 			id: "open-tracker-dashboard",
@@ -272,6 +234,23 @@ export default class ProjectTrackerPlugin extends Plugin {
 		
 	}
 
+	updateStatusText(message: string, duration: number = 5) {
+		if (this.timeoutId !== null) {
+			window.clearTimeout(this.timeoutId);
+		}
+		const durationMax = 10
+		const durationMin = 2
+		let durationMs = Math.min(
+			Math.max(duration, durationMin),
+			durationMax
+		) * 1000;  // coerce duration to value between durationMin and durationMax
+		this.statusBar.setText(message)
+		this.timeoutId = window.setTimeout(() => {
+			this.statusBar.setText("");
+			this.timeoutId = null;
+		}, durationMs)
+	}
+
 	async activateTrackerDashboard(): Promise<void> {
 
 		const { workspace } = this.app;
@@ -371,6 +350,8 @@ export default class ProjectTrackerPlugin extends Plugin {
 	}
 
 	async addToIssue(editor: Editor, view: MarkdownView | MarkdownFileInfo): Promise<void> {
+
+		
 		/*
 							Append to issue steps
 								Select which issue (from open issues)	
@@ -378,6 +359,36 @@ export default class ProjectTrackerPlugin extends Plugin {
 								Add new subsection with meeting backlink
 								Add selected text
 							*/
+		await this.issueTracker.addSelectionToIssue(editor, view)
+	}
+
+	async openProjectinTracker(projectPath: string): Promise<void> {
+		const { workspace } = this.app;
+
+		let leaf = this.app.workspace.getLeavesOfType(
+			VIEW_TYPE_TRACKER
+		)[0];
+
+		if (!leaf) {
+			leaf = workspace.getLeaf("tab");
+
+			if (!leaf) {
+				return;
+			}
+
+			await leaf.setViewState({
+				type: VIEW_TYPE_TRACKER,
+				active: true,
+				state: { activeTab: "Projects" }
+			});
+		}
+		const view = leaf.view;
+		if (!(view instanceof TrackerView)) {
+			return;
+		}
+
+		await view.goToProjectView(projectPath)
+		await workspace.revealLeaf(leaf);
 	}
 
 	async createNewTodo() {

@@ -14,19 +14,19 @@
 		"forceConsistentCasingInFileNames": true,
 		"allowSyntheticDefaultImports": true,
 		"lib": [ "ES2021", "DOM" ],
-		//"noUnusedLocals": true,
-		//"noUnusedParameters": true
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
 		//"baseUrl": ".",
 		"paths": {
 			//"*": [ "./*" ],
-			"@/*": ["./src/*"],
+			"@/*": [ "./src/*" ],
 			//"@issues/*": [ "./issues/*" ],
 			//"@notes/*": [ "./notes/*" ],
 			//"@projects/*": [ "./projects/*" ],
 			//"@utils/*": [ "./utils/*" ],
 			//"@time/*": [ "./time/*" ],
 			//"@todos/*": [ "./todos/*" ],
-			
+
 			"@issues/*": [ "./*" ],
 			"@notes/*": [ "./*" ],
 			"@projects/*": [ "./*" ],
@@ -36,4 +36,5 @@
 		}
 	},
 	//"include": ["src/**/*.ts"]
+	"exclude": [ "node_modules", "dist", "**/*.spec.ts" ]
 }

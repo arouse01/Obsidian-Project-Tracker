@@ -1,32 +1,22 @@
 import {
 	App,
-	ButtonComponent,
-	// MarkdownFileInfo,
-	// CachedMetadata,
 	Modal,
-	Notice,
 	Setting
 } from 'obsidian';
 import {
-	SessionAction,
-	SessionContext,
 	ProjectInfo,
 	WeeklyAllocation,
 	TimeAllocModalOptions,
 	CreateAllocRequest
 } from '@/utils/types';
 import {
-	formatMinutesToDuration
-} from '@/utils/utils'
-import {
 	TIME_ALLOC_COLS,
-	TimeAllocColumnField,
-	TimeAllocSort,
-	ProjectGroup,
-	ProjectColumnField
-
+	TimeAllocColumnField
 } from '@/utils/tableConstants'
-import { createTableColGroup, TableColumn } from '../utils/tableFunctions';
+import {
+	createTableColGroup,
+	TableColumn
+} from '../utils/tableFunctions';
 
 
 interface AllocationRow {
@@ -282,16 +272,7 @@ export class TimeAllocModal extends Modal {
 			});
 	}
 
-	private getDateTimeLocalValue(date: Date): string {
-		const year = date.getFullYear();
-		const month = String(date.getMonth() + 1).padStart(2, "0");
-		const day = String(date.getDate()).padStart(2, "0");
-		const hours = String(date.getHours()).padStart(2, "0");
-		const minutes = String(date.getMinutes()).padStart(2, "0");
-
-		return `${year}-${month}-${day}T${hours}:${minutes}`;
-	}
-
+/*
 	private async confirmLongSession(): Promise<boolean> {
 		return new Promise((resolve) => {
 			const modal = new Modal(this.app);
@@ -329,5 +310,5 @@ export class TimeAllocModal extends Modal {
 			modal.open();
 		});
 	}
-
+*/
 }

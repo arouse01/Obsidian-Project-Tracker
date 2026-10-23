@@ -4,7 +4,8 @@ import {
 	Events,
 	TFile,
 	MarkdownView,
-	MarkdownFileInfo
+	MarkdownFileInfo,
+    Notice
 } from 'obsidian';
 import {
 	IssueTrackerSettings,
@@ -16,7 +17,8 @@ import {
 	IssueModalOptions,
 	PRIORITIES,
 	IssueItem,
-	IssueStatusFilter
+	IssueStatusFilter,
+    IssueSelectModalOptions
 } from '@/utils/types';
 import {
 	formatIssueID,
@@ -29,6 +31,7 @@ import {
 } from '@/utils/utils';
 import { IssueModal } from '@/issues/issueModal'
 import { MyProjectManager } from '@/projects/projectManager'
+import { IssueSelectModal } from './issueSelectModal';
 
 
 
@@ -129,53 +132,6 @@ export class IssueTracker extends Events {
 		return name.replace(/[\\/:*?"<>|]/g, "-");
 	}
 
-	/*async createNewIssue(): Promise<void> {
-		const tempTitle = "";
-		const lines = "";
-
-
-		// get the project of the current document and its actual file location, if any
-		const projectNames = null;
-		const projectPaths = null;
-
-		const context: IssueContext = {
-			tempTitle: tempTitle,
-			selectedText: lines,
-			sourceFile: null,
-			line: null,
-			projectPaths: projectPaths,
-			projectNames: projectNames
-
-		}
-
-		// const selectedText = editor.getLine(editor.getCursor().line);
-		const allProjects = this.projectManager.getActiveProjects();
-		const currProjectSet = new Set(projectNames);
-		const sortedProjects = [...allProjects].sort((a, b) => {
-			const aSource = currProjectSet.has(a.file.path);
-			const bSource = currProjectSet.has(b.file.path);
-			if (aSource !== bSource) {
-				return aSource ? -1 : 1;
-			}
-
-			return a.name.localeCompare(b.name);
-		})
-
-		const options: IssueModalOptions = {
-			context: context,
-			projects: sortedProjects,
-			priorities: PRIORITIES,
-			onSubmit: async (request) => {
-				const newFile = await this.createIssueNote(request);
-				await this.app.workspace.getLeaf(false).openFile(newFile);
-			}
-
-		}
-		new IssueModal(
-			this.app,
-			options
-		).open();
-	}*/
 
 	async createIssueFromSelection(editor: Editor, view: MarkdownView | MarkdownFileInfo): Promise<void> {
 		{
@@ -414,6 +370,137 @@ ${request.issue.description}
 		return id;
 	}
 
-	
-}
+	async selectIssue() {
+
+	}
+
+	async addSelectionToIssue(
+		editor: Editor,
+		view: MarkdownView | MarkdownFileInfo
+	) {
+		/*
+			Append to issue steps
+				- Select which issue (from open issues)	
+				- Go to end of "Activity" section 
+				- Add new subsection with meeting backlink
+				- Add selected text
+		*/
+		const selectedText = editor.getSelection();
+		const startLine = editor.getCursor("from").line;
+		let selected: string[];
+		if (selectedText.length == 0) {
+			selected = editor.getLine(startLine).split(/\r?\n/)
+		} else {
+			selected = editor.getSelection().split(/\r?\n/);
+		}
+		const sourceFile = view.file!;
+		
+
+		const sourceFileName = sourceFile.basename
+		const lines = selected
+			.join("\n")
+			.trim();
+		const currDate = formatDate(undefined, "datetime_short");
+		const textToAdd = `### ${currDate}\n#### Added from [[${sourceFileName}]]\n` + lines
+
+		// console.log('projects: ', projectNames);
+		const projectPaths =
+			getFrontmatterStringArray(this.app.metadataCache, sourceFile, "project")
+				.map(link => normalizeWikiLink(link))
+				.map(link =>
+					this.app.metadataCache.getFirstLinkpathDest(
+						link,
+						sourceFile.path
+					)?.path
+				)
+				.filter((path): path is string => path !== undefined);
+
+		let issueList: IssueItem[] = []
+		for (const projectPath of projectPaths) {
+			const projectIssues = await this.getIssues("Open", projectPath);
+			issueList.push(...projectIssues) 
+		}
+
+		const options: IssueSelectModalOptions = {
+			issueList: issueList,
+			onSubmit: async (request) => {
+				await this._appendToIssue(request, textToAdd);
+				// await this.app.workspace.getLeaf(false).openFile(newFile);
+			}
+
+		}
+		
+
+		new IssueSelectModal(
+			this.app,
+			options
+		).open();
+
+	}
+
+	private async _appendToIssue(issuePath: string, textToAdd: string, section: string = "Activity", ) {
+		const files = this.app.vault.getMarkdownFiles();
+		const issueFile = files.find(item => item.path === issuePath)
+
+		if (!issueFile) {
+			new Notice(`Issue file ${issuePath} not found`)
+			return;
+		} else {
+			const content = await this.app.vault.read(issueFile);
+			const cache = this.app.metadataCache.getFileCache(issueFile)
+
+			if (!cache) {
+				new Notice(`Issue file ${issuePath} couldn't be read`)
+				return;
+			}
+
+			const eol = content.includes('\r\n') ? '\r\n' : '\n'
+
+			const headings = cache.headings;
+			if (!headings) {
+				new Notice(`Issue file ${issuePath} section headers couldn't be read`)
+				return;
+			}
+
+			
+
+			const targetIndex = headings.findIndex(h => h.heading.toLowerCase() === section.toLowerCase())
+
+			if (targetIndex === -1) {
+				new Notice(`Header "${section}" not found, added to end of file`)
+				textToAdd = `${eol}##${section}${eol}${textToAdd}`
+			}
+
+			const currHeader = headings[targetIndex]!;
+			// insert location depends on whether there's another header at same level or higher - otherwise just append to end of file
+
+			let nextHeader = headings.slice(targetIndex + 1).find(h => h.level <= currHeader.level);
+
+			const insertPosition = nextHeader ? nextHeader.position.start.offset : content.length;
+
+			const before = content.substring(0, insertPosition)
+			const after = content.substring(insertPosition)
+
+			// enforce correct EOL in added text
+			const normalizedTextToAdd = textToAdd.replace(/\r?\n/g, eol)
+
+			const beforeNewline = !before.endsWith('\n') ? eol : ''
+			const afterNewline = !after.startsWith('\r') && !after.startsWith('\n') && after.length > 0 ? eol : ''
+
+			const resultingContent = before + beforeNewline + normalizedTextToAdd + afterNewline + after
+			await this.app.vault.modify(issueFile, resultingContent);
+
+
+
+
+
+				
+					}
+			
+			
+		}
+
+			
+	}
+
 

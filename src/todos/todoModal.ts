@@ -77,15 +77,15 @@ export class TodoModal extends Modal {
 		Due Date
 		buttons
 		*/
-		if (this.options.mode === "edit") {
-			this.buildIDField(form)
-		}
+		// if (this.options.mode === "edit") {
+		// 	this.buildIDField(form)
+		// }
 		this.buildTitleField(form);
 		this.buildNotesField(form);
 		this.buildProjectDropdown(form);
 		this.buildPriorityDropdown(form);
 		this.buildDateFields(form);
-		this.buildStatusField(form);
+		// this.buildStatusField(form);
 		this.buildButtons(form);
 
 
@@ -96,9 +96,9 @@ export class TodoModal extends Modal {
 		this.contentEl.empty();
 	}
 
-	buildIDField(parent: HTMLElement): void {
+	// buildIDField(parent: HTMLElement): void {
 
-	}
+	// }
 
 	buildTitleField(parent: HTMLElement): void {
 		parent.createEl("label", {
@@ -311,9 +311,9 @@ export class TodoModal extends Modal {
 
 	}
 
-	buildStatusField(parent: HTMLElement): void {
+	// buildStatusField(parent: HTMLElement): void {
 
-	}
+	// }
 
 	buildButtons(parent: HTMLElement) {
 		new Setting(parent)

@@ -1,29 +1,16 @@
 import {
 	App,
-	// MarkdownView,
-	// MarkdownFileInfo,
-	// CachedMetadata,
 	Modal,
-	// Notice,
 	Setting
 } from 'obsidian';
 import {
-	// SessionAction,
-	// SessionContext,
 	ModalItem,
 	CreateGenericModalOptions,
-	// ModalContext,
     CreateModalRequest
 } from '@/utils/types';
-import {
-	// formatMinutesToDuration
-} from '@/utils/utils'
-
-
 
 export class GenericModal extends Modal {
 
-	// private sessionAction: SessionAction;
 	private inputs!: HTMLInputElement[];
 
 	constructor(
@@ -33,15 +20,11 @@ export class GenericModal extends Modal {
 	) {
 		super(app);
 
-		// set the initial values for the items returned at the end
-		
-
 	}
 
 	onOpen() {
 		const { contentEl } = this;
 
-		// this.setTitle('Create Issue');
 		contentEl.empty();
 
 		const form = contentEl.createDiv({ cls: "issue-form font-size-12" });
@@ -54,8 +37,6 @@ export class GenericModal extends Modal {
 		}
 
 		this.buildButtons(form);
-
-
 	}
 
 	onClose() {
@@ -64,6 +45,7 @@ export class GenericModal extends Modal {
 	}
 
 	createField(parent: HTMLDivElement, item: ModalItem): HTMLInputElement {
+
 		parent.createEl("label", { text: item.text });
 		let field: HTMLInputElement
 		if (item.type === "number") {
@@ -77,7 +59,6 @@ export class GenericModal extends Modal {
 	}
 
 	
-
 	// buildTimestampField(parent: HTMLElement): void {
 	// 	switch (this.options.mode) {
 	// 		case "start":

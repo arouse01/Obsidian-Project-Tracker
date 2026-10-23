@@ -1,17 +1,13 @@
 import {
 	App,
-	Component,
-	ButtonComponent,
-	Notice
+	Component
 } from 'obsidian';
 import {
 	ProjectInfo
 } from '@/utils/types';
 import {
 	normalizeWikiLink,
-	// getFrontmatterString,
-	getFrontmatterStringArray,
-	getFrontmatterNumber
+	getFrontmatterStringArray
 } from '@/utils/utils';
 import { MyProjectManager } from '@/projects/projectManager'
 
@@ -32,9 +28,9 @@ export class ProjectInfoSingle extends Component {
 
 		this.container = target;
 
-		const project = this.projectManager.getProjectInfoByPath(projectPath)
+		const project = this.projectManager.getProjectInfoByPath(this.projectPath)
 		if (project === undefined) {
-			throw new Error(`Project not found: ${projectPath}`);
+			throw new Error(`Project not found: ${this.projectPath}`);
 		}
 		this.selectedProject = project
 		// this.tableContainer = target.createDiv();
@@ -60,10 +56,9 @@ export class ProjectInfoSingle extends Component {
 	private async buildDashboard() {
 		// await this.updateValues()
 
-		// const mainSection = this.container.createEl("section");
 		this.container.addClass("project-stats")
 		this.container.addClass("control-col")
-		// mainSection.addClass("font-size-16")
+
 		
 		if (this.selectedProject) {
 			

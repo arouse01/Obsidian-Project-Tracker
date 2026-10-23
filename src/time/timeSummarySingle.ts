@@ -49,10 +49,9 @@ export class TimeSummarySingle extends Component {
 
 	private container: HTMLDivElement;  // parent container the component will live in
 
-	// private sessionControls!: HTMLDivElement;
 	private activeDiv!: HTMLDivElement;
 	private activeIcon!: HTMLSpanElement;
-	// private generalSummary!: HTMLDivElement;
+	
 	private progressWeekIndicator!: ProgressSection;
 	private progressMonthIndicator!: ProgressSection;
 
@@ -62,7 +61,7 @@ export class TimeSummarySingle extends Component {
 
 	private startButton!: ButtonComponent
 	private startAtButton!: ButtonComponent
-	private addSessionButton!: ButtonComponent
+	// private addSessionButton!: ButtonComponent
 
 	private timeSummaries: TimeSummaryStore = {
 		day: {
@@ -519,7 +518,7 @@ export class TimeSummarySingle extends Component {
 					}
 				})
 
-			this.addSessionButton = new ButtonComponent(buttonDiv)
+			new ButtonComponent(buttonDiv)
 				.setButtonText("Add session")
 				// .setClass("button-larger")
 				.setClass("button-new")

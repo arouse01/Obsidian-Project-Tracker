@@ -260,7 +260,7 @@ export const TIME_COLS = {
 		tableGroup: "project"
 	},
 	"progress": {
-		label: "",
+		label: "Progress",
 		sortable: false,
 		centered: true,
 		groupable: false,

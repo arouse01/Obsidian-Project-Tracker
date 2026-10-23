@@ -1,25 +1,16 @@
 import {
 	App,
-	// MarkdownView,
-	// MarkdownFileInfo,
-	// CachedMetadata,
 	Modal,
 	Notice,
 	Setting
 } from 'obsidian';
-import {
-	SessionAction,
-	SessionContext,
-} from '@/utils/types';
-import {
-	formatMinutesToDuration
-} from '@/utils/utils'
+import { SessionContext } from '@/utils/types';
+import { formatMinutesToDuration } from '@/utils/utils'
 
 
 
 export class TimeModal extends Modal {
 
-	private sessionAction: SessionAction;
 	private timestampStartInput!: HTMLInputElement;
 	private timestampStopInput!: HTMLInputElement;
 	private durationInput!: HTMLInputElement;
@@ -32,13 +23,6 @@ export class TimeModal extends Modal {
 
 	) {
 		super(app);
-
-		// set the initial values for the items returned at the end
-		
-
-		this.sessionAction = options.mode;
-
-
 	}
 
 	onOpen() {
@@ -115,7 +99,7 @@ export class TimeModal extends Modal {
 				break;
 			case "stop":
 				this.timestampStopInput = this.createTimestampField(parent, "stop", true)
-				this.durationInput = this.createDurationField(parent, true)!
+				this.durationInput = this.createDurationField(parent)!
 				this.updateDurationFromStopTimestamp()
 				break;
 			case "stopAll":
@@ -124,7 +108,7 @@ export class TimeModal extends Modal {
 			case "add":
 				this.timestampStartInput = this.createTimestampField(parent, "start");
 				this.timestampStopInput = this.createTimestampField(parent, "stop");
-				this.durationInput = this.createDurationField(parent, true)!
+				this.durationInput = this.createDurationField(parent)!
 				this.updateDurationFromStopTimestamp()
 				break;
 		}
@@ -168,7 +152,7 @@ export class TimeModal extends Modal {
 		 return field
 	}
 
-	createDurationField(parent: HTMLElement, fillCurrent: boolean = false): HTMLInputElement | null {
+	createDurationField(parent: HTMLElement): HTMLInputElement | null {
 		// duration field only created for "stop" and "add" modes
 		if (this.options.mode !== "stop" &&
 			this.options.mode !== "add") {
@@ -179,9 +163,7 @@ export class TimeModal extends Modal {
 
 		fieldDiv.createEl("label", { text: "Duration" });
 		const field = fieldDiv.createEl("input", { type: "text" });
-		// if (fillCurrent) {
-		// 	field.value = this.getDateTimeLocalValue(new Date());
-		// }
+
 		field.addEventListener("change", () => {
 			this.updateStopTimestampFromDuration()			
 		});
@@ -244,11 +226,11 @@ export class TimeModal extends Modal {
 	}
 
 	
-	buildTimeButtons(parent: HTMLElement, mode: "start" | "stop"): void {
+	// buildTimeButtons(parent: HTMLElement, mode: "start" | "stop"): void {
 		
 
 
-	}
+	// }
 
 	buildButtons(parent: HTMLElement) {
 		new Setting(parent)

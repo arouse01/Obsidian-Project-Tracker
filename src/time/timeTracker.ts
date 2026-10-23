@@ -26,6 +26,7 @@ import {
     formatDate
 } from '@/utils/utils'
 import { IssueTrackerSettings } from '../settings/settings';
+import ProjectTrackerPlugin from '../main';
 // import { SummaryGroup } from '@/utils/tableFunctions';
 
 
@@ -36,6 +37,7 @@ export class TimeTracker extends Events {
 
 	constructor(
 		private app: App,
+		private plugin: ProjectTrackerPlugin,
 		private projectManager: MyProjectManager,
 		private settings: IssueTrackerSettings,
 		// private getTimeLogPath: () => string,
@@ -618,6 +620,7 @@ export class TimeTracker extends Events {
 	}
 
 	async checkTimeLimits() {
+		this.plugin.updateStatusText("Checking project time limits...", 3)
 		const thisWeek = getDateKey(undefined, "week")
 		const thisMonth = getDateKey(undefined, "month")
 
@@ -704,6 +707,7 @@ export class TimeTracker extends Events {
 		}
 
 		if (badList.length > 0) {
+			this.plugin.updateStatusText("Removing erroneous completion notification(s)...", 3)
 			const updatedNotifications = notifications.filter(notification => !badList.includes(notification.id));
 			await this._saveTimeNotification(updatedNotifications);
 		}
@@ -711,15 +715,16 @@ export class TimeTracker extends Events {
 
 	}
 
+/*
 	async validateProjectNotification(
 		project: ProjectInfo,
 		type: NotificationType,
 		periodKey: string
 	) {
-		/*
+		*//*
 		Run when allocations are updated and when sessions are ended. Double-check the actual totals and make sure that any created notifications were issued properly. 
 		Otherwise remove the flags so
-		*/
+		*//*
 
 		const notifications = await this._loadNotificationLog()
 		const notifiedBool = this.hasBeenNotified(notifications, project.file.path, type, periodKey)
@@ -733,10 +738,9 @@ export class TimeTracker extends Events {
 			let target: number;
 
 			if (type === "allocated") {
-				// this.currWeekAllocations = this.getWeeklyAllocations(periodKey)
 				// Check allocated times first (which can include projects that don't have a standard goal)
 				target = this.currWeekAllocations[project.file.path] ?? 0
-			} else {	
+			} else {
 				target = project.targetHours?.hours ?? 0
 			}
 			if (runningTotal < target) {
@@ -744,10 +748,10 @@ export class TimeTracker extends Events {
 				await this.deleteTimeNotification(project.file.path, type, periodKey)
 			}
 		}
-
 	}
+*/
 
-	createTimeNotification(
+	private createTimeNotification(
 		project: ProjectInfo,
 		type: NotificationType,
 		periodKey: DateKey,
@@ -765,6 +769,7 @@ export class TimeTracker extends Events {
 		void this.logNotification(project.file.path, type, periodKey)
 	}
 
+/*
 	private async deleteTimeNotificationById(
 		id: string
 	) {
@@ -788,7 +793,7 @@ export class TimeTracker extends Events {
 		);
 		await this._saveTimeNotification(updatedNotifications);
 	}
-
+*/
 	private hasBeenNotified(
 		notifications: NotificationRecord[],
 		projectPath: string,
