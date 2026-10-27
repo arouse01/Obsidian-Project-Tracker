@@ -8,25 +8,29 @@ import ProjectTrackerPlugin from '@/main';
 
 export interface IssueTrackerSettings {
 	nextIssueID: number;
-	timeLogPath: string;
-	timeAllocPath: string;
-	todoLogPath: string;
+	pluginDataFolder: string;
+	// timeLogPath: string;
+	// timeAllocPath: string;
+	// todoLogPath: string;
 	peoplePath: string;
 	devNotePath: string;
-	notificationLogPath: string;
+	// notificationLogPath: string;
 	allowNotifications: boolean;
 }
 
 export const DEFAULT_SETTINGS: IssueTrackerSettings = {
 	nextIssueID: 1,
-	timeLogPath: 'Project Management/timeLog.json',
-	timeAllocPath: 'Project Management/timeAllocLog.json',
-	todoLogPath: 'Project Management/todoList.json',
+	pluginDataFolder: 'Project Management',
+	// timeLogPath: 'Project Management/timeLog.json',
+	// timeAllocPath: 'Project Management/timeAllocLog.json',
+	// todoLogPath: 'Project Management/todoList.json',
 	peoplePath: 'Organizations/',
 	devNotePath: 'Notes/Obsidian Notes',
-	notificationLogPath: 'Project Management/notificationLog.json',
+	// notificationLogPath: 'Project Management/notificationLog.json',
 	allowNotifications: true
 };
+
+
 
 export class IssueTrackerSettingTab extends PluginSettingTab {
 	plugin: ProjectTrackerPlugin;
@@ -50,32 +54,44 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 						}
 					},
 					{
-						name: 'Time log path',
-						desc: 'The .json file that stores time session data',
+						name: 'Plugin data folder',
+						desc: 'The folder that stores .json files (e.g. time log, notification log, todos)',
 						control: {
-							type: 'file',
-							key: 'timeLogPath',
+							type: 'folder',
+							key: 'pluginDataFolder',
 							placeholder: 'Select a .json...',
 						}
 					},
-					{
-						name: 'Time allocation path',
-						desc: 'The .json file that stores allocated weekly hours by project',
-						control: {
-							type: 'file',
-							key: 'timeAllocPath',
-							placeholder: 'Select a .json...',
-						}
-					},
-					{
-						name: 'Todo log path',
-						desc: 'The .json file that stores todos',
-						control: {
-							type: 'file',
-							key: 'todoLogPath',
-							placeholder: 'Select a .json...',
-						}
-					},
+					// {
+					// 	name: 'Time log path',
+					// 	desc: 'The .json file that stores time session data',
+					// 	control: {
+					// 		type: 'file',
+					// 		key: 'timeLogPath',
+					// 		placeholder: 'Select a .json...',
+					// 		filter: (file) => file.extension === "json",
+					// 	}
+					// },
+					// {
+					// 	name: 'Time allocation path',
+					// 	desc: 'The .json file that stores allocated weekly hours by project',
+					// 	control: {
+					// 		type: 'file',
+					// 		key: 'timeAllocPath',
+					// 		placeholder: 'Select a .json...',
+					// 		filter: (file) => file.extension === "json",
+					// 	}
+					// },
+					// {
+					// 	name: 'Todo log path',
+					// 	desc: 'The .json file that stores todos',
+					// 	control: {
+					// 		type: 'file',
+					// 		key: 'todoLogPath',
+					// 		placeholder: 'Select a .json...',
+					// 		filter: (file) => file.extension === "json",
+					// 	}
+					// },
 					{
 						name: 'People folder',
 						desc: 'Path to the folder where client Markdown files are stored',
@@ -85,14 +101,15 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 							placeholder: 'Select a folder...',
 						}
 					},
-					{
-						name: 'Notification log path',
-						desc: `The .json file that tracks time notifications`,
-						control: {
-							type: 'file',
-							key: 'notificationLogPath',
-						}
-					},
+					// {
+					// 	name: 'Notification log path',
+					// 	desc: `The .json file that tracks time notifications`,
+					// 	control: {
+					// 		type: 'file',
+					// 		key: 'notificationLogPath',
+					// 		filter: (file) => file.extension === "json",
+					// 	}
+					// },
 					{
 						name: 'Allow time limit notifications',
 						desc: `Allow popups when a project's entered time exceeds the target time`,
@@ -120,7 +137,7 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 			}
 		];
 	}
-
+/*
 	display(): void {
 		const { containerEl } = this;
 
@@ -134,8 +151,8 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 		this.buildPeoplePathField(containerEl);
 		this.buildNotificationLogField(containerEl);
 
-	}
-
+	}*/
+/*
 	buildSerialField(parent: HTMLElement): void {
 		new Setting(parent)
 			.setName('Next serial number')
@@ -210,7 +227,7 @@ export class IssueTrackerSettingTab extends PluginSettingTab {
 					})
 					.inputEl.addClass('wide-setting-input')
 			);
-	}
+	}*/
 
 	buildPeoplePathField(parent: HTMLElement): void {
 		new Setting(parent)

@@ -2,7 +2,13 @@ import {
 	Plugin,
 	Editor,
 	MarkdownView,
-	MarkdownFileInfo
+	MarkdownFileInfo,
+    // TFolder,
+    FileSystemAdapter,
+    Notice,
+    TFile,
+    Platform,
+    normalizePath
 } from 'obsidian';
 import {
 	DEFAULT_SETTINGS,
@@ -14,12 +20,16 @@ import { TimeTracker } from '@/time/timeTracker';
 import { IssueTracker } from '@/issues/issueTracker'
 import { TodoManager } from '@/todos/todoTracker'
 import {
+    DATA_FILES,
 	TIME_DASHBOARD_VIEW_TYPE,
 	VIEW_TYPE_TRACKER
 } from '@/utils/constants'
 import { TimeDashboardView } from '@/time/timeDashboard';
 import { TrackerView } from '@/trackerView';
 import { NoteManager } from '@/notes/noteManager';
+import path from "node:path";
+
+
 
 export default class ProjectTrackerPlugin extends Plugin {
 	projectManager!: MyProjectManager;
@@ -62,8 +72,9 @@ export default class ProjectTrackerPlugin extends Plugin {
 
 		this.todoManager = new TodoManager(
 			this.app,
+			this,
 			this.projectManager,
-			() => this.settings.todoLogPath
+			() => this.getDataFilePath("todoList")
 		)
 
 		this.noteManager = new NoteManager(
@@ -350,15 +361,6 @@ export default class ProjectTrackerPlugin extends Plugin {
 	}
 
 	async addToIssue(editor: Editor, view: MarkdownView | MarkdownFileInfo): Promise<void> {
-
-		
-		/*
-							Append to issue steps
-								Select which issue (from open issues)	
-								Go to end of "Activity" section 
-								Add new subsection with meeting backlink
-								Add selected text
-							*/
 		await this.issueTracker.addSelectionToIssue(editor, view)
 	}
 
@@ -395,6 +397,36 @@ export default class ProjectTrackerPlugin extends Plugin {
 		await this.todoManager.startTodoItem()
 	}
 
+	async openInExplorer(targetFile: TFile): Promise<void> {
+		if (!Platform.isDesktopApp) return;
+
+		// eslint-disable-next-line import/no-extraneous-dependencies, @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment -- Electron is already included
+		const { shell } = require('electron')
+		const adapter = this.app.vault.adapter;
+
+		if (!(adapter instanceof FileSystemAdapter)) {
+			new Notice("Opening a local folder requires the desktop app.");
+			return;
+		}
+		const parentFolder = targetFile.parent!.path
+		const fullPath = adapter.getFullPath(parentFolder);
+		// const folderPath = path.dirname(fullPath);
+
+		const error = await shell.openPath(fullPath);
+
+		if (error) {
+			new Notice(`Could not open folder: ${error}`);
+		}
+	}
+
+	getDataFilePath(file: keyof typeof DATA_FILES): string {
+		const folder = this.settings.pluginDataFolder.trim();
+
+		if (!folder) {
+			throw new Error('Plugin data folder not configured')
+		}
+		return normalizePath(`${folder}/${DATA_FILES[file]}`)
+	}
 	/*
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({

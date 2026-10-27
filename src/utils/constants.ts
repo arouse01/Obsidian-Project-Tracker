@@ -1,4 +1,9 @@
-
+export const DATA_FILES = {
+	timeLog: "timeLog.json",
+	timeAllocations: "timeAllocLog.json",
+	todoList: 'todoList.json',
+	notifications: 'notificationLog.json'
+} as const
 
 export const PROJECT_DASHBOARD_VIEW_TYPE = "project-dashboard";
 export const PROJECT_SINGLE_VIEW_TYPE = "project-single";

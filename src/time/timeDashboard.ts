@@ -383,6 +383,16 @@ export class TimeDashboardView extends ItemView {
 		
 	}
 
+	private createSummaryRow(target: HTMLTableSectionElement) {
+		const row = target.createEl('tr');
+
+		for (const [field,] of this.getVisibleCols()) {
+			const cell = row.createEl("td", { cls: 'summary-row' });
+			this.renderTimeSummaryRowCell(cell, field);
+		}
+
+	}
+
 	private renderTimeCell(
 		cell: HTMLTableCellElement,
 		field: TimeColumnField,
@@ -748,6 +758,116 @@ export class TimeDashboardView extends ItemView {
 		}
 	}
 
+	private renderTimeSummaryRowCell(
+		cell: HTMLTableCellElement,
+		field: TimeColumnField
+	): void {
+
+		cell.addClass('summary-row')
+
+		switch (field) {
+			case "project":
+				{  // curly braces needed to avoid warning about "unexpected lexical declaration" because we're defining a const
+					cell.setText("All active projects")
+
+					break;
+				}
+
+			// case "hoursToday":
+			// 	{
+			// 		const dailyTimeSum = this.dayTimeSumByPath.get(project.file.path);
+			// 		const dailyTimeText = formatMinutesToDuration(dailyTimeSum?.totalMinutes ?? 0);
+			// 		cell.setText(dailyTimeText);
+
+
+			// 		break;
+			// 	}
+
+			// case 'hoursWeek':
+			// 	{
+			// 		const weekTimeSum = this.weekTimeSumByPath.get(project.file.path);
+			// 		const weekTimeText = formatMinutesToDuration(weekTimeSum?.totalMinutes ?? 0);
+			// 		cell.setText(weekTimeText);
+
+			// 		break;
+			// 	}
+
+			case 'sessionStart': {
+				const button = new ButtonComponent(cell)
+					.setButtonText("Stop")
+					// .setClass("")
+					.onClick(async () => {
+						await this.timeTracker.stopSessions()
+					})
+
+				button.buttonEl.addEventListener("contextmenu", (event) => {
+					event.preventDefault();
+
+					// right-click menu
+					const menu = new Menu();
+
+					menu.addItem((item) => {
+						item.setTitle("Stop at")
+							.onClick(async () => {
+								const activeSessions = await this.timeTracker.getActiveSessions()
+								const sessionDisplayInfo = activeSessions.map(session => {
+									const project = this.projectManager.getProjectInfoByPath(session.projectPath);
+									return {
+										projectName: project?.name ?? "missing",
+										startTime: session.start
+									}
+								})
+								new TimeModal(this.app, {
+									mode: 'stopAll',
+									sessions: sessionDisplayInfo,
+									onSubmit: async (timestamp: Date) => {
+
+										await this.timeTracker.stopSessions(timestamp);
+									}
+								}).open();
+
+							});
+						menu.showAtMouseEvent(event);
+					});
+				})
+
+				break;
+			}
+
+			case 'sessionAt':
+				new ButtonComponent(cell)
+					.setButtonText("Stop at")
+					.onClick(async () => {
+						const activeSessions = await this.timeTracker.getActiveSessions()
+						const sessionDisplayInfo = activeSessions.map(session => {
+							const project = this.projectManager.getProjectInfoByPath(session.projectPath);
+							return {
+								projectName: project?.name ?? "missing",
+								startTime: session.start
+							}
+						})
+						new TimeModal(this.app, {
+							mode: 'stopAll',
+							sessions: sessionDisplayInfo,
+							onSubmit: async (timestamp: Date) => {
+
+								await this.timeTracker.stopSessions(timestamp);
+							}
+						}).open();
+
+
+					})
+
+				break;
+
+			default:
+
+				break;
+
+
+
+		}
+	}
 
 	private compareProjects(
 		a: ProjectInfo,

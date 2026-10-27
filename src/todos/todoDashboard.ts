@@ -140,6 +140,19 @@ export class TodoDashboardView extends Component {
 		const mainSection = this.container.createEl("section", { cls: "dashboard font-size-12" });
 
 		const controlSection = mainSection.createDiv({ cls: 'project-controls', attr: { name: "table-filters" } });
+		
+
+
+		// new ButtonComponent(controlSection)
+		// 	.setButtonText("Todo .json file")
+		// 	.setClass("dev-button")
+		// 	.onClick(async () => {
+
+		// 		this.todoManager.openTodoLogFolder()
+		// 	});
+
+
+		
 
 		const centerSection = controlSection.createDiv( {cls: 'center-content summary-controls'})
 

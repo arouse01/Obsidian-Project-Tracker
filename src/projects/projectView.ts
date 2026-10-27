@@ -51,7 +51,7 @@ export class ProjectSingleView extends Component {
 		private todoManager: TodoManager,
 		private noteManager: NoteManager,
 		private project?: string | undefined,
-		activeTab: DashboardTab = "Issues"
+		activeTab: DashboardTab = "Todos"
 	) {
 		super();
 		this.selectedProject = this.project

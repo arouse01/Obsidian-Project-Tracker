@@ -21,16 +21,29 @@ import {
 	normalizeWikiLink,
 	getFrontmatterStringArray
 } from '@/utils/utils'
+import ProjectTrackerPlugin from '../main';
 
 
 export class TodoManager extends Events {
 
 	constructor(
 		private app: App,
+		private plugin: ProjectTrackerPlugin,
 		private projectManager: MyProjectManager,
 		private getTodoLogPath: () => string
 	) {
 		super();
+		
+	}
+
+	openTodoLogFolder() {
+		const todoPath = this.getTodoLogPath();
+		const file = this.app.vault.getAbstractFileByPath(todoPath);
+		if (!(file instanceof TFile)) {
+			return
+		}
+		void this.plugin.openInExplorer(file)
+		
 	}
 
 	private async loadTodos(): Promise<TodoItem[]> {

@@ -33,7 +33,8 @@
 			"@utils/*": [ "./src/*" ],
 			"@time/*": [ "./*" ],
 			"@todos/*": [ "./*" ]
-		}
+		},
+		"types": ["node"]
 	},
 	//"include": ["src/**/*.ts"]
 	"exclude": [ "node_modules", "dist", "**/*.spec.ts" ]

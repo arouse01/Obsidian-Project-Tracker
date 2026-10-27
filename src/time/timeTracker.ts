@@ -53,6 +53,26 @@ export class TimeTracker extends Events {
 
 	}
 
+	openTimeAllocLogFolder() {
+		const filePath = this.plugin.getDataFilePath("timeAllocations")
+		const file = this.app.vault.getAbstractFileByPath(filePath);
+		if (!(file instanceof TFile)) {
+			return
+		}
+		void this.plugin.openInExplorer(file)
+
+	}
+
+	openTimeLogFolder() {
+		const filePath = this.plugin.getDataFilePath("timeLog")
+		const file = this.app.vault.getAbstractFileByPath(filePath);
+		if (!(file instanceof TFile)) {
+			return
+		}
+		void this.plugin.openInExplorer(file)
+
+	}
+
 	stopMonitoring(): void {
 		if (this.refreshInterval !== undefined) {
 			window.clearInterval(this.refreshInterval);
@@ -70,7 +90,7 @@ export class TimeTracker extends Events {
 
 	
 	private async _loadWeeklyTimePlans(): Promise<WeeklyTimePlans> {
-		const path = this.settings.timeAllocPath
+		const path = this.plugin.getDataFilePath("timeAllocations")
 		// console.log(JSON.stringify(path))
 		const file = this.app.vault.getAbstractFileByPath(path);
 		// console.log(file)
@@ -94,7 +114,7 @@ export class TimeTracker extends Events {
 	}
 
 	private async _saveWeeklyTimePlans(plans: WeeklyTimePlans): Promise<void> {
-		const planPath = this.settings.timeAllocPath
+		const planPath = this.plugin.getDataFilePath("timeAllocations");
 		const file = this.app.vault.getAbstractFileByPath(planPath);
 
 		const timeData = JSON.stringify(plans)
@@ -185,7 +205,7 @@ export class TimeTracker extends Events {
 	}
 
 	private async _loadSessions(): Promise<SessionData[]> {
-		const path = this.settings.timeLogPath;
+		const path = this.plugin.getDataFilePath("timeLog")
 		// console.log(JSON.stringify(path))
 		const file = this.app.vault.getAbstractFileByPath(path);
 
@@ -207,7 +227,7 @@ export class TimeTracker extends Events {
 	private async _saveSessions(
 		sessions: SessionData[]
 	): Promise<void> {
-		const path = this.settings.timeLogPath;
+		const path = this.plugin.getDataFilePath("timeLog");
 		const file = this.app.vault.getAbstractFileByPath(path);
 		//console.log(file);
 		const rawSessions = sessions.map(formattedSession => this._sessionDataToRaw(formattedSession))
@@ -641,7 +661,7 @@ export class TimeTracker extends Events {
 					if (!notifiedBool) {
 						const runningTotal = (timeSummaries.week.project.get(project.file.path) ?? 0) / 60 // timeSummaries returns in minutes
 
-						if (runningTotal > allocatedTarget) {
+						if (runningTotal >= allocatedTarget) {
 							this.createTimeNotification(project, timePeriod, thisWeek, allocatedTarget)
 						}
 					}
@@ -658,7 +678,7 @@ export class TimeTracker extends Events {
 						if (!notifiedBool) {
 
 							const runningTotal = (timeSummaries[timePeriod].project.get(project.file.path) ?? 0) / 60 // timeSummaries returns in minutes
-							if (runningTotal > standingTarget && standingTarget > 0) {
+							if (runningTotal >= standingTarget && standingTarget > 0) {
 								this.createTimeNotification(project, timePeriod, thisMonth, standingTarget)
 							}
 						}
@@ -829,7 +849,7 @@ export class TimeTracker extends Events {
 
 	
 	private async _loadNotificationLog(): Promise<NotificationRecord[]> {
-		const logPath = this.settings.notificationLogPath
+		const logPath = this.plugin.getDataFilePath("notifications");
 		const file = this.app.vault.getAbstractFileByPath(logPath);
 
 		if (!(file instanceof TFile)) {
@@ -847,7 +867,7 @@ export class TimeTracker extends Events {
 	}
 
 	private async _saveTimeNotification(notifications: NotificationRecord[]): Promise<void> {
-		const logPath = this.settings.notificationLogPath
+		const logPath = this.plugin.getDataFilePath("notifications");
 		const file = this.app.vault.getAbstractFileByPath(logPath);
 		//console.log(file);
 		// const rawSessions = sessions.map(formattedSession => this._sessionDataToRaw(formattedSession))
