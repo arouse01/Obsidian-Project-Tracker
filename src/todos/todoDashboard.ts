@@ -142,6 +142,13 @@ export class TodoDashboardView extends Component {
 		const controlSection = mainSection.createDiv({ cls: 'project-controls', attr: { name: "table-filters" } });
 		
 
+		new ButtonComponent(controlSection)
+			.setButtonText("Add new todo...")
+			.setClass("underline")
+			.onClick(async () => {
+				await this.todoManager.startTodoItem(this.selectedProject);
+			})
+			.buttonEl.setCssStyles({ marginRight: "auto"})
 
 		// new ButtonComponent(controlSection)
 		// 	.setButtonText("Todo .json file")
@@ -317,23 +324,23 @@ export class TodoDashboardView extends Component {
 			}
 		}
 
-		this.createAddTodoRow(tbody)
+		// this.createAddTodoRow(tbody)
 
 	}
 
-	createAddTodoRow(target: HTMLTableSectionElement) {
-		const row = target.createEl('tr');
+	// createAddTodoRow(target: HTMLTableSectionElement) {
+	// 	const row = target.createEl('tr');
 		
 
-		for (const [field, column] of this.getVisibleCols()) {
-			const cell = row.createEl("td");
-			if (!column.centered) {
-				cell.addClass("left-align")
-			}
-			this.renderAddTodoCell(cell, field);
-		}
+	// 	for (const [field, column] of this.getVisibleCols()) {
+	// 		const cell = row.createEl("td");
+	// 		if (!column.centered) {
+	// 			cell.addClass("left-align")
+	// 		}
+	// 		this.renderAddTodoCell(cell, field);
+	// 	}
 
-	}
+	// }
 
 	private updateFilterByButtons(): void {
 		for (const [field, button] of this.filterButtons) {
@@ -668,6 +675,7 @@ export class TodoDashboardView extends Component {
 		}
 	}
 
+/*
 	private renderAddTodoCell(
 		cell: HTMLTableCellElement,
 		field: TodoColumnField,
@@ -675,7 +683,6 @@ export class TodoDashboardView extends Component {
 		cell.addClass("summary-row")
 		switch (field) {
 			case "name":
-
 				new ButtonComponent(cell)
 					.setButtonText("Create new todo")
 					.setClass("center-align")
@@ -683,17 +690,13 @@ export class TodoDashboardView extends Component {
 					.onClick(async () => {
 						await this.todoManager.startTodoItem(this.selectedProject);
 					})
-
 				break;
 
 			default:
-				
 				break;
-
-
-
 		}
 	}
+*/
 
 	private compareTodos(
 		a: TodoItem,

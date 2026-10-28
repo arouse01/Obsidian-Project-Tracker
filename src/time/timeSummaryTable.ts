@@ -67,7 +67,7 @@ export class TimeSummaryTable {
 	private createControls() {
 		this.container.addClass('dashboard')
 		if (this.summaryFormat !== "sidebar") { 
-			// in the sidebar we want a client summary only, since horizontal space is limited 
+			// in the sidebar we want a client summary only, since horizontal space is limited, and only values for today and current week
 			const summaryControlsTop = this.container.createDiv({cls: 'summary-controls'});
 
 			summaryControlsTop.createEl('label', {
@@ -196,7 +196,8 @@ export class TimeSummaryTable {
 			projects: projectDays === undefined
 				? new Map<string, Map<string, number>>()
 				: new Map([[this.selectedProjectPath, projectDays]]),
-			clients: new Map()
+			clients: new Map(),
+			totals: new Map()
 		}
 	}
 
@@ -378,7 +379,7 @@ export class TimeSummaryTable {
 		}
 		// rest of columns
 		if (this.summaryFormat === "sidebar") {
-			headerRow.createEl('th', {text: "Today"});
+			headerRow.createEl('th', { text: "Today" });
 			headerRow.createEl('th', { text: "Week" });
 		} else {
 			if (this.summaryPeriod === "year") {
@@ -423,13 +424,9 @@ export class TimeSummaryTable {
 
 		// create temporary body for table, then fill it and swap for the current one instead of clearing the whole thing
 		const newBody = createEl('tbody')
-		if (this.summaryFormat === "sidebar") {
-			const summaryData = await this.getSummaryData()
-			await this.buildSummaryTableBody(newBody, summaryData);
-		} else {
-			const summaryData = await this.getSummaryData()
-			await this.buildSummaryTableBody(newBody, summaryData);
-		}
+		const summaryData = await this.getSummaryData()
+		await this.buildSummaryTableBody(newBody, summaryData);
+
 		
 
 		if (this.summaryTableBodyEl) {
@@ -500,8 +497,47 @@ export class TimeSummaryTable {
 
 			}
 		}
+		if (this.summaryFormat !== "single") {
+			await this._buildSummaryRow(tbody, summaryData.totals)
+		}
 		
+	}
+
+	private async _buildSummaryRow(
+		tbody: HTMLTableSectionElement,
+		totals: Map<string, number>	// summaryData: PeriodicTimeSummary
+	): Promise<void> {
+		const row = tbody.createEl('tr');
+		// const totals = summaryData.totals
 		
+		row.createEl("td", { text: "Totals", cls: 'summary-row' });
+
+		if (this.summaryFormat === "sidebar") {
+			// const day = summaryData.days[0]
+			const todayMinutes = totals.get(getDateKey()) ?? 0;
+			// runningTotal += minutes;
+			const cell = row.createEl("td", { cls: 'summary-row' });
+			cell.setText(formatMinutesToDuration(todayMinutes, "alt"))
+			let weekTotal = 0;
+			for (const [, minutes] of totals) {
+				weekTotal = weekTotal + minutes;
+			}
+			const totalCell = row.createEl("td", { cls: 'summary-row' });
+			// totalCell.addClass("total-col")
+			totalCell.setText(formatMinutesToDuration(weekTotal, "alt"))
+		} else {
+			let runningTotal = 0;
+			for (const [, dailyMinutes] of totals) {
+
+				// const minutes = dailyMinutes.get(day) ?? 0;
+				runningTotal += dailyMinutes;
+				const cell = row.createEl("td", { cls: 'summary-row' });
+				cell.setText(formatMinutesToDuration(dailyMinutes, "alt"))
+
+			}
+			// Total column
+			row.createEl("td", { text: formatMinutesToDuration(runningTotal, "alt"), cls: 'total-col summary-row' });
+		}
 	}
 
 

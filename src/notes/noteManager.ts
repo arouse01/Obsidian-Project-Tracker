@@ -45,7 +45,7 @@ export class NoteManager {
 			} else {
 				noteType = noteTypeRaw as NoteType
 			}
-
+			const topic = getFrontmatterString(this.app.metadataCache, file, "topic")
 			const tags = getFrontmatterStringArray(this.app.metadataCache, file, "tags")
 			const people = getFrontmatterStringArray(this.app.metadataCache, file, "people")
 
@@ -65,7 +65,8 @@ export class NoteManager {
 				dateModified: dateModified,
 				date: date,
 				tags: tags,
-				people: people
+				people: people,
+				topic: topic
 			};
 
 		})

@@ -33,7 +33,7 @@ export const PROJ_COLS = {
 		sortable: true,
 		groupable: false,
 		tableGroup: "Project",
-		width: "250px",
+		minWidth: "250px",
 		maxWidth: "300px"
 	},
 	"primary": {
@@ -41,7 +41,7 @@ export const PROJ_COLS = {
 		sortable: true,
 		groupable: true,
 		tableGroup: "Project",
-		width: "250px",
+		minWidth: "150px",
 		maxWidth: "300px"
 	},
 	"progress": {
@@ -56,7 +56,7 @@ export const PROJ_COLS = {
 		label: "Today",
 		sortable: false,
 		groupable: false,
-		width: "55px",
+		minWidth: "45px",
 		tableGroup: "Hours worked",
 		centered: true
 	},
@@ -64,7 +64,7 @@ export const PROJ_COLS = {
 		label: "Week",
 		sortable: false,
 		groupable: false,
-		width: "55px",
+		minWidth: "50px",
 		tableGroup: "Hours worked",
 		centered: true
 	},
@@ -72,7 +72,7 @@ export const PROJ_COLS = {
 		label: "Month",
 		sortable: false,
 		groupable: false,
-		width: "55px",
+		minWidth: "55px",
 		tableGroup: "Hours worked",
 		centered: true
 	},
@@ -271,7 +271,7 @@ export const TIME_COLS = {
 		label: "Today",
 		sortable: false,
 		groupable: false,
-		width: "50px",
+		minWidth: "45px",
 		centered: true,
 		tableGroup: "hours"
 	},
@@ -279,7 +279,7 @@ export const TIME_COLS = {
 		label: "Week",
 		sortable: false,
 		groupable: false,
-		width: "50px",
+		minWidth: "50px",
 		centered: true,
 		tableGroup: "hours"
 	},
@@ -287,7 +287,7 @@ export const TIME_COLS = {
 		label: "Month",
 		sortable: false,
 		groupable: false,
-		width: "50px",
+		minWidth: "55px",
 		centered: true,
 		tableGroup: "hours"
 	},
@@ -295,7 +295,7 @@ export const TIME_COLS = {
 		label: "",
 		sortable: false,
 		groupable: false,
-		width: "40px",
+		minWidth: "40px",
 		centered: true,
 		tableGroup: "session"
 	},
@@ -480,7 +480,7 @@ export const NOTE_COLS = {
 		sortable: false,
 		groupable: false,
 		centered: true,
-		width: "85px"
+		minWidth: "85px"
 	},
 	"action": {
 		label: "Action",

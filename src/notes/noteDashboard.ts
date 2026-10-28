@@ -126,10 +126,20 @@ export class NoteDashboard extends Component {
 		this.container.addClass("single-project-section")
 		this.container.addClass("project-section")
 
-		const mainSection = this.container.createDiv( {cls: "dashboard font-size-12"});
+		const mainSection = this.container.createDiv({ cls: "dashboard font-size-12" });
+		const controlSection = mainSection.createDiv({ cls: 'project-controls', attr: { name: "table-filters" } });
+		new ButtonComponent(controlSection)
+			.setClass("underline")
+			.setButtonText(this.filter === "other" ? "Add new note..." : "Add meeting note...")
+			.onClick(async () => {
+				await this.addNote();
+				await this.updateNoteRows();
+			})
+			.buttonEl.setCssStyles({ marginRight: "auto" })
 
+		const centerSection = controlSection.createDiv({ cls: 'center-content summary-controls' })
 		if (!this.selectedProject) {
-			mainSection.createDiv({ cls: 'summary-controls' });
+			centerSection.createDiv({ cls: 'summary-controls' });
 		}
 
 
@@ -241,7 +251,7 @@ export class NoteDashboard extends Component {
 			}
 		}
 
-		this.createAddNoteRow(tbody)
+		// this.createAddNoteRow(tbody)
 
 	}
 
@@ -487,17 +497,15 @@ export class NoteDashboard extends Component {
 
 	}
 
-	private createAddNoteRow(
-		target: HTMLTableSectionElement
-	) {
-		const row = target.createEl('tr');
-		for (const [field,] of this.getVisibleCols()) {
-			const cell = row.createEl("td");
-
-			this.renderAddNoteRowCell(cell, field);
-		}
-
-	}
+	// private createAddNoteRow(
+	// 	target: HTMLTableSectionElement
+	// ) {
+	// 	const row = target.createEl('tr');
+	// 	for (const [field,] of this.getVisibleCols()) {
+	// 		const cell = row.createEl("td");
+	// 		this.renderAddNoteRowCell(cell, field);
+	// 	}
+	// }
 
 	private renderCell(
 		cell: HTMLTableCellElement,
@@ -663,6 +671,10 @@ export class NoteDashboard extends Component {
 
 					break;
 				}
+			case "topic": {
+
+				return
+			}
 			case "action":
 				{
 					
@@ -757,8 +769,8 @@ export class NoteDashboard extends Component {
 		}
 	}
 
-	
 
+	/*
 	private renderAddNoteRowCell(
 		cell: HTMLTableCellElement,
 		field: NoteColumnField,
@@ -780,16 +792,11 @@ export class NoteDashboard extends Component {
 					break;
 				}
 
-
-
 			default:
-
 				break;
-
-
-
 		}
 	}
+	*/
 
 	async addNote(): Promise<void> {
 		if (this.selectedProject) {

@@ -66,15 +66,18 @@ export class TimeSummarySingle extends Component {
 	private timeSummaries: TimeSummaryStore = {
 		day: {
 			project: new Map(),
-			client: new Map()
+			client: new Map(),
+			total: 0
 		},
 		week: {
 			project: new Map(),
-			client: new Map()
+			client: new Map(),
+			total: 0
 		},
 		month: {
 			project: new Map(),
-			client: new Map()
+			client: new Map(),
+			total: 0
 		}
 	};
 	private sessionActive: SessionData | undefined

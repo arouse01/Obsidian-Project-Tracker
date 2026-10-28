@@ -212,6 +212,7 @@ export interface PeriodicTimeSummary {
 	days: DateKey[];
 	projects: Map<string, Map<DateKey, number>>;
 	clients: Map<string, Map<DateKey, number>>;
+	totals: Map<DateKey, number>
 }
 
 // structure for holding current summarized values (totals for current day, week, and month): 
@@ -225,7 +226,9 @@ type TimeSummaryMaps = Record<
 
 export type TimeSummaryStore = Record<
 	TimePeriod,
-	TimeSummaryMaps
+	TimeSummaryMaps & {
+		total: number
+	}
 	>;
 
 export interface TimeTarget {
@@ -368,9 +371,10 @@ export interface NoteItem {
 	title: string,
 	project?: ProjectInfo[]  // not all notes have a project
 	type: NoteType,
+	topic?: string,
 	dateModified?: Date,
-	date?: Date
-	tags?: string[]
+	date?: Date,
+	tags?: string[],
 	people?: string[]
 }
 

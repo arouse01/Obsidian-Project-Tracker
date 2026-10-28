@@ -422,10 +422,10 @@ hr {
 	height: fit-content;
 }
 
-.table-wrapper {
+/*.table-wrapper {
 	max-width: 100%;
 	overflow-x: auto;
-}
+}*/
 
 .project-selector:invalid {
 	color: var(--text-muted);
@@ -738,10 +738,20 @@ hr {
 	padding-bottom: 8px;
 }*/
 
-.dashboard .summary-controls button {
+/*.dashboard .summary-controls button {
 	height: 30px;
+}*/
+.control-button {
+	align-items: end;
+	justify-content: right
 }
-
+/*.control-button button {
+	border: 0;
+	box-shadow: var(--input-shadow);
+	padding: var(--size-4-1) var(--size-4-3);
+	background: var(--interactive-normal);
+	color: var(--text-color);
+}*/
 .dashboard .header {
 	display: flex;
 }
@@ -1041,7 +1051,7 @@ checkbox {
 }
 
 .progress-max {
-	fill: AccentColor
+/*	fill: AccentColor*/
 }
 
 .allocation-total {

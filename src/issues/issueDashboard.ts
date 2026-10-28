@@ -147,6 +147,14 @@ export class IssueDashboardView extends Component {
 
 		const controlSection = mainSection.createDiv( { cls: "project-controls" });
 
+		new ButtonComponent(controlSection)
+			.setClass("underline")
+			.setButtonText("Add new issue...")
+			.onClick(async () => {
+				await this.issueTracker.createNewIssue(this.selectedProject);
+			})
+			.buttonEl.setCssStyles({ marginRight: "auto" })
+
 		const centerSection = controlSection.createDiv( { cls: "center-content summary-controls" })
 		this.createFilterControls(centerSection)
 
@@ -310,7 +318,7 @@ export class IssueDashboardView extends Component {
 			}
 		}
 
-		this.createAddIssueRow(tbody)
+		// this.createAddIssueRow(tbody)
 
 	}
 
@@ -365,17 +373,17 @@ export class IssueDashboardView extends Component {
 		
 	}
 
-	private createAddIssueRow(
-		target: HTMLTableSectionElement
-	) {
-		const row = target.createEl('tr');
-		for (const [field,] of this.getVisibleCols()) {
-			const cell = row.createEl("td");
+	// private createAddIssueRow(
+	// 	target: HTMLTableSectionElement
+	// ) {
+	// 	const row = target.createEl('tr');
+	// 	for (const [field,] of this.getVisibleCols()) {
+	// 		const cell = row.createEl("td");
 			
-			this.renderAddIssueCell(cell, field);
-		}
+	// 		this.renderAddIssueCell(cell, field);
+	// 	}
 
-	}
+	// }
 
 
 	private getVisibleCols(): Array<
@@ -435,7 +443,7 @@ export class IssueDashboardView extends Component {
 		])
 	}
 
-	private renderAddIssueCell(
+	/*private renderAddIssueCell(
 		cell: HTMLTableCellElement,
 		field: IssueColumnField
 	): void {
@@ -453,13 +461,13 @@ export class IssueDashboardView extends Component {
 					
 					break;
 
-					/*new ButtonComponent(cell)
+					*//*new ButtonComponent(cell)
 						// .setIcon(`list-chevrons-up-down`)
 						
 						.onClick(async () => {
 							
 						});
-					break*/
+					break*//*
 				}
 
 			
@@ -468,7 +476,7 @@ export class IssueDashboardView extends Component {
 
 
 		}
-	}
+	}*/
 
 	private renderCollapsedGroupCell(
 		cell: HTMLTableCellElement,

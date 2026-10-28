@@ -314,28 +314,6 @@ export class TimeTracker extends Events {
 		});
 	}
 
-	private _getSummaryTotalsForDates(
-		entries: Map<string, Map<DateKey, number>>,
-		dates: Iterable<DateKey>
-	): Map<string, number> {
-		const totals = new Map<string, number>();
-
-		for (const [key, dailyTotals] of entries) {
-			let total = 0;
-
-			for (const date of dates) {
-				total += dailyTotals.get(date) ?? 0;
-			}
-
-			if (total > 0) {
-				totals.set(key, total);
-			}
-		}
-
-		return totals;
-
-	}
-
 	private _getCurrentWeekDates(
 		currentDate: Date
 	): Set<DateKey> {
@@ -468,9 +446,10 @@ export class TimeTracker extends Events {
 	): Promise<PeriodicTimeSummary> {
 		/* 
 		/  Returns PeriodicTimeSummary, which is
-		/  days: DateKey[];
-		/  projects: Map<string, Map<DateKey, number>>;
-		/  clients: Map<string, Map<DateKey, number>>
+		/		days: DateKey[];
+		/		projects: Map<string, Map<DateKey, number>>;
+		/		clients: Map<string, Map<DateKey, number>>
+		/	days is an array of the dates in the range, and projects/clients are 
 		*/
 		// Get summary of time worked between start and end for all projects and clients
 
@@ -541,10 +520,16 @@ export class TimeTracker extends Events {
 			currentDay.setDate(currentDay.getDate() + 1);
 		}
 
+		const totals = this._getOverallTotalsForDates(
+			projectSummaries,
+			days
+		);
+
 		return {
 			days,
 			projects: projectSummaries,
-			clients: clientSummaries
+			clients: clientSummaries,
+			totals
 		}
 
 	}
@@ -567,17 +552,78 @@ export class TimeTracker extends Events {
 		return {
 			day: {
 				project: this._getSummaryTotalsForDates(summary.projects, today),
-				client: this._getSummaryTotalsForDates(summary.clients, today)
+				client: this._getSummaryTotalsForDates(summary.clients, today),
+				total: this._getSummaryTotalsAcrossProjects(summary.totals, today)
 			},
 			week: {
 				project: this._getSummaryTotalsForDates(summary.projects, thisWeekDates),
-				client: this._getSummaryTotalsForDates(summary.clients, thisWeekDates)
+				client: this._getSummaryTotalsForDates(summary.clients, thisWeekDates),
+				total: this._getSummaryTotalsAcrossProjects(summary.totals, thisWeekDates)
 			},
 			month: {
 				project: this._getSummaryTotalsForDates(summary.projects, thisMonthDates),
-				client: this._getSummaryTotalsForDates(summary.clients, thisMonthDates)
+				client: this._getSummaryTotalsForDates(summary.clients, thisMonthDates),
+				total: this._getSummaryTotalsAcrossProjects(summary.totals, thisMonthDates)
 			}
 		}
+	}
+
+
+	private _getSummaryTotalsForDates(
+		entries: Map<string, Map<DateKey, number>>,
+		dates: Iterable<DateKey>
+	): Map<string, number> {
+		const totals = new Map<string, number>();
+
+		for (const [key, dailyTotals] of entries) {
+			let total = 0;
+
+			for (const date of dates) {
+				total += dailyTotals.get(date) ?? 0;
+			}
+
+			if (total > 0) {
+				totals.set(key, total);
+			}
+		}
+
+		return totals;
+
+	}
+
+	private _getOverallTotalsForDates(
+		entries: Map<string, Map<DateKey, number>>,
+		dates: Iterable<DateKey>
+	): Map<DateKey, number> {
+		// sum across projects
+		const totals = new Map<string, number>();
+
+		for (const date of dates) {
+			let total = 0;
+
+			for (const dailyTotals of entries.values()) {
+				total += dailyTotals.get(date) ?? 0;
+			}
+			totals.set(date, total)
+		}
+
+		return totals;
+
+	}
+
+	private _getSummaryTotalsAcrossProjects(
+		totals: Map<DateKey, number>,
+		dates: Iterable<DateKey>
+	): number {
+		let total = 0;
+
+		for (const date of dates) {
+			total += totals.get(date) ?? 0;
+		}
+		
+
+		return total;
+
 	}
 
 	async getMonthlySummary(
@@ -595,7 +641,8 @@ export class TimeTracker extends Events {
 		return {
 			days: [...months].sort(),
 			projects: await this._summarizeByMonth(summary.projects),
-			clients: await this._summarizeByMonth(summary.clients)
+			clients: await this._summarizeByMonth(summary.clients),
+			totals: await this._summarizeByMonthOverall(summary.projects)
 		};
 	}
 
@@ -619,6 +666,31 @@ export class TimeTracker extends Events {
 			}
 
 			result.set(key, monthlyTotals);
+		}
+
+		return result;
+	}
+
+	private async _summarizeByMonthOverall(
+		entries: Map<string, Map<DateKey, number>>
+	): Promise<Map<DateKey, number>> {
+		const result = new Map<DateKey, number>();
+
+		for (const [, dailyTotals] of entries) {
+			// const monthlyTotals = new Map<DateKey, number>();
+
+			for (const [dateKey, minutes] of dailyTotals) {
+				const date = dateKeyToDate(dateKey);
+
+				const monthKey = getDateKey(date, "month");
+
+				result.set(
+					monthKey,
+					(result.get(monthKey) ?? 0) + minutes
+				);
+			}
+
+			// result.set(key, monthlyTotals);
 		}
 
 		return result;
